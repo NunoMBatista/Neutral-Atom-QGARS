@@ -1,4 +1,7 @@
+from itertools import chain
 import numpy as np
+import bloqade
+from bloqade.ir.location import Chain, start
 
 def build_task(QRC_parameters, xs1):
     """
@@ -17,8 +20,13 @@ def build_task(QRC_parameters, xs1):
     # Time between two consecutive probes
     delta_t = QRC_parameters['total_time'] / QRC_parameters['time_steps'] 
     
+    # Get the atom chain 
+    chain: Chain
+    chain = QRC_parameters["geometry_spec"]
+    
     rabi_oscillations_program = (
-        QRC_parameters["geometry_spec"]
+        #QRC_parameters["geometry_spec"]
+        chain
         .rydberg.rabi.amplitude.uniform.constant(
             duration="run_time",
             value=QRC_parameters["rabi_frequency"]
