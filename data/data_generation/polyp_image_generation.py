@@ -354,7 +354,7 @@ def generate_dataset(num_images=500, img_size=28):
     return all_images
 
 # Generate the dataset
-images = generate_dataset(num_images=70000, img_size=128) 
+images = generate_dataset(num_images=70000-63565, img_size=128) 
 
 # Visualize some examples
 fig, axes = plt.subplots(3, 2, figsize=(12, 12))
