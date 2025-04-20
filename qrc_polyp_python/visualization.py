@@ -1,21 +1,14 @@
-from typing import Dict, List, Tuple, Any
 import matplotlib.pyplot as plt
+from typing import Dict, Tuple, List, Any
 
 def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> None:
     """
     Plot training results for multiple models.
     
-    Creates a figure with two subplots: one for accuracy and one for loss.
-    
     Parameters
     ----------
     results_dict : Dict[str, Tuple[List[float], List[float], List[float], Any]]
-        Dictionary mapping model names to tuples containing:
-        (losses, accs_train, accs_test, model) for each model
-    
-    Returns
-    -------
-    None
+        Dictionary mapping model names to (losses, accs_train, accs_test, model) tuples
     """
     plt.figure(figsize=(12, 6))
     
@@ -47,17 +40,10 @@ def print_results(results_dict: Dict[str, Tuple[List[float], List[float], List[f
     """
     Print the final test accuracies for each model.
     
-    Displays a formatted summary of test accuracies for all models in the results.
-    
     Parameters
     ----------
     results_dict : Dict[str, Tuple[List[float], List[float], List[float], Any]]
-        Dictionary mapping model names to tuples containing:
-        (losses, accs_train, accs_test, model) for each model
-    
-    Returns
-    -------
-    None
+        Dictionary mapping model names to (losses, accs_train, accs_test, model) tuples
     """
     print("\nResults Summary:")
     print("-" * 50)

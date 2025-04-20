@@ -1,32 +1,21 @@
-from typing import Dict, Any, List, Union, Optional
 import numpy as np
-import bloqade
+import bloqade as bq
 from bloqade.analog.ir.location import Chain
+from typing import Dict, Any, List, Union, Optional, Tuple
 
-from tqdm import tqdm
-
-def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray) -> Any:
+def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     """
     Build a quantum task using Bloqade.
-    
-    Creates a Bloqade program for simulating Rydberg atom dynamics with
-    the given parameters and detunings.
     
     Parameters
     ----------
     QRC_parameters : Dict[str, Any]
-        Dictionary with QRC parameters including:
-        - geometry_spec: atom chain geometry
-        - rabi_frequency: Rabi frequency
-        - total_time: total evolution time
-        - encoding_scale: scaling factor for data encoding
-        - time_steps: number of time steps
+        Dictionary with QRC parameters
     detunings : np.ndarray
         Array of detunings for each atom
     
     Returns
     -------
-    Any
         A Bloqade Program ready to be executed
     """
     # Get parameters
@@ -66,23 +55,17 @@ def process_results(QRC_parameters: Dict[str, Any], report: Any) -> np.ndarray:
     """
     Process the results from a quantum task.
     
-    Extracts and processes measurement results from a quantum simulation,
-    calculating expectation values for observables.
-    
     Parameters
     ----------
     QRC_parameters : Dict[str, Any]
-        Dictionary with QRC parameters including:
-        - atom_number: number of atoms
-        - time_steps: number of time steps
-        - readouts: type of readout ("Z" or "ZZ")
+        Dictionary with QRC parameters
     report : Any
-        Report from the quantum task containing measurement results
+        Report from the quantum task
     
     Returns
     -------
     np.ndarray
-        Array of expectation values forming the quantum embedding
+        Array of expectation values
     """
     # Initialize array for embedding vector
     embedding = []
@@ -118,28 +101,21 @@ def process_results(QRC_parameters: Dict[str, Any], report: Any) -> np.ndarray:
     
     return np.array(embedding)
 
-def get_embeddings_emulation(
-    xs: np.ndarray, 
-    qrc_params: Dict[str, Any], 
-    num_examples: int, 
-    n_shots: int = 1000
-) -> np.ndarray:
+def get_embeddings_emulation(xs: np.ndarray, qrc_params: Dict[str, Any], 
+                            num_examples: int, n_shots: int = 1000) -> np.ndarray:
     """
-    Get embeddings from quantum tasks.
-    
-    Processes input data through quantum simulation to obtain
-    quantum feature embeddings.
+    Function to get the embeddings from the quantum task.
     
     Parameters
     ----------
     xs : np.ndarray
-        Training set features
+        Training set
     qrc_params : Dict[str, Any]
         Dictionary with QRC parameters
     num_examples : int
         Number of examples to process
     n_shots : int, optional
-        Number of shots for the quantum task (default is 1000)
+        Number of shots for the quantum task, by default 1000
     
     Returns
     -------
@@ -148,27 +124,19 @@ def get_embeddings_emulation(
     """    
     embeddings = []
     
-    # Process each example one at a time with progress bar
-    for i in tqdm(range(num_examples), desc="Processing quantum samples", unit="sample"):
+    # Process each example one at a time
+    for i in range(num_examples):
         try:
             # Extract features for current example 
             features = xs[:, i] if len(xs.shape) > 1 else xs
             
-            # Build quantum task
+            # Build and run quantum task
             task = build_task(qrc_params, features)
-            
-            # Run simulation
-            #result = task.bloqade.python().run(shots=n_shots).report()
             result = task.bloqade.python().run(shots=n_shots).report()
             
             # Process results and add to embeddings
             embedding = process_results(qrc_params, result)
             embeddings.append(embedding)
-            
-            # Update progress bar with completion percentage
-            if i % 10 == 0 or i == num_examples - 1:
-                tqdm.write(f"Completed {i+1}/{num_examples} samples ({(i+1)/num_examples*100:.1f}%)")
-                
         except Exception as e:
             print(f"Error processing example {i}: {e}")
             # Create dummy embedding of the right size if processing fails
@@ -177,5 +145,46 @@ def get_embeddings_emulation(
                 dim += qrc_params["atom_number"] * (qrc_params["atom_number"] - 1) // 2 * qrc_params["time_steps"]
             embeddings.append(np.zeros(dim))
     
-    # Return as a transposed array where each column is a sample (features × samples)
-    return np.array(embeddings).T
+    return np.array(embeddings)
+
+def get_embeddings_with_checkpoint(xs: np.ndarray, qrc_params: Dict[str, Any], 
+                                 num_examples: int, n_shots: int = 1000, 
+                                 checkpoint_file: str = 'quantum_embeddings.joblib') -> np.ndarray:
+    """
+    Get embeddings with checkpoint support to avoid recomputing.
+    
+    Parameters
+    ----------
+    xs : np.ndarray
+        Training set
+    qrc_params : Dict[str, Any]
+        Dictionary with QRC parameters
+    num_examples : int
+        Number of examples to process
+    n_shots : int, optional
+        Number of shots for the quantum task, by default 1000
+    checkpoint_file : str, optional
+        Filename to save/load embeddings, by default 'quantum_embeddings.joblib'
+    
+    Returns
+    -------
+    np.ndarray
+        Array with the embeddings
+    """
+    import os
+    from joblib import dump, load
+    
+    # Check if checkpoint exists
+    if os.path.exists(checkpoint_file):
+        print(f"Loading embeddings from checkpoint: {checkpoint_file}")
+        return load(checkpoint_file)
+    
+    # If not, compute embeddings
+    print("Computing embeddings...")
+    embeddings = get_embeddings_emulation(xs, qrc_params, num_examples, n_shots)
+    
+    # Save checkpoint
+    print(f"Saving embeddings checkpoint: {checkpoint_file}")
+    dump(embeddings, checkpoint_file)
+    
+    return embeddings

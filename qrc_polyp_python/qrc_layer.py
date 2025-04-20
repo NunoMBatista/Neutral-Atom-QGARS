@@ -1,43 +1,25 @@
-from typing import Dict, Any
 import numpy as np
-import bloqade
 from bloqade.analog.ir.location import Chain
-
 from tqdm import tqdm
+from typing import Dict, Any
 from quantum_task import get_embeddings_emulation
 
 class DetuningLayer:
     """
     Bloqade implementation of the quantum dynamics simulation.
     
-    A class that handles the quantum reservoir computing layer using
-    Rydberg atom dynamics simulated with Bloqade.
-    
-    Attributes
+    Parameters
     ----------
-    qrc_params : Dict[str, Any]
-        Dictionary containing quantum reservoir computing parameters
-    
-    Methods
-    -------
-    apply_layer(x)
-        Apply quantum dynamics to input data
+    n_atoms : int
+        Number of atoms in the chain
+    rabi_freq : float
+        Rabi frequency for the quantum dynamics
+    t_end : float
+        Total evolution time
+    n_steps : int
+        Number of time steps for readout
     """
-    def __init__(self, n_atoms: int, rabi_freq: float, t_end: float, n_steps: int) -> None:
-        """
-        Initialize the detuning layer.
-        
-        Parameters
-        ----------
-        n_atoms : int
-            Number of atoms in the chain
-        rabi_freq : float
-            Rabi frequency for the atomic transitions
-        t_end : float
-            Total evolution time
-        n_steps : int
-            Number of time steps for the evolution
-        """
+    def __init__(self, n_atoms: int, rabi_freq: float, t_end: float, n_steps: int):
         # Create an atom chain with the specified number of atoms
         atom_chain = Chain(n_atoms, lattice_spacing=10)
         
@@ -45,7 +27,7 @@ class DetuningLayer:
         self.qrc_params = {
             "atom_number": n_atoms,
             "geometry_spec": atom_chain,
-            "encoding_scale": 9.0,
+            "encoding_scale": 9.0,  # Use same encoding scale as MNIST example
             "rabi_frequency": rabi_freq,
             "total_time": t_end,
             "time_steps": n_steps,
@@ -56,9 +38,6 @@ class DetuningLayer:
         """
         Apply quantum dynamics to input data.
         
-        Transforms input features through quantum simulation to create
-        quantum embeddings.
-        
         Parameters
         ----------
         x : np.ndarray
@@ -67,7 +46,7 @@ class DetuningLayer:
         Returns
         -------
         np.ndarray
-            Quantum embeddings (features × samples)
+            Quantum embeddings
         """
         if len(x.shape) == 1:
             # Single sample
@@ -75,4 +54,8 @@ class DetuningLayer:
         else:
             # Batch of samples
             print(f"Processing {x.shape[1]} samples...")
-            return get_embeddings_emulation(x, self.qrc_params, x.shape[1])
+            outputs = []
+            iterator = tqdm(range(x.shape[1]), desc="Quantum simulation", unit="sample")
+            for i in iterator:
+                outputs.append(get_embeddings_emulation(x[:, i].reshape(-1, 1), self.qrc_params, 1)[0])
+            return np.column_stack(outputs)

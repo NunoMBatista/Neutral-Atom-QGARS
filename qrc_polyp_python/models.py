@@ -1,31 +1,19 @@
 import torch
 import torch.nn as nn
+from typing import Any
 
 class LinearClassifier(nn.Module):
     """
     Simple linear classifier with softmax output.
     
-    A single-layer neural network that applies a linear transformation
-    followed by a softmax activation.
-    
-    Attributes
+    Parameters
     ----------
-    linear : nn.Linear
-        Linear transformation layer
-    softmax : nn.Softmax
-        Softmax activation function
+    input_dim : int
+        Dimension of input features
+    output_dim : int
+        Number of output classes
     """
-    def __init__(self, input_dim: int, output_dim: int) -> None:
-        """
-        Initialize the linear classifier.
-        
-        Parameters
-        ----------
-        input_dim : int
-            Dimension of input features
-        output_dim : int
-            Dimension of output (number of classes)
-        """
+    def __init__(self, input_dim: int, output_dim: int):
         super(LinearClassifier, self).__init__()
         self.linear = nn.Linear(input_dim, output_dim)
         self.softmax = nn.Softmax(dim=1)
@@ -38,7 +26,7 @@ class LinearClassifier(nn.Module):
         ----------
         x : torch.Tensor
             Input tensor
-            
+        
         Returns
         -------
         torch.Tensor
@@ -50,27 +38,16 @@ class NeuralNetwork(nn.Module):
     """
     Multi-layer neural network with two hidden layers.
     
-    A feed-forward neural network with two hidden layers and ReLU activations,
-    followed by a softmax output layer.
-    
-    Attributes
+    Parameters
     ----------
-    layers : nn.Sequential
-        Sequential container of network layers
+    input_dim : int
+        Dimension of input features
+    output_dim : int
+        Number of output classes
+    hidden_dim : int, optional
+        Size of hidden layers, by default 100
     """
-    def __init__(self, input_dim: int, output_dim: int, hidden_dim: int = 100) -> None:
-        """
-        Initialize the neural network.
-        
-        Parameters
-        ----------
-        input_dim : int
-            Dimension of input features
-        output_dim : int
-            Dimension of output (number of classes)
-        hidden_dim : int, optional
-            Dimension of hidden layers (default is 100)
-        """
+    def __init__(self, input_dim: int, output_dim: int, hidden_dim: int = 100):
         super(NeuralNetwork, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -89,7 +66,7 @@ class NeuralNetwork(nn.Module):
         ----------
         x : torch.Tensor
             Input tensor
-            
+        
         Returns
         -------
         torch.Tensor

@@ -1,29 +1,19 @@
-from typing import Tuple, List, Any, Union
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+from typing import Tuple, List, Dict, Any, Optional, Union
 from models import LinearClassifier, NeuralNetwork
 
-def train(
-    x_train: np.ndarray, 
-    y_train: np.ndarray, 
-    x_test: np.ndarray, 
-    y_test: np.ndarray, 
-    regularization: float = 0.0, 
-    nepochs: int = 100, 
-    batchsize: int = 100, 
-    learning_rate: float = 0.01, 
-    verbose: bool = True, 
-    nonlinear: bool = False
-) -> Tuple[List[float], List[float], List[float], Union[LinearClassifier, NeuralNetwork]]:
+def train(x_train: np.ndarray, y_train: np.ndarray, 
+          x_test: np.ndarray, y_test: np.ndarray, 
+          regularization: float = 0.0, nepochs: int = 100, 
+          batchsize: int = 100, learning_rate: float = 0.01, 
+          verbose: bool = True, nonlinear: bool = False) -> Tuple[List[float], List[float], List[float], nn.Module]:
     """
     Train a model on the given data.
-    
-    Trains either a linear classifier or neural network on the provided 
-    training data and evaluates performance on both training and test data.
     
     Parameters
     ----------
@@ -36,58 +26,35 @@ def train(
     y_test : np.ndarray
         Test labels
     regularization : float, optional
-        Weight decay for regularization (default is 0.0)
+        Weight decay for regularization, by default 0.0
     nepochs : int, optional
-        Number of training epochs (default is 100)
+        Number of training epochs, by default 100
     batchsize : int, optional
-        Batch size for training (default is 100)
+        Batch size for training, by default 100
     learning_rate : float, optional
-        Learning rate for optimizer (default is 0.01)
+        Learning rate for optimizer, by default 0.01
     verbose : bool, optional
-        Whether to show progress bars (default is True)
+        Whether to show progress bars, by default True
     nonlinear : bool, optional
-        Whether to use a neural network (True) or linear classifier (False)
-        (default is False)
-        
+        Whether to use a neural network (True) or linear classifier (False), by default False
+    
     Returns
     -------
-    Tuple[List[float], List[float], List[float], Union[LinearClassifier, NeuralNetwork]]
-        A tuple containing:
-        - losses: training loss history
-        - accs_train: training accuracy history
-        - accs_test: test accuracy history
-        - model: the trained model
+    Tuple[List[float], List[float], List[float], nn.Module]
+        - losses: Training losses per epoch
+        - accs_train: Training accuracies per epoch
+        - accs_test: Test accuracies per epoch
+        - model: Trained model
     """
     # Convert numpy arrays to PyTorch tensors
     x_train_tensor = torch.FloatTensor(x_train.T)  # Transpose to match PyTorch's expected shape
     y_train_tensor = torch.FloatTensor(y_train.T)
-    
-    # Print shapes for debugging
-    if verbose:
-        print(f"Training data shapes - X: {x_train.shape}, Y: {y_train.shape}")
-        print(f"Tensor shapes - X: {x_train_tensor.shape}, Y: {y_train_tensor.shape}")
-    
-    # Ensure tensors have compatible dimensions for TensorDataset
-    if x_train_tensor.shape[0] != y_train_tensor.shape[0]:
-        raise ValueError(f"Tensor dimension mismatch: x_train_tensor has {x_train_tensor.shape[0]} samples, "
-                         f"y_train_tensor has {y_train_tensor.shape[0]} samples")
-    
     x_test_tensor = torch.FloatTensor(x_test.T)
-    
-    # Convert test labels to one-hot encoding if they're not already
-    if len(y_test.shape) == 1:
-        # One-hot encode if we have a 1D array of class indices
-        n_classes = y_train.shape[0]
-        y_test_one_hot = np.zeros((n_classes, y_test.shape[0]))
-        for i, label in enumerate(y_test):
-            y_test_one_hot[int(label), i] = 1.0
-        y_test = y_test_one_hot
-    
-    y_test_tensor = torch.FloatTensor(y_test.T)
+    y_test_tensor = torch.LongTensor(np.argmax(y_test, axis=0) if len(y_test.shape) > 1 else y_test)
     
     # Create model
     input_dim = x_train.shape[0]
-    output_dim = y_train.shape[0]
+    output_dim = y_train.shape[0] if len(y_train.shape) > 1 else len(np.unique(y_train))
     
     if nonlinear:
         model = NeuralNetwork(input_dim, output_dim)
@@ -124,7 +91,7 @@ def train(
             # Forward pass
             outputs = model(x_batch)
             
-            # Compute loss - CrossEntropyLoss expects class indices
+            # Compute loss
             loss = criterion(outputs, torch.argmax(y_batch, dim=1))
             
             # Backward pass and optimize
@@ -145,15 +112,14 @@ def train(
             # Test accuracy
             test_outputs = model(x_test_tensor)
             _, test_pred = torch.max(test_outputs, 1)
-            test_targets = torch.argmax(y_test_tensor, dim=1)
-            test_acc = (test_pred == test_targets).sum().item() / test_targets.size(0)
+            test_acc = (test_pred == y_test_tensor).sum().item() / y_test_tensor.size(0)
         
         losses.append(epoch_loss / len(train_loader))
         accs_train.append(train_acc)
         accs_test.append(test_acc)
         
         # Update the progress bar with current metrics
-        if verbose and epoch % 10 == 0:
+        if verbose:
             tqdm.write(f"Epoch {epoch+1}/{nepochs} - Loss: {losses[-1]:.4f} - Train Acc: {train_acc:.4f} - Test Acc: {test_acc:.4f}")
     
     return losses, accs_train, accs_test, model

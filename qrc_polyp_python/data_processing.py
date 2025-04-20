@@ -1,24 +1,19 @@
-from typing import Tuple, Dict, Any, List, Optional
 import os
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import random
+import matplotlib.pyplot as plt
+from typing import Tuple, Dict, Any, List, Optional, Union
 
 # Global settings
-SHOW_PROGRESS_BAR: bool = True
+SHOW_PROGRESS_BAR = True
 
-def create_polyp_dataset(
-    polyp_dir: str, 
-    no_polyp_dir: str, 
-    split_ratio: float = 0.8, 
-    target_size: Tuple[int, int] = (28, 28)
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def create_polyp_dataset(polyp_dir: str, no_polyp_dir: str, 
+                        split_ratio: float = 0.8, 
+                        target_size: Tuple[int, int] = (28, 28)) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Load and preprocess the polyp dataset.
-    
-    Loads images from polyp and no-polyp directories, preprocesses them,
-    and splits them into training and test sets.
     
     Parameters
     ----------
@@ -27,16 +22,14 @@ def create_polyp_dataset(
     no_polyp_dir : str
         Directory containing non-polyp images
     split_ratio : float, optional
-        Ratio for train/test split (default is 0.8)
+        Ratio for train/test split, by default 0.8
     target_size : Tuple[int, int], optional
-        Size to resize images to (default is (28, 28))
+        Size to resize images to, by default (28, 28)
     
     Returns
     -------
     Tuple[Dict[str, Any], Dict[str, Any]]
-        A tuple containing:
-        - train_dataset: Dictionary with training data
-        - test_dataset: Dictionary with test data
+        train_dataset, test_dataset containing features and targets
     """
     # Load and process polyp images
     polyp_files = [os.path.join(polyp_dir, f) for f in os.listdir(polyp_dir)]
@@ -75,7 +68,22 @@ def create_polyp_dataset(
     test_targets = [test_targets[i] for i in test_indices]
     
     # Process images and create features arrays
-    def process_images(files, target_size):
+    def process_images(files: List[str], target_size: Tuple[int, int]) -> np.ndarray:
+        """
+        Process images and resize them to the target size.
+        
+        Parameters
+        ----------
+        files : List[str]
+            List of file paths to images
+        target_size : Tuple[int, int]
+            Target size to resize images to
+        
+        Returns
+        -------
+        np.ndarray
+            Array of processed images
+        """
         n_samples = len(files)
         features = np.zeros((target_size[0], target_size[1], n_samples), dtype=np.float32)
         
@@ -126,15 +134,12 @@ def flatten_images(data: np.ndarray, desc: str = "Flattening images") -> np.ndar
     """
     Flatten 3D image data into 2D matrix.
     
-    Converts images from (height, width, n_samples) to (height*width, n_samples)
-    for further processing.
-    
     Parameters
     ----------
     data : np.ndarray
         Image data tensor of shape (height, width, n_samples)
     desc : str, optional
-        Description for progress bar (default is "Flattening images")
+        Description for progress bar, by default "Flattening images"
         
     Returns
     -------
@@ -155,22 +160,18 @@ def show_sample_image(data: Dict[str, Any], index: Optional[int] = None) -> int:
     """
     Display a sample image from the dataset.
     
-    Shows an image from the dataset with its corresponding label.
-    
     Parameters
     ----------
     data : Dict[str, Any]
         Dataset containing 'features' and 'targets'
     index : Optional[int], optional
-        Index of image to display (random if None)
-        
+        Index of image to display (random if None), by default None
+    
     Returns
     -------
     int
-        Index of displayed image
+        Index of the displayed image
     """
-    import matplotlib.pyplot as plt
-    
     if index is None:
         index = random.randint(0, data["features"].shape[2] - 1)
     

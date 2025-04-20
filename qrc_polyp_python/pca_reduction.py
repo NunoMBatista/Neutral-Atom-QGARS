@@ -1,37 +1,31 @@
-from typing import Dict, Any, Tuple
 import numpy as np
+from typing import Dict, Tuple, Optional, Any, Union
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 from data_processing import flatten_images
 
-def apply_pca(
-    data: Dict[str, Any], 
-    dim_pca: int = 8, 
-    num_examples: int = 1000
-) -> Tuple[np.ndarray, np.ndarray, PCA, OneHotEncoder]:
+def apply_pca(data: Dict[str, Any], dim_pca: int = 8, num_examples: int = 1000) -> Tuple[np.ndarray, np.ndarray, PCA, float, OneHotEncoder]:
     """
     Apply PCA to the image features.
     
-    Reduces dimensionality of image data using PCA without scaling.
-    
     Parameters
     ----------
-    data : Dict[str, Any]
-        Dictionary containing dataset with 'features' and 'targets'
+    data : dict
+        Dictionary containing 'features' (image data) and 'targets' (labels)
     dim_pca : int, optional
-        Number of PCA components (default is 8)
+        Number of principal components to extract, by default 8
     num_examples : int, optional
-        Number of examples to process (default is 1000)
+        Number of examples to process, by default 1000
     
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, PCA, OneHotEncoder]
-        A tuple containing:
-        - xs: Transformed features (without scaling)
-        - ys: One-hot encoded labels
-        - pca: Trained PCA model
-        - encoder: Trained OneHotEncoder
+    Tuple[np.ndarray, np.ndarray, PCA, float, OneHotEncoder]
+        - xs: Principal components for the selected examples
+        - ys: One-hot encoded labels for the selected examples
+        - pca: The fitted PCA model
+        - spectral: Max absolute value of the PCA components (for scaling)
+        - encoder: The fitted OneHotEncoder
     """
     # Flatten images
     print("Flattening images...")
@@ -55,6 +49,9 @@ def apply_pca(
     
     xs = x[:, :num_examples]  # Take first num_examples samples
     
+    # Calculate spectral range (max absolute value)
+    spectral = max(abs(xs.max()), abs(xs.min()))
+    
     # One-hot encode the labels
     # Handle different scikit-learn versions
     try:
@@ -67,52 +64,41 @@ def apply_pca(
     y = encoder.fit_transform(data["targets"].reshape(-1, 1))
     ys = y[:num_examples].T  # Transpose to match Julia's format
     
-    return xs, ys, pca, encoder
+    return xs, ys, pca, spectral, encoder
 
-def scale_features(features: np.ndarray, target_range: float = 6.0) -> Tuple[np.ndarray, float]:
+def scale_to_detuning_range(xs: np.ndarray, spectral: float, detuning_max: float = 6.0) -> np.ndarray:
     """
-    Scale features to a target range.
-    
-    Scales features to the range [-target_range, target_range] based on the
-    maximum absolute value in the feature set.
+    Scale data to a specific detuning range.
     
     Parameters
     ----------
-    features : np.ndarray
-        Features to scale
-    target_range : float, optional
-        Target range for scaling (default is 6.0 for quantum detuning)
-        
+    xs : np.ndarray
+        Input data to scale
+    spectral : float
+        The spectral range (maximum absolute value) from the original data
+    detuning_max : float, optional
+        Maximum detuning value to scale to, by default 6.0
+    
     Returns
     -------
-    Tuple[np.ndarray, float]
-        A tuple containing:
-        - scaled_features: The scaled features
-        - spectral: The scaling factor used
+    np.ndarray
+        Scaled data within the range (-detuning_max, detuning_max)
     """
-    spectral = max(abs(features.max()), abs(features.min()))
-    if spectral == 0:  # Avoid division by zero
-        return features, 1.0
-    scaled_features = features / spectral * target_range
-    return scaled_features, spectral
+    return xs / spectral * detuning_max
 
-def apply_pca_to_test_data(
-    data: Dict[str, Any], 
-    pca_model: PCA, 
-    dim_pca: int, 
-    num_examples: int
-) -> np.ndarray:
+def apply_pca_to_test_data(data: Dict[str, Any], pca_model: PCA, spectral: float, 
+                           dim_pca: int, num_examples: int) -> np.ndarray:
     """
     Apply pre-trained PCA to test data.
     
-    Transforms test data using a pre-trained PCA model without scaling.
-    
     Parameters
     ----------
-    data : Dict[str, Any]
+    data : dict
         Test dataset containing 'features'
     pca_model : PCA
         Trained PCA model
+    spectral : float
+        Scaling factor from training
     dim_pca : int
         Number of PCA components
     num_examples : int
@@ -121,7 +107,7 @@ def apply_pca_to_test_data(
     Returns
     -------
     np.ndarray
-        Transformed features (without scaling)
+        Transformed features (not scaled)
     """
     print("Flattening test data...")
     data_flat = flatten_images(data["features"], desc="Flattening test data")
@@ -132,7 +118,7 @@ def apply_pca_to_test_data(
     for i in tqdm(range(min(data_flat.shape[0], num_examples)), desc="PCA transform"):
         test_features[i] = pca_model.transform(data_flat[i].reshape(1, -1))[0]
     
-    # Transpose to match the format of training features
-    test_features = test_features.T  
+    # Return in the same format as training features
+    test_features = test_features.T  # Match the format of training features
     
     return test_features

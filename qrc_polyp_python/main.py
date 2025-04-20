@@ -4,10 +4,11 @@ import random
 import torch
 import warnings
 import matplotlib.pyplot as plt
+from typing import Dict, Any, Tuple
 
 # Import custom modules
 from data_processing import create_polyp_dataset, show_sample_image
-from pca_reduction import apply_pca, apply_pca_to_test_data, scale_features
+from pca_reduction import apply_pca, apply_pca_to_test_data, scale_to_detuning_range
 from qrc_layer import DetuningLayer
 from training import train
 from visualization import plot_training_results, print_results
@@ -16,11 +17,19 @@ from visualization import plot_training_results, print_results
 warnings.filterwarnings('ignore')
 
 # Set random seed for reproducibility
-np.random.seed(43)
-random.seed(43)
-torch.manual_seed(43)
+np.random.seed(42)
+random.seed(42)
+torch.manual_seed(42)
 
-def main():
+def main() -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]:
+    """
+    Main function to run the quantum reservoir computing pipeline.
+    
+    Returns
+    -------
+    Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]
+        Dictionary of results for each model
+    """
     # Define the path to the generated polyp dataset
     root_dir = os.path.dirname(os.path.abspath(__file__))
     generated_polyp_dataset = os.path.join(root_dir, "..", "data", "datasets", "cvc_clinic_db_patches")
@@ -31,18 +40,17 @@ def main():
     data_train, data_test = create_polyp_dataset(polyp_dir, no_polyp_dir, split_ratio=0.8, target_size=(128, 128))
     
     # Display a random image from the training set
-    #show_sample_image(data_train)
+    show_sample_image(data_train)
     
     # PCA Reduction
     print("\nPerforming PCA reduction...")
     dim_pca = 8
     num_examples = 1000
-    xs, ys, pca_model, encoder = apply_pca(data_train, dim_pca, num_examples)
+    xs_raw, ys, pca_model, spectral, encoder = apply_pca(data_train, dim_pca, num_examples)
     
-    # Scale features to detuning range for quantum processing
-    print("Scaling features to detuning range...")
-    detuning_range = 6.0  # Quantum detuning range
-    xs_scaled, spectral = scale_features(xs, detuning_range)
+    # Scale features to detuning range
+    detuning_max = 6.0
+    xs = scale_to_detuning_range(xs_raw, spectral, detuning_max)
     
     # Create quantum layer with Bloqade
     print("\nPreparing quantum simulation...")
@@ -54,28 +62,27 @@ def main():
     )
     
     print("Running quantum simulation...")
-    embeddings = quantum_layer.apply_layer(xs_scaled)
+    embeddings = quantum_layer.apply_layer(xs)
     
     # Prepare test data
     print("\nPreparing test data...")
     num_test_examples = 400
     
-    test_features = apply_pca_to_test_data(
+    test_features_raw = apply_pca_to_test_data(
         data_test,
         pca_model,
+        spectral,
         dim_pca,
         num_test_examples
     )
     
-    # Scale test features using the same spectral factor
-    test_features_scaled, _ = scale_features(test_features, detuning_range)
+    # Scale test features to detuning range
+    test_features = scale_to_detuning_range(test_features_raw, spectral, detuning_max)
     
-    # Convert test targets to one-hot encoding like training targets
-    test_labels = data_test["targets"][:num_test_examples]
-    test_targets = encoder.transform(test_labels.reshape(-1, 1)).T  # Transform and transpose
+    test_targets = data_test["targets"][:num_test_examples]
     
     print("Computing quantum embeddings for test data...")
-    test_embeddings = quantum_layer.apply_layer(test_features_scaled)
+    test_embeddings = quantum_layer.apply_layer(test_features)
     
     # Train different models
     results = {}
