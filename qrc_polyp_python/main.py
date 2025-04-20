@@ -16,9 +16,9 @@ from visualization import plot_training_results, print_results
 warnings.filterwarnings('ignore')
 
 # Set random seed for reproducibility
-np.random.seed(42)
-random.seed(42)
-torch.manual_seed(42)
+np.random.seed(43)
+random.seed(43)
+torch.manual_seed(43)
 
 def main():
     # Define the path to the generated polyp dataset
