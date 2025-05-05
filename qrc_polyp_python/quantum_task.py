@@ -19,7 +19,7 @@ def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
         A Bloqade Program ready to be executed
     """
     # Get parameters
-    atom_chain = QRC_parameters["geometry_spec"]
+    atom_geometry = QRC_parameters["geometry_spec"]
     rabi_frequency = QRC_parameters["rabi_frequency"]
     total_time = QRC_parameters["total_time"]
     encoding_scale = QRC_parameters["encoding_scale"]
@@ -27,29 +27,67 @@ def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     # Time between consecutive probes
     delta_t = total_time / QRC_parameters["time_steps"]
     
-    # Create the bloqade program using the API style from the MNIST example
-    rabi_oscillations_program = (
-        atom_chain
-        .rydberg.rabi.amplitude.uniform.constant(
+    # Create the bloqade program using the flexible API
+    # We can customize the rabi amplitude and detuning profiles
+    rabi_amplitude_profile = QRC_parameters.get("rabi_amplitude_profile", "constant")
+    detuning_profile = QRC_parameters.get("detuning_profile", "constant")
+    
+    # Initialize the program with the atom geometry
+    program = atom_geometry
+    
+    # Add Rabi amplitude based on the selected profile
+    if rabi_amplitude_profile == "constant":
+        program = program.rydberg.rabi.amplitude.uniform.constant(
             duration="run_time",
             value=rabi_frequency
         )
-        .detuning.uniform.constant(
+    elif rabi_amplitude_profile == "linear_ramp":
+        program = program.rydberg.rabi.amplitude.uniform.linear(
+            duration="run_time",
+            start=0,
+            stop=rabi_frequency
+        )
+    elif callable(rabi_amplitude_profile):
+        # Use custom Rabi amplitude function if provided
+        program = program.rydberg.rabi.amplitude.uniform.custom(
+            duration="run_time",
+            value=rabi_amplitude_profile
+        )
+    
+    # Add detuning based on the selected profile and the input detunings
+    if detuning_profile == "constant":
+        program = program.detuning.uniform.constant(
             duration="run_time",
             value=encoding_scale/2
-        )
-        .scale(list(detunings)).constant(
+        ).scale(list(detunings)).constant(
             duration="run_time",
             value=-encoding_scale
         )
-    )
+    elif detuning_profile == "linear_ramp":
+        program = program.detuning.uniform.linear(
+            duration="run_time",
+            start=0,
+            stop=encoding_scale/2
+        ).scale(list(detunings)).constant(
+            duration="run_time",
+            value=-encoding_scale
+        )
+    elif callable(detuning_profile):
+        # Use custom detuning function if provided
+        program = program.detuning.uniform.custom(
+            duration="run_time",
+            value=lambda t: detuning_profile(t, encoding_scale/2)
+        ).scale(list(detunings)).constant(
+            duration="run_time",
+            value=-encoding_scale
+        )
     
     # Batch assign to probe the quantum system at multiple timesteps
-    rabi_oscillations_job = rabi_oscillations_program.batch_assign(
+    program_job = program.batch_assign(
         run_time=np.arange(1, QRC_parameters["time_steps"]+1, 1) * delta_t
     )
     
-    return rabi_oscillations_job
+    return program_job
 
 def process_results(QRC_parameters: Dict[str, Any], report: Any) -> np.ndarray:
     """
@@ -70,6 +108,8 @@ def process_results(QRC_parameters: Dict[str, Any], report: Any) -> np.ndarray:
     # Initialize array for embedding vector
     embedding = []
     atom_number = QRC_parameters["atom_number"]
+    readout_type = QRC_parameters.get("readouts", "ZZ")
+    custom_readouts = QRC_parameters.get("custom_readouts", None)
     
     try: 
         # Process bitstrings for each time step
@@ -78,26 +118,52 @@ def process_results(QRC_parameters: Dict[str, Any], report: Any) -> np.ndarray:
             ar1 = -1.0 + 2.0 * ((report.bitstrings())[t])
             nsh1 = ar1.shape[0]
             
-            # Calculate Z expectation values for each atom
-            for i in range(atom_number):
-                embedding.append(np.sum(ar1[:, i])/nsh1)
-            
-            # Add ZZ correlators if needed
-            if QRC_parameters.get("readouts") == "ZZ":
+            # Process based on readout type
+            if custom_readouts is not None:
+                # Use custom readout configuration if provided
+                for readout in custom_readouts:
+                    value = readout(ar1, nsh1)
+                    embedding.append(value)
+            else:
+                # Calculate Z expectation values for each atom
                 for i in range(atom_number):
-                    for j in range(i+1, atom_number):
-                        embedding.append(np.sum(ar1[:, i]*ar1[:, j])/nsh1)
+                    embedding.append(np.sum(ar1[:, i])/nsh1)
+                
+                # Add ZZ correlators if specified
+                if readout_type == "ZZ" or readout_type == "all":
+                    for i in range(atom_number):
+                        for j in range(i+1, atom_number):
+                            embedding.append(np.sum(ar1[:, i]*ar1[:, j])/nsh1)
+                
+                # Add other correlators if needed
+                if readout_type == "all":
+                    # Example: Add three-body ZZZ correlators
+                    for i in range(atom_number):
+                        for j in range(i+1, atom_number):
+                            for k in range(j+1, atom_number):
+                                embedding.append(np.sum(ar1[:, i]*ar1[:, j]*ar1[:, k])/nsh1)
                         
     except Exception as e:
         print(f"Error processing results: {e}")
         # Fallback to zeros if no results obtained
-        for t in range(QRC_parameters["time_steps"]):
-            for i in range(atom_number):
-                embedding.append(0.0)
-            if QRC_parameters.get("readouts") == "ZZ":
-                for i in range(atom_number):
-                    for j in range(i+1, atom_number):
-                        embedding.append(0.0)
+        # Calculate expected number of readouts based on configuration
+        expected_readouts = 0
+        
+        if custom_readouts is not None:
+            expected_readouts = len(custom_readouts) * QRC_parameters["time_steps"]
+        else:
+            # Z readouts
+            expected_readouts = atom_number * QRC_parameters["time_steps"]
+            
+            # ZZ readouts
+            if readout_type == "ZZ" or readout_type == "all":
+                expected_readouts += atom_number * (atom_number - 1) // 2 * QRC_parameters["time_steps"]
+            
+            # Other correlators
+            if readout_type == "all":
+                expected_readouts += atom_number * (atom_number - 1) * (atom_number - 2) // 6 * QRC_parameters["time_steps"]
+        
+        embedding = [0.0] * expected_readouts
     
     return np.array(embedding)
 
@@ -139,11 +205,11 @@ def get_embeddings_emulation(xs: np.ndarray, qrc_params: Dict[str, Any],
             embeddings.append(embedding)
         except Exception as e:
             print(f"Error processing example {i}: {e}")
-            # Create dummy embedding of the right size if processing fails
-            dim = qrc_params["atom_number"] * qrc_params["time_steps"]
-            if qrc_params.get("readouts") == "ZZ":
-                dim += qrc_params["atom_number"] * (qrc_params["atom_number"] - 1) // 2 * qrc_params["time_steps"]
-            embeddings.append(np.zeros(dim))
+            # Create dummy embedding by calling process_results with None
+            # This ensures consistent output size even if simulation fails
+            dummy_report = None
+            embedding = process_results(qrc_params, dummy_report)
+            embeddings.append(embedding)
     
     return np.array(embeddings)
 

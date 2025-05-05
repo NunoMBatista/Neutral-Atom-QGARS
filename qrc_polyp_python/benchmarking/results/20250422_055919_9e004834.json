@@ -1,0 +1,29 @@
+{
+  "parameters": {
+    "dim_pca": 12,
+    "rabi_freq": 6.0,
+    "time_steps": 16,
+    "readout_type": "Z",
+    "geometry": "chain",
+    "num_examples": 100,
+    "num_test_examples": 50,
+    "nepochs": 20,
+    "no_progress": true,
+    "no_plot": true
+  },
+  "test_accuracies": {
+    "PCA+linear": 74.0,
+    "QRC": 86.0,
+    "PCA+NN": 88.0
+  },
+  "qrc_accuracy": 86.0,
+  "best_model": "PCA+NN",
+  "best_accuracy": 88.0,
+  "execution_time": 643.9242882728577,
+  "status": "success",
+  "metadata": {
+    "timestamp": "20250422_055919",
+    "test_name": "20250422_055919",
+    "id": "9e004834"
+  }
+}
