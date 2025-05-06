@@ -4,23 +4,26 @@ import numpy as np
 # Define available atom geometries
 AVAILABLE_GEOMETRIES = ["chain"]  # Removed square and triangular
 AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
+#AVAILABLE_DATASETS = ["mnist", "image_folder"]  # Removed polyp as it's just a case of image_folder
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description="Quantum Reservoir Computing for Polyp Detection")
+    parser = argparse.ArgumentParser(description="Quantum Reservoir Computing for Image Classification")
     
     # Dataset parameters
+    parser.add_argument("--dataset-type", type=str, default="cvc_clinic_db_patches",
+                       help="Type of dataset to use")
     parser.add_argument("--data-dir", type=str, default=None, 
-                       help="Path to polyp dataset directory")
+                       help="Path to dataset directory containing class subfolders")
     parser.add_argument("--target-size", type=int, nargs=2, default=[128, 128],
                        help="Size to resize images to")
     parser.add_argument("--split-ratio", type=float, default=0.8,
                        help="Train/test split ratio")
     
     # PCA parameters
-    parser.add_argument("--dim-pca", type=int, default=8,
+    parser.add_argument("--dim-pca", type=int, default=12,
                        help="Number of PCA components")
-    parser.add_argument("--num-examples", type=int, default=1000,
+    parser.add_argument("--num-examples", type=int, default=10000,
                        help="Number of examples to use for training")
     parser.add_argument("--num-test-examples", type=int, default=400,
                        help="Number of examples to use for testing")
@@ -34,9 +37,9 @@ def parse_args() -> argparse.Namespace:
                        help="Rabi frequency")
     parser.add_argument("--evolution-time", type=float, default=4.0,
                        help="Total evolution time")
-    parser.add_argument("--time-steps", type=int, default=8,
+    parser.add_argument("--time-steps", type=int, default=16,
                        help="Number of time steps")
-    parser.add_argument("--readout-type", type=str, choices=AVAILABLE_READOUT_TYPES, default="ZZ",
+    parser.add_argument("--readout-type", type=str, choices=AVAILABLE_READOUT_TYPES, default="all",
                        help="Type of readout")
     parser.add_argument("--n-shots", type=int, default=1000,
                        help="Number of shots for quantum simulation")

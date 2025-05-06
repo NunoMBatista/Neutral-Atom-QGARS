@@ -11,14 +11,13 @@ from typing import Dict, Any, Tuple, Optional
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
-from data_processing import create_polyp_dataset, show_sample_image
-from pca_reduction import apply_pca, apply_pca_to_test_data, scale_to_detuning_range
+from data_processing import load_dataset, show_sample_image, flatten_images
+from feature_reduction import apply_pca, apply_pca_to_test_data, scale_to_detuning_range
 from qrc_layer import DetuningLayer
 from training import train
 from visualization import plot_training_results, print_results
 
-# Use local cli module, not system one
-from qrc_polyp_python.cli import parse_args
+from cli_utils import parse_args
 import argparse
 
 def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]:
@@ -27,14 +26,15 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     
     Parameters
     ----------
-    args : Optional[argparse.Namespace]
-        Command line arguments
+    Optional[argparse.Namespace]
+    Command line arguments
     
     Returns
     -------
     Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]
         Dictionary of results for each model
     """
+    
     # Parse arguments if not provided
     if args is None:
         args = parse_args()
@@ -45,25 +45,36 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     torch.manual_seed(args.seed)
     
     # Suppress warnings
-    warnings.filterwarnings('ignore')
+    #warnings.filterwarnings('ignore')
 
-    # Define the path to the polyp dataset
-    if args.data_dir is None:
-        root_dir = os.path.dirname(os.path.abspath(__file__))
-        generated_polyp_dataset = os.path.join(root_dir, "..", "data", "datasets", "cvc_clinic_db_patches")
-    else:
-        generated_polyp_dataset = args.data_dir
-        
-    polyp_dir = os.path.join(generated_polyp_dataset, "polyp")
-    no_polyp_dir = os.path.join(generated_polyp_dataset, "no_polyp")
-    
+    DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
+
+    # Load dataset based on the specified dataset type
     print("Loading dataset...")
-    data_train, data_test = create_polyp_dataset(
-        polyp_dir, 
-        no_polyp_dir, 
-        split_ratio=args.split_ratio, 
-        target_size=tuple(args.target_size)
-    )
+    if args.dataset_type == 'mnist':
+        # Define the path to MNIST dataset
+        data_train, data_test = load_dataset(
+            'mnist',
+            data_dir=DATA_DIR,
+            target_size=tuple(args.target_size)
+        )
+        
+    else:            
+        DATASET_DIR = os.path.join(DATA_DIR, args.dataset_type)
+        if not os.path.exists(DATASET_DIR):
+            raise ValueError(f"Dataset directory does not exist: {DATASET_DIR}")
+        
+        data_train, data_test = load_dataset(
+            'image_folder',
+            data_dir=DATASET_DIR,
+            target_size=tuple(args.target_size),
+            split_ratio=args.split_ratio
+        )
+
+    print(f"Dataset loaded: {args.dataset_type}")
+    print(f"Number of training samples: {data_train['metadata']['n_samples']}")
+    print(f"Number of test samples: {data_test['metadata']['n_samples']}")
+    print(f"Number of classes: {data_train['metadata']['n_classes']}")
     
     # PCA Reduction
     print("\nPerforming PCA reduction...")

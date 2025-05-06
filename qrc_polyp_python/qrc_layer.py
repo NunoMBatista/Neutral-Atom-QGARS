@@ -31,12 +31,12 @@ class DetuningLayer:
     """
     def __init__(self, 
                  geometry: str = 'chain', 
-                 n_atoms: int = 8, 
+                 n_atoms: int = 12, 
                  lattice_spacing: float = 10.0,
                  rabi_freq: float = 2*np.pi, 
                  t_end: float = 4.0, 
-                 n_steps: int = 8,
-                 readout_type: str = "ZZ",
+                 n_steps: int = 12,
+                 readout_type: str = "all",
                  encoding_scale: float = 9.0,
                  custom_readouts: Optional[List] = None):
         

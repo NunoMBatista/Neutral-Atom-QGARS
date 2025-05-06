@@ -52,17 +52,24 @@ def apply_pca(data: Dict[str, Any], dim_pca: int = 8, num_examples: int = 1000) 
     # Calculate spectral range (max absolute value)
     spectral = max(abs(xs.max()), abs(xs.min()))
     
+    data_categories = data["metadata"]["n_classes"]
+    if data_categories is None:
+        raise ValueError("Metadata does not contain 'n_classes' key.")
+        
+        
     # One-hot encode the labels
     # Handle different scikit-learn versions
     try:
         # For newer scikit-learn versions (0.24+)
-        encoder = OneHotEncoder(categories=[[0, 1]], sparse_output=False)
+        #encoder = OneHotEncoder(categories=[[0, 1]], sparse_output=False)
+        encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse_output=False)
     except TypeError:
         # For older scikit-learn versions
-        encoder = OneHotEncoder(categories=[[0, 1]], sparse=False)
+        #encoder = OneHotEncoder(categories=[[0, 1]], sparse=False)
+        encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse=False)
     
     y = encoder.fit_transform(data["targets"].reshape(-1, 1))
-    ys = y[:num_examples].T  # Transpose to match Julia's format
+    ys = y[:num_examples].T
     
     return xs, ys, pca, spectral, encoder
 
