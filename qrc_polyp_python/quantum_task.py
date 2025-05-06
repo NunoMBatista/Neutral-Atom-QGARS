@@ -1,7 +1,6 @@
 import numpy as np
-import bloqade as bq
 from bloqade.analog.ir.location import Chain
-from typing import Dict, Any, List, Union, Optional, Tuple
+from typing import Dict, Any
 
 def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     """
@@ -28,59 +27,26 @@ def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     delta_t = total_time / QRC_parameters["time_steps"]
     
     # Create the bloqade program using the flexible API
-    # We can customize the rabi amplitude and detuning profiles
-    rabi_amplitude_profile = QRC_parameters.get("rabi_amplitude_profile", "constant")
-    detuning_profile = QRC_parameters.get("detuning_profile", "constant")
-    
+
     # Initialize the program with the atom geometry
     program = atom_geometry
+        
+    # We can customize the rabi amplitude and detuning profiles (constant for now)
+    # Add Rabi amplitude based on the constant profile
+    program = program.rydberg.rabi.amplitude.uniform.constant(
+        duration="run_time",
+        value=rabi_frequency
+    )
+        
+    # Add detuning based on the constant profile
+    program = program.detuning.uniform.constant(
+        duration="run_time",
+        value=encoding_scale/2
+    ).scale(list(detunings)).constant(
+        duration="run_time",
+        value=-encoding_scale
+    )
     
-    # Add Rabi amplitude based on the selected profile
-    if rabi_amplitude_profile == "constant":
-        program = program.rydberg.rabi.amplitude.uniform.constant(
-            duration="run_time",
-            value=rabi_frequency
-        )
-    elif rabi_amplitude_profile == "linear_ramp":
-        program = program.rydberg.rabi.amplitude.uniform.linear(
-            duration="run_time",
-            start=0,
-            stop=rabi_frequency
-        )
-    elif callable(rabi_amplitude_profile):
-        # Use custom Rabi amplitude function if provided
-        program = program.rydberg.rabi.amplitude.uniform.custom(
-            duration="run_time",
-            value=rabi_amplitude_profile
-        )
-    
-    # Add detuning based on the selected profile and the input detunings
-    if detuning_profile == "constant":
-        program = program.detuning.uniform.constant(
-            duration="run_time",
-            value=encoding_scale/2
-        ).scale(list(detunings)).constant(
-            duration="run_time",
-            value=-encoding_scale
-        )
-    elif detuning_profile == "linear_ramp":
-        program = program.detuning.uniform.linear(
-            duration="run_time",
-            start=0,
-            stop=encoding_scale/2
-        ).scale(list(detunings)).constant(
-            duration="run_time",
-            value=-encoding_scale
-        )
-    elif callable(detuning_profile):
-        # Use custom detuning function if provided
-        program = program.detuning.uniform.custom(
-            duration="run_time",
-            value=lambda t: detuning_profile(t, encoding_scale/2)
-        ).scale(list(detunings)).constant(
-            duration="run_time",
-            value=-encoding_scale
-        )
     
     # Batch assign to probe the quantum system at multiple timesteps
     program_job = program.batch_assign(

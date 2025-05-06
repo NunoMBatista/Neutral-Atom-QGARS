@@ -4,6 +4,7 @@ import numpy as np
 # Define available atom geometries
 AVAILABLE_GEOMETRIES = ["chain"] 
 AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
+AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder"]
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
@@ -19,13 +20,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split-ratio", type=float, default=0.8,
                        help="Train/test split ratio")
     
-    # PCA parameters
-    parser.add_argument("--dim-pca", type=int, default=12,
-                       help="Number of PCA components")
+    # Feature reduction parameters
+    parser.add_argument("--reduction-method", type=str, choices=AVAILABLE_REDUCTION_METHODS, default="autoencoder",
+                       help="Feature reduction method to use")
+    parser.add_argument("--dim-reduction", type=int, default=12,
+                       help="Number of dimensions after reduction (PCA components or autoencoder encoding dim)")
     parser.add_argument("--num-examples", type=int, default=10000,
                        help="Number of examples to use for training")
     parser.add_argument("--num-test-examples", type=int, default=400,
                        help="Number of examples to use for testing")
+    
+
+    
+    # Autoencoder parameters
+    parser.add_argument("--autoencoder-epochs", type=int, default=50,
+                       help="Number of epochs for autoencoder training")
+    parser.add_argument("--autoencoder-batch-size", type=int, default=64,
+                       help="Batch size for autoencoder training")
+    parser.add_argument("--autoencoder-learning-rate", type=float, default=0.001,
+                       help="Learning rate for autoencoder training")
+    parser.add_argument("--autoencoder-hidden-dims", type=int, nargs="+", default=None,
+                       help="Hidden dimensions for autoencoder (e.g. --autoencoder-hidden-dims 256 128)")
+    parser.add_argument("--gpu", action="store_true", help="Use GPU for autoencoder training if available")
     
     # Quantum parameters
     parser.add_argument("--geometry", type=str, choices=AVAILABLE_GEOMETRIES, default="chain",

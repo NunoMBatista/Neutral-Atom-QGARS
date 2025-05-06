@@ -1,10 +1,8 @@
 import os
-from pydoc import classify_class_attrs
 import sys
 import numpy as np
 import random
 import torch
-import warnings
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional
 
@@ -13,7 +11,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
 from data_processing import load_dataset, show_sample_image, flatten_images
-from feature_reduction import apply_pca, apply_pca_to_test_data, scale_to_detuning_range
+from feature_reduction import (
+    apply_pca, apply_pca_to_test_data, 
+    apply_autoencoder, apply_autoencoder_to_test_data,
+    scale_to_detuning_range
+)
 from qrc_layer import DetuningLayer
 from training import train
 from visualization import plot_training_results, print_results
@@ -87,32 +89,72 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     print("""
           
           =========================================
-                  PERFORMING PCA REDUCTION
+                PERFORMING FEATURE REDUCTION
           =========================================
           
           """)
     
+    # Determine reduction dimension
+    dim_reduction = args.dim_reduction
     
-    # Create the PCA model and apply it to the training data
-    print("Applying PCA to training data...")
-    xs_raw, ys, pca_model, spectral, encoder = apply_pca(
-        data_train, 
-        args.dim_pca, 
-        args.num_examples
-    )
+    # Perform feature reduction based on selected method
+    method_name = args.reduction_method.lower()
+    reduction_name = method_name.upper()  # For display in result labels
     
-    # Create the PCA model and apply it to the test data
-    print("Applying PCA to test data...")
-    test_features_raw = apply_pca_to_test_data(
-        data_test,
-        pca_model,
-        spectral,
-        args.dim_pca,
-        args.num_test_examples
-    )
+    if method_name == "pca":
+        # Apply PCA reduction
+        print("Using PCA for feature reduction...")
+        xs_raw, ys, reduction_model, spectral, encoder = apply_pca(
+            data_train, 
+            dim_reduction, 
+            args.num_examples
+        )
+        
+        # Apply PCA to test data
+        print("Applying PCA to test data...")
+        test_features_raw = apply_pca_to_test_data(
+            data_test,
+            reduction_model,
+            spectral,
+            dim_reduction,
+            args.num_test_examples
+        )
+        
+    elif method_name == "autoencoder":
+        # Use GPU if available and requested
+        device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
+        if args.gpu and not torch.cuda.is_available():
+            print("Warning: GPU requested but not available. Using CPU instead.")
+        
+        print(f"Using autoencoder for feature reduction (device: {device})...")
+        
+        # Apply autoencoder reduction
+        xs_raw, ys, reduction_model, spectral, encoder = apply_autoencoder(
+            data_train,
+            encoding_dim=dim_reduction,
+            num_examples=args.num_examples,
+            hidden_dims=args.autoencoder_hidden_dims,
+            batch_size=args.autoencoder_batch_size,
+            epochs=args.autoencoder_epochs,
+            learning_rate=args.autoencoder_learning_rate,
+            device=device,
+            verbose=not args.no_progress
+        )
+        
+        # Apply autoencoder to test data
+        print("Applying autoencoder to test data...")
+        test_features_raw = apply_autoencoder_to_test_data(
+            data_test,
+            reduction_model,
+            args.num_test_examples,
+            device=device,
+            verbose=not args.no_progress
+        )
+        
+    else:
+        raise ValueError(f"Unknown reduction method: {method_name}")
+    
     test_targets = data_test["targets"][:args.num_test_examples]
-
-
 
     print("""
           
@@ -131,7 +173,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     # Create quantum layer 
     quantum_layer = DetuningLayer(
         geometry=args.geometry,
-        n_atoms=args.dim_pca,
+        n_atoms=dim_reduction,
         lattice_spacing=args.lattice_spacing,
         rabi_freq=args.rabi_freq,
         t_end=args.evolution_time,
@@ -167,7 +209,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
           
         =========================================
              TRAINING LINEAR CLASSIFIER ON 
-                     PCA FEATURES
+                   REDUCED FEATURES
         =========================================
         
         """)
@@ -184,7 +226,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         verbose=not args.no_progress,
         nonlinear=False
     )
-    results["PCA+linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
+    results[f"{reduction_name}+linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
     
     print("""
           
@@ -211,7 +253,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
           
         =========================================
                 TRAINING NEURAL NETWORK 
-                    ON PCA FEATURES
+                  ON REDUCED FEATURES
         =========================================
         
         """)
@@ -224,7 +266,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         verbose=not args.no_progress,
         nonlinear=True
     )
-    results["PCA+NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
+    results[f"{reduction_name}+NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
     
     # Print and visualize results
     print_results(results)
