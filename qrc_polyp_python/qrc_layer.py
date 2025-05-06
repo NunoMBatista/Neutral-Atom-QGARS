@@ -38,7 +38,8 @@ class DetuningLayer:
                  n_steps: int = 12,
                  readout_type: str = "all",
                  encoding_scale: float = 9.0,
-                 custom_readouts: Optional[List] = None):
+                 custom_readouts: Optional[List] = None,
+                 print_params: bool = True):
         
         # Create chain geometry (only supported option)
         if geometry.lower() != 'chain':
@@ -57,6 +58,25 @@ class DetuningLayer:
             "readouts": readout_type,
             "custom_readouts": custom_readouts
         }
+        
+        if print_params:
+            print(f"""
+                    *******************************************
+                    *          Quantum Reservoir Layer        *
+                    *******************************************
+                    *                                           
+                    *    Geometry: {geometry}                   
+                    *    Number of atoms: {n_atoms}           
+                    *    Lattice spacing: {lattice_spacing} μm
+                    *    Rabi frequency: {rabi_freq} Hz
+                    *    Total evolution time: {t_end} s
+                    *    Number of time steps: {n_steps}
+                    *    Readout type: {readout_type}
+                    *    Encoding scale: {encoding_scale}
+                    *    Custom readouts: {custom_readouts}
+                    *    
+                    *******************************************
+                  """)
         
     def apply_layer(self, x: np.ndarray, n_shots: int = 1000, show_progress: bool = True) -> np.ndarray:
         """

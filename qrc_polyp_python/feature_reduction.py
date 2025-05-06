@@ -5,7 +5,9 @@ from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 from data_processing import flatten_images
 
-def apply_pca(data: Dict[str, Any], dim_pca: int = 8, num_examples: int = 1000) -> Tuple[np.ndarray, np.ndarray, PCA, float, OneHotEncoder]:
+def apply_pca(data: Dict[str, Any], 
+              dim_pca: int = 8, 
+              num_examples: int = 1000) -> Tuple[np.ndarray, np.ndarray, PCA, float, OneHotEncoder]:
     """
     Apply PCA to the image features.
     
@@ -56,19 +58,10 @@ def apply_pca(data: Dict[str, Any], dim_pca: int = 8, num_examples: int = 1000) 
     if data_categories is None:
         raise ValueError("Metadata does not contain 'n_classes' key.")
         
-        
-    # One-hot encode the labels
-    # Handle different scikit-learn versions
-    try:
-        # For newer scikit-learn versions (0.24+)
-        #encoder = OneHotEncoder(categories=[[0, 1]], sparse_output=False)
-        encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse_output=False)
-    except TypeError:
-        # For older scikit-learn versions
-        #encoder = OneHotEncoder(categories=[[0, 1]], sparse=False)
-        encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse=False)
+    # One-hot encode the labels, ensuring the correct number of categories
+    encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse_output=False)
     
-    y = encoder.fit_transform(data["targets"].reshape(-1, 1))
+    y = encoder.fit_transform(data["targets"].reshape(-1, 1)) 
     ys = y[:num_examples].T
     
     return xs, ys, pca, spectral, encoder

@@ -2,9 +2,8 @@ import argparse
 import numpy as np
 
 # Define available atom geometries
-AVAILABLE_GEOMETRIES = ["chain"]  # Removed square and triangular
+AVAILABLE_GEOMETRIES = ["chain"] 
 AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
-#AVAILABLE_DATASETS = ["mnist", "image_folder"]  # Removed polyp as it's just a case of image_folder
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""

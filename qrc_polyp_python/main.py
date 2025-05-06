@@ -1,4 +1,5 @@
 import os
+from pydoc import classify_class_attrs
 import sys
 import numpy as np
 import random
@@ -44,13 +45,19 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     
-    # Suppress warnings
-    #warnings.filterwarnings('ignore')
+
+    print("""
+          
+          =========================================
+                    LOADING THE DATASET
+          =========================================
+          
+          """)
+    
 
     DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
 
     # Load dataset based on the specified dataset type
-    print("Loading dataset...")
     if args.dataset_type == 'mnist':
         # Define the path to MNIST dataset
         data_train, data_test = load_dataset(
@@ -76,19 +83,52 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     print(f"Number of test samples: {data_test['metadata']['n_samples']}")
     print(f"Number of classes: {data_train['metadata']['n_classes']}")
     
-    # PCA Reduction
-    print("\nPerforming PCA reduction...")
+    
+    print("""
+          
+          =========================================
+                  PERFORMING PCA REDUCTION
+          =========================================
+          
+          """)
+    
+    
+    # Create the PCA model and apply it to the training data
+    print("Applying PCA to training data...")
     xs_raw, ys, pca_model, spectral, encoder = apply_pca(
         data_train, 
         args.dim_pca, 
         args.num_examples
     )
     
+    # Create the PCA model and apply it to the test data
+    print("Applying PCA to test data...")
+    test_features_raw = apply_pca_to_test_data(
+        data_test,
+        pca_model,
+        spectral,
+        args.dim_pca,
+        args.num_test_examples
+    )
+    test_targets = data_test["targets"][:args.num_test_examples]
+
+
+
+    print("""
+          
+        =========================================
+                PREPARING QUANTUM LAYER
+        =========================================
+        
+        """)
+    
     # Scale features to detuning range
     xs = scale_to_detuning_range(xs_raw, spectral, args.detuning_max)
     
-    # Create quantum layer with Bloqade
-    print("\nPreparing quantum simulation...")
+    # Scale test features to detuning range
+    test_features = scale_to_detuning_range(test_features_raw, spectral, args.detuning_max)
+
+    # Create quantum layer 
     quantum_layer = DetuningLayer(
         geometry=args.geometry,
         n_atoms=args.dim_pca,
@@ -99,41 +139,42 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         readout_type=args.readout_type,
         encoding_scale=args.encoding_scale 
     )
+   
+    print("""
+          
+        =========================================
+                 RUNNING QUANTUM LAYER
+        =========================================
+        
+        """)
     
-    print("Running quantum simulation...")
+    print("Computing quantum embeddings for training data...")
     embeddings = quantum_layer.apply_layer(
         xs, 
         n_shots=args.n_shots, 
         show_progress=not args.no_progress
     )
     
-    # Prepare test data
-    print("\nPreparing test data...")
-    test_features_raw = apply_pca_to_test_data(
-        data_test,
-        pca_model,
-        spectral,
-        args.dim_pca,
-        args.num_test_examples
-    )
-    
-    # Scale test features to detuning range
-    test_features = scale_to_detuning_range(test_features_raw, spectral, args.detuning_max)
-    
-    test_targets = data_test["targets"][:args.num_test_examples]
-    
     print("Computing quantum embeddings for test data...")
     test_embeddings = quantum_layer.apply_layer(
         test_features, 
         n_shots=args.n_shots, 
         show_progress=not args.no_progress
-    )
+    )  
+
+    
+    print("""
+          
+        =========================================
+             TRAINING LINEAR CLASSIFIER ON 
+                     PCA FEATURES
+        =========================================
+        
+        """)
     
     # Train different models
     results = {}
     
-    # Train linear classifier using PCA features directly (baseline)
-    print("\nTraining linear classifier on PCA features...")
     loss_lin, accs_train_lin, accs_test_lin, model_lin = train(
         xs, ys, test_features, test_targets, 
         regularization=args.regularization, 
@@ -145,8 +186,15 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     )
     results["PCA+linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
     
-    # Train with QRC embeddings
-    print("\nTraining linear classifier on QRC embeddings...")
+    print("""
+          
+        =========================================
+             TRAINING LINEAR CLASSIFIER ON 
+                   QUANTUM EMBEDDINGS
+        =========================================
+        
+        """)
+    
     loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc = train(
         embeddings, ys, test_embeddings, test_targets, 
         regularization=args.regularization, 
@@ -158,8 +206,15 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     )
     results["QRC"] = (loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc)
     
-    # Train neural network on PCA features
-    print("\nTraining neural network on PCA features...")
+    
+    print("""
+          
+        =========================================
+                TRAINING NEURAL NETWORK 
+                    ON PCA FEATURES
+        =========================================
+        
+        """)
     loss_nn, accs_train_nn, accs_test_nn, model_nn = train(
         xs, ys, test_features, test_targets, 
         regularization=args.regularization, 
