@@ -4,7 +4,7 @@ import numpy as np
 # Define available atom geometries
 AVAILABLE_GEOMETRIES = ["chain"] 
 AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
-AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder"]
+AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder", "guided_autoencoder"]
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
@@ -30,7 +30,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-test-examples", type=int, default=400,
                        help="Number of examples to use for testing")
     
-
+    # Guided Autoencoder parameters
+    parser.add_argument("--guided-alpha", type=float, default=0.7,
+                      help="Weight for reconstruction loss in guided autoencoding (0-1)")
+    parser.add_argument("--guided-beta", type=float, default=0.3,
+                      help="Weight for classification loss in guided autoencoding (0-1)")
+    parser.add_argument("--quantum-update-frequency", type=int, default=5,
+                      help="Update quantum embeddings every N epochs")
+    parser.add_argument("--guided-batch-size", type=int, default=32,
+                      help="Batch size for guided autoencoder training")
     
     # Autoencoder parameters
     parser.add_argument("--autoencoder-epochs", type=int, default=50,

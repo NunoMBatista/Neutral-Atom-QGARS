@@ -10,10 +10,13 @@ from typing import Dict, Any, Tuple, Optional
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
+from autoencoder import Autoencoder, GuidedAutoencoder
+
 from data_processing import load_dataset, show_sample_image, flatten_images
 from feature_reduction import (
     apply_pca, apply_pca_to_test_data, 
     apply_autoencoder, apply_autoencoder_to_test_data,
+    apply_guided_autoencoder, apply_guided_autoencoder_to_test_data,
     scale_to_detuning_range
 )
 from qrc_layer import DetuningLayer
@@ -128,7 +131,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         
         print(f"Using autoencoder for feature reduction (device: {device})...")
         
-        # Apply autoencoder reduction
+        # Apply autoencoder reduction with improved parameters
         xs_raw, ys, reduction_model, spectral, encoder = apply_autoencoder(
             data_train,
             encoding_dim=dim_reduction,
@@ -138,12 +141,74 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             epochs=args.autoencoder_epochs,
             learning_rate=args.autoencoder_learning_rate,
             device=device,
-            verbose=not args.no_progress
+            verbose=not args.no_progress,
+            use_batch_norm=True,  # Enable batch normalization
+            dropout=0.1,  # Add dropout for regularization
+            weight_decay=1e-5  # Add weight decay
         )
+        
+        # Log the spectral range to help diagnose scaling issues
+        print(f"Encoded data spectral range: {spectral}")
         
         # Apply autoencoder to test data
         print("Applying autoencoder to test data...")
         test_features_raw = apply_autoencoder_to_test_data(
+            data_test,
+            reduction_model,
+            args.num_test_examples,
+            device=device,
+            verbose=not args.no_progress
+        )
+    
+    elif method_name == "guided_autoencoder":
+        # Use GPU if available and requested
+        device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
+        if args.gpu and not torch.cuda.is_available():
+            print("Warning: GPU requested but not available. Using CPU instead.")
+        
+        print(f"Using quantum guided autoencoder for feature reduction (device: {device})...")
+        
+        # First create quantum layer for guided training
+        print("Creating quantum layer for guided autoencoder training...")
+        quantum_layer = DetuningLayer(
+            geometry=args.geometry,
+            n_atoms=dim_reduction,
+            lattice_spacing=args.lattice_spacing,
+            rabi_freq=args.rabi_freq,
+            t_end=args.evolution_time,
+            n_steps=args.time_steps,
+            readout_type=args.readout_type,
+            encoding_scale=args.encoding_scale,
+            print_params=False  # No need to print params twice
+        )
+        
+        # Apply guided autoencoder reduction with improved parameters
+        xs_raw, ys, reduction_model, spectral, encoder = apply_guided_autoencoder(
+            data_train,
+            quantum_layer=quantum_layer,
+            encoding_dim=dim_reduction,
+            num_examples=args.num_examples,
+            hidden_dims=args.autoencoder_hidden_dims,
+            alpha=args.guided_alpha,
+            beta=args.guided_beta,
+            batch_size=args.guided_batch_size,
+            epochs=args.autoencoder_epochs,
+            learning_rate=args.autoencoder_learning_rate,
+            quantum_update_frequency=args.quantum_update_frequency,
+            n_shots=args.n_shots,
+            device=device,
+            verbose=not args.no_progress,
+            use_batch_norm=True,  # Enable batch normalization
+            dropout=0.1,  # Add dropout for regularization
+            weight_decay=1e-5  # Add weight decay
+        )
+        
+        # Log the spectral range to help diagnose scaling issues
+        print(f"Encoded data spectral range: {spectral}")
+        
+        # Apply guided autoencoder to test data
+        print("Applying guided autoencoder to test data...")
+        test_features_raw = apply_guided_autoencoder_to_test_data(
             data_test,
             reduction_model,
             args.num_test_examples,
@@ -164,23 +229,29 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         
         """)
     
-    # Scale features to detuning range
+    # Scale features to detuning range with more diagnostic info
+    print(f"Scaling features with spectral value: {spectral}")
     xs = scale_to_detuning_range(xs_raw, spectral, args.detuning_max)
+    print(f"Scaled feature range: {xs.min()} to {xs.max()}")
     
     # Scale test features to detuning range
     test_features = scale_to_detuning_range(test_features_raw, spectral, args.detuning_max)
+    print(f"Scaled test feature range: {test_features.min()} to {test_features.max()}")
 
-    # Create quantum layer 
-    quantum_layer = DetuningLayer(
-        geometry=args.geometry,
-        n_atoms=dim_reduction,
-        lattice_spacing=args.lattice_spacing,
-        rabi_freq=args.rabi_freq,
-        t_end=args.evolution_time,
-        n_steps=args.time_steps,
-        readout_type=args.readout_type,
-        encoding_scale=args.encoding_scale 
-    )
+    # Create quantum layer (reuse if we already created one for guided autoencoder)
+    if method_name == "guided_autoencoder" and 'quantum_layer' in locals():
+        print("Reusing quantum layer from guided autoencoder...")
+    else:
+        quantum_layer = DetuningLayer(
+            geometry=args.geometry,
+            n_atoms=dim_reduction,
+            lattice_spacing=args.lattice_spacing,
+            rabi_freq=args.rabi_freq,
+            t_end=args.evolution_time,
+            n_steps=args.time_steps,
+            readout_type=args.readout_type,
+            encoding_scale=args.encoding_scale 
+        )
    
     print("""
           
@@ -268,9 +339,27 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     )
     results[f"{reduction_name}+NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
     
+    
+    
+    
+    
+    print(f"""
+        ==========================================
+            Dataset: {args.dataset_type}
+            Reduction Method: {reduction_name}
+            Number of training samples: {data_train['metadata']['n_samples']}
+            Number of test samples: {data_test['metadata']['n_samples']}
+            Number of classes: {data_train['metadata']['n_classes']}
+            Number of features: {dim_reduction}
+            Number of epochs: {args.nepochs}
+            Batch size: {args.batchsize}
+            Learning rate: {args.learning_rate}
+            Regularization: {args.regularization}
+            Number of shots: {args.n_shots}
+        ===========================================
+          """)
     # Print and visualize results
     print_results(results)
-    
     if not args.no_plot:
         plot_training_results(results)
     
