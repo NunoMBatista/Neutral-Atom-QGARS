@@ -52,6 +52,9 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     x_test_tensor = torch.FloatTensor(x_test.T)
     y_test_tensor = torch.LongTensor(np.argmax(y_test, axis=0) if len(y_test.shape) > 1 else y_test)
     
+    # Convert batchsize to Python native int to avoid PyTorch DataLoader errors
+    batchsize = int(batchsize)
+    
     # Adjust batch size if it's larger than dataset size
     train_samples = x_train_tensor.shape[0]
     adjusted_batchsize = min(batchsize, train_samples)

@@ -310,6 +310,9 @@ def train_guided_autoencoder(
     Tuple[GuidedAutoencoder, float]
         Trained guided autoencoder and maximum absolute value for scaling
     """
+    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
+    batch_size = int(batch_size)
+    
     # Prepare data
     input_dim = data.shape[0]
     n_samples = data.shape[1]
@@ -617,6 +620,9 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     # Prepare data
     input_dim = data.shape[0]
     X = torch.tensor(data.T, dtype=torch.float32)
+    
+    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
+    batch_size = int(batch_size)
     
     # Adjust batch size if it's larger than dataset size
     adjusted_batch_size = min(batch_size, X.shape[0])

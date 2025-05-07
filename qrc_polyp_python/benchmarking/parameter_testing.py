@@ -26,8 +26,11 @@ from qrc_polyp_python.cli_utils import AVAILABLE_READOUT_TYPES
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-# File to store the best results
+# Files to store the best results by category
 BEST_RESULTS_FILE = os.path.join(RESULTS_DIR, "best_results.json")
+BEST_QRC_RESULTS_FILE = os.path.join(RESULTS_DIR, "best_qrc_results.json")
+BEST_AUTOENCODER_RESULTS_FILE = os.path.join(RESULTS_DIR, "best_autoencoder_results.json")
+BEST_GUIDED_AUTOENCODER_RESULTS_FILE = os.path.join(RESULTS_DIR, "best_guided_autoencoder_results.json")
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments for the benchmarking script."""
@@ -91,10 +94,10 @@ def parse_args() -> argparse.Namespace:
     # Guided autoencoder specific parameters
     parser.add_argument("--guided-alpha-range", type=float, nargs=3, 
                        default=[0.3, 0.9, 0.2],
-                       help="Range for guided autoencoder alpha values [min, max, step]")
+                       help="Range for guided autoencoder alpha values [min, max, step]. Beta will be calculated as (1-alpha).")
     parser.add_argument("--guided-beta-range", type=float, nargs=3, 
                        default=[0.1, 0.7, 0.2],
-                       help="Range for guided autoencoder beta values [min, max, step]")
+                       help="DEPRECATED: Use guided-alpha-range instead. Beta will be calculated as (1-alpha).")
     parser.add_argument("--quantum-update-freq-range", type=int, nargs=3, 
                        default=[1, 10, 3],
                        help="Range for quantum update frequency [min, max, step]")
@@ -114,6 +117,8 @@ def parse_args() -> argparse.Namespace:
                         help="Number of examples to use for testing")
     parser.add_argument("--nepochs", type=int, default=20,
                         help="Number of training epochs")
+    
+
     
     return parser.parse_args()
 
@@ -190,7 +195,7 @@ def create_parameter_grid(args: argparse.Namespace) -> List[Dict[str, Any]]:
         
         # Guided autoencoder parameters
         "guided_alpha": list(np.arange(args.guided_alpha_range[0], args.guided_alpha_range[1] + 0.01, args.guided_alpha_range[2])),
-        "guided_beta": list(np.arange(args.guided_beta_range[0], args.guided_beta_range[1] + 0.01, args.guided_beta_range[2])),
+        # Beta is no longer a separately chosen parameter
         "quantum_update_frequency": list(range(args.quantum_update_freq_range[0], 
                                               args.quantum_update_freq_range[1] + 1, 
                                               args.quantum_update_freq_range[2])),
@@ -255,17 +260,12 @@ def create_parameter_grid(args: argparse.Namespace) -> List[Dict[str, Any]]:
             
             # Add guided autoencoder-specific parameters if applicable
             if params["reduction_method"] == "guided_autoencoder":
+                alpha = np.random.choice(param_grid["guided_alpha"])
                 params.update({
-                    "guided_alpha": np.random.choice(param_grid["guided_alpha"]),
-                    "guided_beta": np.random.choice(param_grid["guided_beta"]),
+                    "guided_alpha": alpha,
+                    "guided_beta": round(1.0 - alpha, 10),  # Ensure precision doesn't cause issues
                     "quantum_update_frequency": np.random.choice(param_grid["quantum_update_frequency"]),
                 })
-            
-            # Add classifier parameters
-            params.update({
-                "learning_rate": np.random.choice(param_grid["learning_rate"]),
-                "regularization": np.random.choice(param_grid["regularization"]),
-            })
             
             combinations.append(params)
     else:
@@ -325,14 +325,13 @@ def create_parameter_grid(args: argparse.Namespace) -> List[Dict[str, Any]]:
                                 # Add guided autoencoder-specific parameters if applicable
                                 if reduction_method == "guided_autoencoder":
                                     for alpha in param_grid["guided_alpha"][:2]:  # Limit to first 2
-                                        for beta in param_grid["guided_beta"][:2]:  # Limit to first 2
-                                            guided_combo = ae_combo.copy()
-                                            guided_combo.update({
-                                                "guided_alpha": alpha,
-                                                "guided_beta": beta,
-                                                "quantum_update_frequency": param_grid["quantum_update_frequency"][0],  # First value
-                                            })
-                                            combinations.append(guided_combo)
+                                        guided_combo = ae_combo.copy()
+                                        guided_combo.update({
+                                            "guided_alpha": alpha,
+                                            "guided_beta": round(1.0 - alpha, 10),  # Ensure precision doesn't cause issues
+                                            "quantum_update_frequency": param_grid["quantum_update_frequency"][0],  # First value
+                                        })
+                                        combinations.append(guided_combo)
                                 else:
                                     combinations.append(ae_combo)
                 else:
@@ -370,6 +369,13 @@ def run_parameter_test(params: Dict[str, Any]) -> Dict[str, Any]:
     Dict[str, Any]
         Results and parameters of the test
     """
+    # Validate that guided_alpha and guided_beta sum to 1
+    if "reduction_method" in params and params["reduction_method"] == "guided_autoencoder":
+        if abs(params["guided_alpha"] + params["guided_beta"] - 1.0) > 1e-9:
+            # Correct beta value to ensure sum is exactly 1
+            params["guided_beta"] = round(1.0 - params["guided_alpha"], 10)
+            print(f"Adjusted guided_beta to {params['guided_beta']} to ensure guided_alpha + guided_beta = 1")
+    
     class Args:
         pass
     
@@ -417,6 +423,9 @@ def run_parameter_test(params: Dict[str, Any]) -> Dict[str, Any]:
         args.guided_batch_size = 32
     if not hasattr(args, "quantum_update_frequency") and hasattr(args, "reduction_method") and args.reduction_method == "guided_autoencoder":
         args.quantum_update_frequency = 5
+    
+    if not hasattr(args, "batchsize"):
+        args.batchsize = 100
     
     # Run the main function with these parameters
     start_time = time.time()
@@ -498,9 +507,9 @@ def save_results(result: Dict[str, Any], args: argparse.Namespace) -> str:
     
     return filepath
 
-def update_best_results(result: Dict[str, Any]) -> bool:
+def update_best_results(result: Dict[str, Any]) -> Dict[str, bool]:
     """
-    Update best results file if current QRC result is better.
+    Update different best result files based on the current test result.
     
     Parameters
     ----------
@@ -509,10 +518,21 @@ def update_best_results(result: Dict[str, Any]) -> bool:
         
     Returns
     -------
-    bool
-        Whether the QRC result was the new best
+    Dict[str, bool]
+        Dictionary indicating whether the result was the new best for each category
     """
-    # Load existing best results if available
+    # Initialize results
+    is_new_best = {
+        "overall": False,
+        "qrc": False,
+        "autoencoder": False,
+        "guided_autoencoder": False
+    }
+    
+    # Convert NumPy types to standard Python types for consistency
+    result_converted = convert_numpy_types(result)
+    
+    # Update overall best results (based on QRC accuracy)
     if os.path.exists(BEST_RESULTS_FILE):
         with open(BEST_RESULTS_FILE, 'r') as f:
             try:
@@ -523,17 +543,66 @@ def update_best_results(result: Dict[str, Any]) -> bool:
     else:
         best_qrc_accuracy = 0
     
-    # Check if current QRC result is better
+    # Check if current QRC result is better for overall
     current_qrc_accuracy = result["qrc_accuracy"]
-    is_new_best = current_qrc_accuracy > best_qrc_accuracy
-    
-    # Update if better
-    if is_new_best:
-        # Convert NumPy types to standard Python types
-        result_converted = convert_numpy_types(result)
-        
+    if current_qrc_accuracy > best_qrc_accuracy:
+        is_new_best["overall"] = True
         with open(BEST_RESULTS_FILE, 'w') as f:
             json.dump(result_converted, f, indent=2)
+    
+    # Update best QRC results (also based on QRC accuracy)
+    if os.path.exists(BEST_QRC_RESULTS_FILE):
+        with open(BEST_QRC_RESULTS_FILE, 'r') as f:
+            try:
+                best_qrc_results = json.load(f)
+                best_qrc_specific_accuracy = best_qrc_results.get("qrc_accuracy", 0)
+            except json.JSONDecodeError:
+                best_qrc_specific_accuracy = 0
+    else:
+        best_qrc_specific_accuracy = 0
+    
+    # Check if current QRC result is better for QRC specifically
+    if current_qrc_accuracy > best_qrc_specific_accuracy:
+        is_new_best["qrc"] = True
+        with open(BEST_QRC_RESULTS_FILE, 'w') as f:
+            json.dump(result_converted, f, indent=2)
+    
+    # Update best results for specific reduction methods
+    reduction_method = result["parameters"].get("reduction_method", "")
+    
+    # For autoencoder method
+    if reduction_method == "autoencoder":
+        if os.path.exists(BEST_AUTOENCODER_RESULTS_FILE):
+            with open(BEST_AUTOENCODER_RESULTS_FILE, 'r') as f:
+                try:
+                    best_ae_results = json.load(f)
+                    best_ae_accuracy = best_ae_results.get("qrc_accuracy", 0)
+                except json.JSONDecodeError:
+                    best_ae_accuracy = 0
+        else:
+            best_ae_accuracy = 0
+        
+        if current_qrc_accuracy > best_ae_accuracy:
+            is_new_best["autoencoder"] = True
+            with open(BEST_AUTOENCODER_RESULTS_FILE, 'w') as f:
+                json.dump(result_converted, f, indent=2)
+    
+    # For guided autoencoder method
+    if reduction_method == "guided_autoencoder":
+        if os.path.exists(BEST_GUIDED_AUTOENCODER_RESULTS_FILE):
+            with open(BEST_GUIDED_AUTOENCODER_RESULTS_FILE, 'r') as f:
+                try:
+                    best_guided_ae_results = json.load(f)
+                    best_guided_ae_accuracy = best_guided_ae_results.get("qrc_accuracy", 0)
+                except json.JSONDecodeError:
+                    best_guided_ae_accuracy = 0
+        else:
+            best_guided_ae_accuracy = 0
+        
+        if current_qrc_accuracy > best_guided_ae_accuracy:
+            is_new_best["guided_autoencoder"] = True
+            with open(BEST_GUIDED_AUTOENCODER_RESULTS_FILE, 'w') as f:
+                json.dump(result_converted, f, indent=2)
     
     return is_new_best
 
@@ -563,10 +632,16 @@ def run_parameter_test_wrapper(params_and_args):
         result_file = save_results(result, args)
         print(f"Results saved to: {result_file}")
         
-        # Check if it's the best QRC result so far
-        is_best = update_best_results(result)
-        if is_best:
-            print(f"✓ New best QRC result! Accuracy: {result['qrc_accuracy']:.2f}%")
+        # Check if it's the best result in any category
+        is_best_results = update_best_results(result)
+        if is_best_results["overall"]:
+            print(f"✓ New best overall QRC result! Accuracy: {result['qrc_accuracy']:.2f}%")
+        if is_best_results["qrc"]:
+            print(f"✓ New best QRC-specific result! Accuracy: {result['qrc_accuracy']:.2f}%")
+        if is_best_results["autoencoder"]:
+            print(f"✓ New best autoencoder result! Accuracy: {result['qrc_accuracy']:.2f}%")
+        if is_best_results["guided_autoencoder"]:
+            print(f"✓ New best guided autoencoder result! Accuracy: {result['qrc_accuracy']:.2f}%")
         
         # Print summary
         print(f"Test accuracies: {result['test_accuracies']}")
@@ -644,10 +719,16 @@ def run_benchmark(args: argparse.Namespace) -> None:
                 result_file = save_results(result, args)
                 print(f"Results saved to: {result_file}")
                 
-                # Check if it's the best QRC result so far
-                is_best = update_best_results(result)
-                if is_best:
-                    print(f"✓ New best QRC result! Accuracy: {result['qrc_accuracy']:.2f}%")
+                # Check if it's the best result in any category
+                is_best_results = update_best_results(result)
+                if is_best_results["overall"]:
+                    print(f"✓ New best overall QRC result! Accuracy: {result['qrc_accuracy']:.2f}%")
+                if is_best_results["qrc"]:
+                    print(f"✓ New best QRC-specific result! Accuracy: {result['qrc_accuracy']:.2f}%")
+                if is_best_results["autoencoder"]:
+                    print(f"✓ New best autoencoder result! Accuracy: {result['qrc_accuracy']:.2f}%")
+                if is_best_results["guided_autoencoder"]:
+                    print(f"✓ New best guided autoencoder result! Accuracy: {result['qrc_accuracy']:.2f}%")
                 
                 # Add to all results
                 all_results.append(result)
@@ -670,13 +751,36 @@ def run_benchmark(args: argparse.Namespace) -> None:
         json.dump(all_results_converted, f, indent=2)
     print(f"\nAll results saved to: {all_results_file}")
     
-    # Print best result
+    # Print best results for each category
+    print("\nBest Results by Category:")
+
     if os.path.exists(BEST_RESULTS_FILE):
         with open(BEST_RESULTS_FILE, 'r') as f:
             best_results = json.load(f)
-        print("\nBest Result:")
+        print("\nBest Overall Result:")
         print(f"QRC model accuracy: {best_results['qrc_accuracy']:.2f}%")
         print(f"Parameters: {best_results['parameters']}")
+
+    if os.path.exists(BEST_QRC_RESULTS_FILE):
+        with open(BEST_QRC_RESULTS_FILE, 'r') as f:
+            best_qrc_results = json.load(f)
+        print("\nBest QRC-Specific Result:")
+        print(f"QRC model accuracy: {best_qrc_results['qrc_accuracy']:.2f}%")
+        print(f"Parameters: {best_qrc_results['parameters']}")
+
+    if os.path.exists(BEST_AUTOENCODER_RESULTS_FILE):
+        with open(BEST_AUTOENCODER_RESULTS_FILE, 'r') as f:
+            best_ae_results = json.load(f)
+        print("\nBest Autoencoder Result:")
+        print(f"QRC model accuracy: {best_ae_results['qrc_accuracy']:.2f}%")
+        print(f"Parameters: {best_ae_results['parameters']}")
+
+    if os.path.exists(BEST_GUIDED_AUTOENCODER_RESULTS_FILE):
+        with open(BEST_GUIDED_AUTOENCODER_RESULTS_FILE, 'r') as f:
+            best_guided_ae_results = json.load(f)
+        print("\nBest Guided Autoencoder Result:")
+        print(f"QRC model accuracy: {best_guided_ae_results['qrc_accuracy']:.2f}%")
+        print(f"Parameters: {best_guided_ae_results['parameters']}")
 
 if __name__ == "__main__":
     args = parse_args()
