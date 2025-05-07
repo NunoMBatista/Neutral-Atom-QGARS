@@ -45,16 +45,20 @@ class DetuningLayer:
         if geometry.lower() != 'chain':
             print(f"Warning: Only 'chain' geometry is supported. Ignoring requested geometry: {geometry}")
         
-        atom_geometry = Chain(n_atoms, lattice_spacing=lattice_spacing)
+        # Convert numpy types to native Python types to avoid type errors
+        n_atoms_int = int(n_atoms)  # Convert numpy.int64 to Python int
+        lattice_spacing_float = float(lattice_spacing)  # Convert any numpy float types
+        
+        atom_geometry = Chain(n_atoms_int, lattice_spacing=lattice_spacing_float)
         
         # Define QRC parameters
         self.qrc_params = {
-            "atom_number": n_atoms,
+            "atom_number": n_atoms_int,
             "geometry_spec": atom_geometry,
-            "encoding_scale": encoding_scale,
-            "rabi_frequency": rabi_freq,
-            "total_time": t_end,
-            "time_steps": n_steps,
+            "encoding_scale": float(encoding_scale),
+            "rabi_frequency": float(rabi_freq),
+            "total_time": float(t_end),
+            "time_steps": int(n_steps),
             "readouts": readout_type,
             "custom_readouts": custom_readouts
         }
@@ -66,13 +70,13 @@ class DetuningLayer:
                     *******************************************
                     *                                           
                     *    Geometry: {geometry}                   
-                    *    Number of atoms: {n_atoms}           
-                    *    Lattice spacing: {lattice_spacing} μm
-                    *    Rabi frequency: {rabi_freq} Hz
-                    *    Total evolution time: {t_end} s
-                    *    Number of time steps: {n_steps}
+                    *    Number of atoms: {n_atoms_int}           
+                    *    Lattice spacing: {lattice_spacing_float} μm
+                    *    Rabi frequency: {float(rabi_freq)} Hz
+                    *    Total evolution time: {float(t_end)} s
+                    *    Number of time steps: {int(n_steps)}
                     *    Readout type: {readout_type}
-                    *    Encoding scale: {encoding_scale}
+                    *    Encoding scale: {float(encoding_scale)}
                     *    Custom readouts: {custom_readouts}
                     *    
                     *******************************************

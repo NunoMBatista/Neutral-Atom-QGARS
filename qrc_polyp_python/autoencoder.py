@@ -321,9 +321,14 @@ def train_guided_autoencoder(
     y_one_hot[np.arange(n_samples), labels] = 1
     y = torch.tensor(y_one_hot, dtype=torch.float32)
     
+    # Adjust batch size if it's larger than dataset size
+    adjusted_batch_size = min(batch_size, n_samples)
+    if adjusted_batch_size != batch_size and verbose:
+        print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
+    
     # Create dataset and dataloader
     dataset = TensorDataset(X, y)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=adjusted_batch_size, shuffle=True)
     
     # Initialize model
     model = GuidedAutoencoder(input_dim, encoding_dim, output_dim, 
@@ -347,7 +352,7 @@ def train_guided_autoencoder(
         
         # Get quantum embeddings to determine dimension
         initial_quantum_embs = quantum_layer.apply_layer(
-            initial_encoding_scaled, n_shots=n_shots, show_progress=False
+            initial_encoding_scaled, n_shots=n_shots, show_progress=True
         )
         quantum_dim = initial_quantum_embs.shape[0]
         
@@ -414,7 +419,7 @@ def train_guided_autoencoder(
                     
                     # Get quantum embeddings
                     quantum_embs = quantum_layer.apply_layer(
-                        batch_encoding_scaled, n_shots=n_shots, show_progress=False
+                        batch_encoding_scaled, n_shots=n_shots, show_progress=True
                     )
                     
                     # Cache quantum embeddings for each sample index
@@ -613,9 +618,14 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     input_dim = data.shape[0]
     X = torch.tensor(data.T, dtype=torch.float32)
     
+    # Adjust batch size if it's larger than dataset size
+    adjusted_batch_size = min(batch_size, X.shape[0])
+    if adjusted_batch_size != batch_size and verbose:
+        print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
+    
     # Create dataset and dataloader
     dataset = TensorDataset(X, X)  # Input = target for autoencoder
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=adjusted_batch_size, shuffle=True)
     
     # Initialize model
     model = Autoencoder(input_dim, encoding_dim, hidden_dims, use_batch_norm, dropout)

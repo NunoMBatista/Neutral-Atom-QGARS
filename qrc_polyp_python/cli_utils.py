@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
                       help="Weight for reconstruction loss in guided autoencoding (0-1)")
     parser.add_argument("--guided-beta", type=float, default=0.3,
                       help="Weight for classification loss in guided autoencoding (0-1)")
-    parser.add_argument("--quantum-update-frequency", type=int, default=5,
+    parser.add_argument("--quantum-update-frequency", type=int, default=1,
                       help="Update quantum embeddings every N epochs")
     parser.add_argument("--guided-batch-size", type=int, default=32,
                       help="Batch size for guided autoencoder training")
@@ -84,7 +84,7 @@ def parse_args() -> argparse.Namespace:
     # Misc parameters
     parser.add_argument("--seed", type=int, default=42,
                        help="Random seed")
-    parser.add_argument("--no-progress", action="store_true",
+    parser.add_argument("--no-progress", action="store_true", default=True,
                        help="Disable progress bars")
     parser.add_argument("--no-plot", action="store_true",
                        help="Disable plotting")

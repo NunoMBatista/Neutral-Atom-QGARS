@@ -52,6 +52,12 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     x_test_tensor = torch.FloatTensor(x_test.T)
     y_test_tensor = torch.LongTensor(np.argmax(y_test, axis=0) if len(y_test.shape) > 1 else y_test)
     
+    # Adjust batch size if it's larger than dataset size
+    train_samples = x_train_tensor.shape[0]
+    adjusted_batchsize = min(batchsize, train_samples)
+    if adjusted_batchsize != batchsize and verbose:
+        print(f"Warning: Reducing batch size from {batchsize} to {adjusted_batchsize} to match dataset size")
+    
     # Create model
     input_dim = x_train.shape[0]
     output_dim = y_train.shape[0] if len(y_train.shape) > 1 else len(np.unique(y_train))
@@ -67,7 +73,7 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     
     # Create DataLoader
     train_dataset = TensorDataset(x_train_tensor, y_train_tensor)
-    train_loader = DataLoader(train_dataset, batch_size=batchsize, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=adjusted_batchsize, shuffle=True)
     
     # Training loop
     if verbose:

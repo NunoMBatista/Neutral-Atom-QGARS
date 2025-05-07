@@ -19,12 +19,12 @@ def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     """
     # Get parameters
     atom_geometry = QRC_parameters["geometry_spec"]
-    rabi_frequency = QRC_parameters["rabi_frequency"]
-    total_time = QRC_parameters["total_time"]
-    encoding_scale = QRC_parameters["encoding_scale"]
+    rabi_frequency = float(QRC_parameters["rabi_frequency"])  # Convert to standard float
+    total_time = float(QRC_parameters["total_time"])  # Convert to standard float
+    encoding_scale = float(QRC_parameters["encoding_scale"])  # Convert to standard float
     
     # Time between consecutive probes
-    delta_t = total_time / QRC_parameters["time_steps"]
+    delta_t = total_time / int(QRC_parameters["time_steps"])  # Convert to standard int
     
     # Create the bloqade program using the flexible API
 
@@ -50,7 +50,7 @@ def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     
     # Batch assign to probe the quantum system at multiple timesteps
     program_job = program.batch_assign(
-        run_time=np.arange(1, QRC_parameters["time_steps"]+1, 1) * delta_t
+        run_time=np.arange(1, int(QRC_parameters["time_steps"])+1, 1) * delta_t
     )
     
     return program_job
