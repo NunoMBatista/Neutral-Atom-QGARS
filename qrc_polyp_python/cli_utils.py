@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import sys
 
 # Define available atom geometries
 AVAILABLE_GEOMETRIES = ["chain"] 
@@ -90,3 +91,22 @@ def parse_args() -> argparse.Namespace:
                        help="Disable plotting")
     
     return parser.parse_args()
+
+def get_args() -> argparse.Namespace:
+    """
+    Get arguments from either command line or config file.
+    If no command-line arguments provided, load from config.
+    
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments
+    """
+    # Check if any arguments were provided (beyond script name)
+    if len(sys.argv) == 1:
+        # No command line args, use config file
+        from config_manager import get_config_args
+        return get_config_args()
+    else:
+        # Command line args provided, use them
+        return parse_args()

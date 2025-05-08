@@ -23,7 +23,8 @@ from qrc_layer import DetuningLayer
 from training import train
 from visualization import plot_training_results, print_results
 
-from cli_utils import parse_args
+# Update import to use the new function
+from cli_utils import get_args
 import argparse
 
 def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]:
@@ -43,7 +44,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     
     # Parse arguments if not provided
     if args is None:
-        args = parse_args()
+        args = get_args()
     
     # Set random seed for reproducibility
     random.seed(args.seed)
@@ -366,5 +367,5 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     return results
 
 if __name__ == "__main__":
-    args = parse_args()
+    args = get_args()
     main(args)
