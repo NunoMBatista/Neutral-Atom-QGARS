@@ -181,15 +181,19 @@ class DatasetLoader:
         
         # Create dataset dictionaries
         train_dataset = self.create_dataset_dict(
-            train_features, np.array(train_targets), 
-            n_classes=n_classes, split="train",
+            features=train_features, 
+            targets=np.array(train_targets), 
+            n_classes=n_classes, 
+            split="train",
             class_names=class_folders,
             class_counts=train_class_counts
         )
         
         test_dataset = self.create_dataset_dict(
-            test_features, np.array(test_targets), 
-            n_classes=n_classes, split="test",
+            features=test_features, 
+            targets=np.array(test_targets), 
+            n_classes=n_classes, 
+            split="test",
             class_names=class_folders,
             class_counts=test_class_counts
         )

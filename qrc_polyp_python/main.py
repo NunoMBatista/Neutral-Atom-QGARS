@@ -109,9 +109,9 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         # Apply PCA reduction
         print("Using PCA for feature reduction...")
         xs_raw, ys, reduction_model, spectral, encoder = apply_pca(
-            data_train, 
-            dim_reduction, 
-            args.num_examples
+            data=data_train, 
+            dim_pca=dim_reduction, 
+            num_examples=args.num_examples
         )
         
         # Apply PCA to test data
@@ -340,9 +340,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     )
     results[f"{reduction_name}+NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
     
-    
-    
-    
+
     
     print(f"""
         ==========================================

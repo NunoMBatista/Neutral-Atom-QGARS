@@ -1,0 +1,33 @@
+{
+  "parameters": {
+    "geometry": "chain",
+    "dim_reduction": 10,
+    "rabi_freq": 4.0,
+    "time_steps": 16,
+    "readout_type": "ZZ",
+    "dataset_type": "cvc_clinic_db_patches",
+    "reduction_method": "pca",
+    "learning_rate": 0.01,
+    "regularization": 100.0,
+    "num_examples": 100,
+    "num_test_examples": 50,
+    "nepochs": 100,
+    "no_progress": false,
+    "no_plot": true
+  },
+  "test_accuracies": {
+    "PCA+linear": 80.0,
+    "QRC": 80.0,
+    "PCA+NN": 78.0
+  },
+  "qrc_accuracy": 80.0,
+  "best_model": "PCA+linear",
+  "best_accuracy": 80.0,
+  "execution_time": 245.16887879371643,
+  "status": "success",
+  "metadata": {
+    "timestamp": "20250508_160351",
+    "test_name": "cvc_clinic_db_patches_test",
+    "id": "92de5c50"
+  }
+}

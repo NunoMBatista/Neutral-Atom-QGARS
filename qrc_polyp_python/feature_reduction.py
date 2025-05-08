@@ -38,17 +38,19 @@ def apply_pca(data: Dict[str, Any],
     
     # Apply PCA
     print("Fitting PCA model...")
-    with tqdm(total=100, desc="Fitting PCA model") as pbar:
+    with tqdm(total=1, desc="Fitting PCA model") as pbar:
         pca = PCA(n_components=dim_pca)
         pca.fit(data_flat.T)
-        pbar.update(100)
+        pbar.update(1)
     
     # Transform data
     print("Computing PCA...")
     transformed_data = []
     pca_iterator = tqdm(range(data_flat.shape[1]), desc="Computing PCA")
     for i in pca_iterator:
-        transformed = pca.transform(data_flat[:, i].reshape(1, -1))
+        # pca.transform expects 2D array of shape (1, n_features) 
+        # by reshaping with -1 parameter, it will infer the correct number of features
+        transformed = pca.transform(data_flat[:, i].reshape(1, -1)) 
         transformed_data.append(transformed[0])
     x = np.array(transformed_data).T
     
