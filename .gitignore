@@ -15,3 +15,5 @@
 **/.CondaPkg
 
 data/datasets/**
+
+qrc_polyp_pyhton_benchmarking/results/**

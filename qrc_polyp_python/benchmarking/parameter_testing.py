@@ -115,7 +115,7 @@ def parse_args() -> argparse.Namespace:
                         help="Number of examples to use for training")
     parser.add_argument("--num-test-examples", type=int, default=50,
                         help="Number of examples to use for testing")
-    parser.add_argument("--nepochs", type=int, default=20,
+    parser.add_argument("--nepochs", type=int, default=100,
                         help="Number of training epochs")
     
 
@@ -244,6 +244,10 @@ def create_parameter_grid(args: argparse.Namespace) -> List[Dict[str, Any]]:
                 
                 # Randomly select reduction method
                 "reduction_method": np.random.choice(param_grid["reduction_method"]),
+                
+                # Add the missing classifier parameters
+                "learning_rate": np.random.choice(param_grid["learning_rate"]),
+                "regularization": np.random.choice(param_grid["regularization"]),
             }
             
             # Add autoencoder-specific parameters based on reduction method
@@ -426,6 +430,9 @@ def run_parameter_test(params: Dict[str, Any]) -> Dict[str, Any]:
     
     if not hasattr(args, "batchsize"):
         args.batchsize = 100
+        
+    # Override regularization to fixed value of 0.0005
+    args.regularization = 0.0005
     
     # Run the main function with these parameters
     start_time = time.time()
