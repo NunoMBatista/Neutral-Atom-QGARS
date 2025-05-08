@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Dict, Tuple, Optional, Any, Union, List, TYPE_CHECKING
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import OneHotEncoder
 from tqdm import tqdm
 from data_processing import flatten_images
 
@@ -10,7 +9,7 @@ from autoencoder import *
 
 def apply_pca(data: Dict[str, Any], 
               dim_pca: int = 8, 
-              num_examples: int = 1000) -> Tuple[np.ndarray, np.ndarray, PCA, float, OneHotEncoder]:
+              num_examples: int = 1000) -> Tuple[np.ndarray, PCA, float]:
     """
     Apply PCA to the image features.
     
@@ -25,12 +24,10 @@ def apply_pca(data: Dict[str, Any],
     
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, PCA, float, OneHotEncoder]
+    Tuple[np.ndarray, PCA, float]
         - xs: Principal components for the selected examples
-        - ys: One-hot encoded labels for the selected examples
         - pca: The fitted PCA model
         - spectral: Max absolute value of the PCA components (for scaling)
-        - encoder: The fitted OneHotEncoder
     """
     # Flatten images
     print("Flattening images...")
@@ -45,31 +42,17 @@ def apply_pca(data: Dict[str, Any],
     
     # Transform data
     print("Computing PCA...")
-    transformed_data = []
-    pca_iterator = tqdm(range(data_flat.shape[1]), desc="Computing PCA")
-    for i in pca_iterator:
-        # pca.transform expects 2D array of shape (1, n_features) 
-        # by reshaping with -1 parameter, it will infer the correct number of features
-        transformed = pca.transform(data_flat[:, i].reshape(1, -1)) 
-        transformed_data.append(transformed[0])
-    x = np.array(transformed_data).T
+    with tqdm(total=data_flat.shape[1], desc=f"Mapping {data_flat.shape[1]} images to Principal Components") as pbar:
+        tranformed_data = pca.transform(data_flat.T)
+        x = tranformed_data.T
+        pbar.update(data_flat.shape[1])
     
     xs = x[:, :num_examples]  # Take first num_examples samples
     
     # Calculate spectral range (max absolute value)
     spectral = max(abs(xs.max()), abs(xs.min()))
     
-    data_categories = data["metadata"]["n_classes"]
-    if data_categories is None:
-        raise ValueError("Metadata does not contain 'n_classes' key.")
-        
-    # One-hot encode the labels, ensuring the correct number of categories
-    encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse_output=False)
-    
-    y = encoder.fit_transform(data["targets"].reshape(-1, 1)) 
-    ys = y[:num_examples].T
-    
-    return xs, ys, pca, spectral, encoder
+    return xs, pca, spectral
 
 def apply_autoencoder(data: Dict[str, Any],
                     encoding_dim: int = 8,
@@ -82,7 +65,7 @@ def apply_autoencoder(data: Dict[str, Any],
                     verbose: bool = True,
                     use_batch_norm: bool = True,
                     dropout: float = 0.1,
-                    weight_decay: float = 1e-5) -> Tuple[np.ndarray, np.ndarray, Autoencoder, float, OneHotEncoder]:
+                    weight_decay: float = 1e-5) -> Tuple[np.ndarray, Autoencoder, float]:
     """
     Apply improved autoencoder to reduce image dimensions.
     
@@ -115,12 +98,10 @@ def apply_autoencoder(data: Dict[str, Any],
         
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, Autoencoder, float, OneHotEncoder]
+    Tuple[np.ndarray, Autoencoder, float]
         - xs: Encoded features for the selected examples
-        - ys: One-hot encoded labels for the selected examples
         - model: Trained autoencoder model
         - spectral: Max absolute value of the encoded features (for scaling)
-        - encoder: The fitted OneHotEncoder
     """
     
     # Flatten images
@@ -148,17 +129,7 @@ def apply_autoencoder(data: Dict[str, Any],
     # Take first num_examples samples
     xs = encoded_data[:, :num_examples]
     
-    data_categories = data["metadata"]["n_classes"]
-    if data_categories is None:
-        raise ValueError("Metadata does not contain 'n_classes' key.")
-        
-    # One-hot encode the labels
-    encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse_output=False)
-    
-    y = encoder.fit_transform(data["targets"].reshape(-1, 1))
-    ys = y[:num_examples].T
-    
-    return xs, ys, model, spectral, encoder
+    return xs, model, spectral
 
 def apply_pca_to_test_data(data: Dict[str, Any], pca_model: PCA, spectral: float, 
                            dim_pca: int, num_examples: int) -> np.ndarray:
@@ -286,7 +257,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             verbose: bool = True,
                             use_batch_norm: bool = True,
                             dropout: float = 0.1,
-                            weight_decay: float = 1e-5) -> Tuple[np.ndarray, np.ndarray, GuidedAutoencoder, float, OneHotEncoder]:
+                            weight_decay: float = 1e-5) -> Tuple[np.ndarray, GuidedAutoencoder, float]:
     """
     Apply guided autoencoder to reduce image dimensions with quantum guidance.
     
@@ -329,12 +300,10 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, GuidedAutoencoder, float, OneHotEncoder]
+    Tuple[np.ndarray, GuidedAutoencoder, float]
         - xs: Encoded features for the selected examples
-        - ys: One-hot encoded labels for the selected examples
         - model: Trained guided autoencoder model
         - spectral: Max absolute value of the encoded features (for scaling)
-        - encoder: The fitted OneHotEncoder
     """
     
     # Flatten images
@@ -370,17 +339,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
     # Take first num_examples samples (already limited earlier)
     xs = encoded_data
     
-    data_categories = data["metadata"]["n_classes"]
-    if data_categories is None:
-        raise ValueError("Metadata does not contain 'n_classes' key.")
-        
-    # One-hot encode the labels
-    encoder = OneHotEncoder(categories=[np.arange(data_categories)], sparse_output=False)
-    
-    y = encoder.fit_transform(targets.reshape(-1, 1))
-    ys = y.T
-    
-    return xs, ys, model, spectral, encoder
+    return xs, model, spectral
 
 def apply_guided_autoencoder_to_test_data(data: Dict[str, Any], 
                                          guided_autoencoder_model: GuidedAutoencoder,

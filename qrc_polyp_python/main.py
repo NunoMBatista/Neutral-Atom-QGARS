@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import custom modules
 from autoencoder import Autoencoder, GuidedAutoencoder
 
-from data_processing import load_dataset, show_sample_image, flatten_images
+from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode
 from feature_reduction import (
     apply_pca, apply_pca_to_test_data, 
     apply_autoencoder, apply_autoencoder_to_test_data,
@@ -108,7 +108,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     if method_name == "pca":
         # Apply PCA reduction
         print("Using PCA for feature reduction...")
-        xs_raw, ys, reduction_model, spectral, encoder = apply_pca(
+        xs_raw, reduction_model, spectral = apply_pca(
             data=data_train, 
             dim_pca=dim_reduction, 
             num_examples=args.num_examples
@@ -133,7 +133,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         print(f"Using autoencoder for feature reduction (device: {device})...")
         
         # Apply autoencoder reduction with improved parameters
-        xs_raw, ys, reduction_model, spectral, encoder = apply_autoencoder(
+        xs_raw, reduction_model, spectral = apply_autoencoder(
             data_train,
             encoding_dim=dim_reduction,
             num_examples=args.num_examples,
@@ -184,7 +184,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         )
         
         # Apply guided autoencoder reduction with improved parameters
-        xs_raw, ys, reduction_model, spectral, encoder = apply_guided_autoencoder(
+        xs_raw, reduction_model, spectral = apply_guided_autoencoder(
             data_train,
             quantum_layer=quantum_layer,
             encoding_dim=dim_reduction,
@@ -220,7 +220,23 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     else:
         raise ValueError(f"Unknown reduction method: {method_name}")
     
+    # Get targets for training and testing (limited to the examples we're using)
+    train_targets = data_train["targets"][:args.num_examples]
     test_targets = data_test["targets"][:args.num_test_examples]
+
+    print("""
+    
+        =========================================
+                  ONE-HOT ENCODING TARGETS
+        =========================================
+    
+        """)
+    
+
+    # Perform one-hot encoding
+    n_classes = data_train["metadata"]["n_classes"]
+    ys_encoded, encoder = one_hot_encode(train_targets, n_classes)
+    ys = ys_encoded.T  # Transpose to match expected format
 
     print("""
           

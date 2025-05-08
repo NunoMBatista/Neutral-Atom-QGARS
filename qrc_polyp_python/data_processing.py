@@ -5,7 +5,8 @@ from tqdm import tqdm
 import random
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, Any, List, Optional, Union, Callable
-
+from sklearn.preprocessing import OneHotEncoder
+    
 # Global settings
 SHOW_PROGRESS_BAR = True
 
@@ -367,8 +368,30 @@ def show_sample_image(data: Dict[str, Any], index: Optional[int] = None) -> int:
     
     return index
 
-# Legacy function wrapper for backward compatibility
-def create_mnist_dataset(data_dir: str = './data',
-                         target_size: Tuple[int, int] = (28, 28)) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Legacy wrapper for backward compatibility"""
-    return load_dataset('mnist', data_dir=data_dir, target_size=target_size)
+
+def one_hot_encode(targets: np.ndarray, n_classes: int) -> Tuple[np.ndarray, OneHotEncoder]:
+    """
+    One-hot encode the target labels.
+    
+    Parameters
+    ----------
+    targets : np.ndarray
+        Target labels
+    n_classes : int
+        Number of classes
+        
+    Returns
+    -------
+    Tuple[np.ndarray, OneHotEncoder]
+        One-hot encoded targets and the encoder object
+    """
+
+    # Create encoder ensuring the correct number of categories
+    encoder = OneHotEncoder(categories=[np.arange(n_classes)], sparse_output=False)
+    
+    # Reshape targets to required 2D array and fit_transform
+    encoded_targets = encoder.fit_transform(targets.reshape(-1, 1))
+    
+    print(f"Encoded {len(targets)} targets into {n_classes} classes")
+    
+    return encoded_targets, encoder

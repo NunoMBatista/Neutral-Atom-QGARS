@@ -85,7 +85,7 @@ def parse_args() -> argparse.Namespace:
     # Misc parameters
     parser.add_argument("--seed", type=int, default=42,
                        help="Random seed")
-    parser.add_argument("--no-progress", action="store_true", default=True,
+    parser.add_argument("--no-progress", action="store_true", default=False,
                        help="Disable progress bars")
     parser.add_argument("--no-plot", action="store_true",
                        help="Disable plotting")
