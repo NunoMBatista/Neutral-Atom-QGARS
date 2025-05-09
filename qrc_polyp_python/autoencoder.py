@@ -30,19 +30,20 @@ class Autoencoder(nn.Module):
                  use_batch_norm: bool = True,
                  dropout: float = 0.1):
         super(Autoencoder, self).__init__()
-        
+
         # Default architecture if hidden_dims not provided
         if hidden_dims is None:
-            # Create a deeper architecture with better scaling
+            # TODO: MIGHT BE BETTER TO USE A FUNCTION OF THE INPUT DIMENSION
             hidden_dims = [
                 max(input_dim // 2, encoding_dim * 8),
                 max(input_dim // 4, encoding_dim * 4), 
                 max(input_dim // 8, encoding_dim * 2)
             ]
+
             # Remove layers that are smaller than encoding_dim
             hidden_dims = [dim for dim in hidden_dims if dim > encoding_dim]
-        
-        
+
+
         print("""
 
             **************************
@@ -50,25 +51,64 @@ class Autoencoder(nn.Module):
             **************************        
         
             """)
-        
-        
+
+
         # Create encoder layers
         encoder_layers = []
         prev_dim = input_dim
-        
+
         for dim in hidden_dims:
-            encoder_layers.append(nn.Linear(prev_dim, dim))
+            # Add a linear layer
+            encoder_layers.append(
+                nn.Linear(
+                        in_features=prev_dim, 
+                        out_features=dim
+                    )
+                )
+            
+            # Add batch normalization if specified
             if use_batch_norm:
-                encoder_layers.append(nn.BatchNorm1d(dim))
-            encoder_layers.append(nn.LeakyReLU(0.2))
+                encoder_layers.append(
+                    nn.BatchNorm1d(
+                            num_features=dim
+                        )
+                    )
+            
+            # Add LeakyReLU activation function
+            encoder_layers.append(
+                nn.LeakyReLU(
+                        negative_slope=0.2
+                    )
+                )
+            
+            # Add dropout if specified
             if dropout > 0:
-                encoder_layers.append(nn.Dropout(dropout))
+                encoder_layers.append(
+                    nn.Dropout(
+                            p=dropout
+                        )
+                    )
+                
+            # Update previous dimension
             prev_dim = dim
         
+        
         # Final encoding layer
-        encoder_layers.append(nn.Linear(prev_dim, encoding_dim))
+        encoder_layers.append(
+            nn.Linear(
+                    in_features=prev_dim, 
+                    out_features=encoding_dim
+                )
+            )
+        
+        # Add batch normalization if specified
         if use_batch_norm:
-            encoder_layers.append(nn.BatchNorm1d(encoding_dim))
+            encoder_layers.append(
+                nn.BatchNorm1d(
+                        num_features=encoding_dim
+                    )
+                )
+            
         self.encoder = nn.Sequential(*encoder_layers)
         
         
@@ -79,24 +119,50 @@ class Autoencoder(nn.Module):
             **************************    
         
             """)
-        
-        
+
+
         # Create decoder layers (reverse of encoder)
         decoder_layers = []
         prev_dim = encoding_dim
         
         # Hidden layers in reverse order
         for dim in reversed(hidden_dims):
-            decoder_layers.append(nn.Linear(prev_dim, dim))
+            decoder_layers.append(
+                nn.Linear(
+                        in_features=prev_dim,
+                        out_features=dim
+                    )
+                )
+            
             if use_batch_norm:
-                decoder_layers.append(nn.BatchNorm1d(dim))
-            decoder_layers.append(nn.LeakyReLU(0.2))
+                decoder_layers.append(
+                    nn.BatchNorm1d(
+                            num_features=dim
+                        )
+                    )
+            
+            decoder_layers.append(
+                nn.LeakyReLU(
+                        negative_slope=0.2
+                    )
+                )
+            
             if dropout > 0:
-                decoder_layers.append(nn.Dropout(dropout))
+                decoder_layers.append(
+                    nn.Dropout(
+                            p=dropout
+                        )
+                    )
+            
             prev_dim = dim
         
         # Final reconstruction layer
-        decoder_layers.append(nn.Linear(prev_dim, input_dim))
+        decoder_layers.append(
+            nn.Linear(
+                    in_features=prev_dim,
+                    out_features=input_dim
+                )
+            )
         decoder_layers.append(nn.Sigmoid())  # Sigmoid for pixel values in [0,1]
         
         self.decoder = nn.Sequential(*decoder_layers)
@@ -182,7 +248,10 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     """
     # Prepare data
     input_dim = data.shape[0]
-    X = torch.tensor(data.T, dtype=torch.float32)
+    X = torch.tensor(
+                data=data.T, 
+                dtype=torch.float32
+            )
     
     # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
     batch_size = int(batch_size)
@@ -194,7 +263,11 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     
     # Create dataset and dataloader
     dataset = TensorDataset(X, X)  # Input = target for autoencoder
-    dataloader = DataLoader(dataset, batch_size=adjusted_batch_size, shuffle=True)
+    dataloader = DataLoader(
+            dataset=dataset, 
+            batch_size=adjusted_batch_size, 
+            shuffle=True
+        )
     
     # Initialize model
     model = Autoencoder(input_dim, encoding_dim, hidden_dims, use_batch_norm, dropout)
@@ -223,7 +296,7 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         for batch_X, _ in dataloader:
             batch_X = batch_X.to(device)
             
-            # Zero gradients
+            # Reset gradients
             optimizer.zero_grad()
             
             # Forward pass
@@ -233,8 +306,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
             loss = criterion(reconstructed, batch_X)
             
             # Backward pass and optimize
-            loss.backward()
-            optimizer.step()
+            loss.backward() # Compute the gradients
+            optimizer.step() # Update weights
             
             running_loss += loss.item()
         
@@ -363,14 +436,23 @@ class GuidedAutoencoder:
     dropout : float, optional
         Dropout probability, by default 0.1
     """
-    def __init__(self, input_dim: int, encoding_dim: int, output_dim: int,
+    def __init__(self, 
+                 input_dim: int,
+                 encoding_dim: int, 
+                 output_dim: int,
                  quantum_dim: int = None,
                  hidden_dims: Optional[List[int]] = None,
-                 alpha: float = 0.7, beta: float = 0.3,
+                 alpha: float = 0.7, 
+                 beta: float = 0.3,
                  use_batch_norm: bool = True,
                  dropout: float = 0.1):
-        self.autoencoder = Autoencoder(input_dim, encoding_dim, hidden_dims, 
-                                     use_batch_norm=use_batch_norm, dropout=dropout)
+        self.autoencoder = Autoencoder(
+                                input_dim=input_dim, 
+                                encoding_dim=encoding_dim, 
+                                hidden_dims=hidden_dims, 
+                                use_batch_norm=use_batch_norm, 
+                                dropout=dropout
+                                )
         self.alpha = alpha
         self.beta = beta
         self.encoding_dim = encoding_dim
@@ -387,8 +469,13 @@ class GuidedAutoencoder:
         """Initialize classifier with the correct input dimension"""
         self.quantum_dim = quantum_dim
         self.classifier = nn.Sequential(
-            nn.Linear(quantum_dim, self.output_dim),
-            nn.Softmax(dim=1)
+            nn.Linear(
+                    in_features=quantum_dim, 
+                    out_features=self.output_dim
+                ),
+            nn.Softmax(
+                    dim=1
+                )
         )
         return self.classifier
         
@@ -472,8 +559,6 @@ def train_guided_autoencoder(
     Tuple[GuidedAutoencoder, float]
         Trained guided autoencoder and maximum absolute value for scaling
     """
-    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
-    batch_size = int(batch_size)
     
     # Prepare data
     input_dim = data.shape[0]
@@ -481,22 +566,30 @@ def train_guided_autoencoder(
     output_dim = len(np.unique(labels))
     
     # Convert to PyTorch tensors
-    X = torch.tensor(data.T, dtype=torch.float32)
-    y_one_hot = np.zeros((n_samples, output_dim))
-    y_one_hot[np.arange(n_samples), labels] = 1
-    y = torch.tensor(y_one_hot, dtype=torch.float32)
+    X = torch.tensor(
+            data.T, dtype=torch.float32)
     
+    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
+    batch_size = int(batch_size)
+
     # Adjust batch size if it's larger than dataset size
     adjusted_batch_size = min(batch_size, n_samples)
     if adjusted_batch_size != batch_size and verbose:
         print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
+
+
+    y_one_hot = np.zeros((n_samples, output_dim))
+    y_one_hot[np.arange(n_samples), labels] = 1
+    y = torch.tensor(y_one_hot, dtype=torch.float32)
+    
     
     # Create dataset and dataloader
     dataset = TensorDataset(X, y)
     dataloader = DataLoader(dataset, batch_size=adjusted_batch_size, shuffle=True)
     
     # Initialize model
-    model = GuidedAutoencoder(input_dim, encoding_dim, output_dim, 
+    model = GuidedAutoencoder(
+        input_dim, encoding_dim, output_dim, 
                              hidden_dims=hidden_dims, alpha=alpha, beta=beta,
                              use_batch_norm=use_batch_norm, dropout=dropout)
     model = model.to(device)
