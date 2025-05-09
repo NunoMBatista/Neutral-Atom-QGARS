@@ -26,8 +26,6 @@ class DetuningLayer:
         Type of readout measurements ("Z", "ZZ", or "all")
     encoding_scale : float, optional
         Scale for encoding features as detunings
-    custom_readouts : Optional[List], optional
-        Custom readout observables
     """
     def __init__(self, 
                  geometry: str = 'chain', 
@@ -38,7 +36,6 @@ class DetuningLayer:
                  n_steps: int = 12,
                  readout_type: str = "all",
                  encoding_scale: float = 9.0,
-                 custom_readouts: Optional[List] = None,
                  print_params: bool = True):
         
         # Create chain geometry (only supported option)
@@ -50,7 +47,7 @@ class DetuningLayer:
         lattice_spacing_float = float(lattice_spacing)  # Convert any numpy float types
         
         atom_geometry = Chain(n_atoms_int, lattice_spacing=lattice_spacing_float)
-        
+
         # Define QRC parameters
         self.qrc_params = {
             "atom_number": n_atoms_int,
@@ -60,7 +57,6 @@ class DetuningLayer:
             "total_time": float(t_end),
             "time_steps": int(n_steps),
             "readouts": readout_type,
-            "custom_readouts": custom_readouts
         }
         
         if print_params:
@@ -77,7 +73,6 @@ class DetuningLayer:
                     *    Number of time steps: {int(n_steps)}
                     *    Readout type: {readout_type}
                     *    Encoding scale: {float(encoding_scale)}
-                    *    Custom readouts: {custom_readouts}
                     *    
                     *******************************************
                   """)
@@ -106,8 +101,23 @@ class DetuningLayer:
         else:
             # Batch of samples
             print(f"Processing {x.shape[1]} samples...")
-            outputs = []
-            iterator = tqdm(range(x.shape[1]), desc="Quantum simulation", unit="sample") if show_progress else range(x.shape[1])
-            for i in iterator:
-                outputs.append(get_embeddings_emulation(x[:, i].reshape(-1, 1), self.qrc_params, 1, n_shots)[0])
-            return np.column_stack(outputs)
+            # outputs = []
+            # iterator = tqdm(range(x.shape[1]), desc="Quantum simulation", unit="sample") if show_progress else range(x.shape[1])
+            # for i in iterator:
+            #     outputs.append(get_embeddings_emulation(
+            #                         xs=x[:, i].reshape(-1, 1), 
+            #                         qrc_params=self.qrc_params, 
+            #                         num_examples=1, # Process one example at a time for progress bar purposes
+            #                         n_shots=n_shots)[0]
+            #                    )
+                
+            # return np.column_stack(outputs)
+
+            outputs = get_embeddings_emulation(
+                xs=x, 
+                qrc_params=self.qrc_params, 
+                num_examples=x.shape[1], 
+                n_shots=n_shots
+            )
+            
+            return outputs

@@ -1,6 +1,7 @@
 import numpy as np
 from bloqade.analog.ir.location import Chain
 from typing import Dict, Any
+from tqdm import tqdm
 
 def build_task(QRC_parameters: Dict[str, Any], detunings: np.ndarray):
     """
@@ -75,61 +76,34 @@ def process_results(QRC_parameters: Dict[str, Any], report: Any) -> np.ndarray:
     embedding = []
     atom_number = QRC_parameters["atom_number"]
     readout_type = QRC_parameters.get("readouts", "ZZ")
-    custom_readouts = QRC_parameters.get("custom_readouts", None)
+    time_steps = QRC_parameters["time_steps"]
     
-    try: 
-        # Process bitstrings for each time step
-        for t in range(QRC_parameters['time_steps']):
-            # Convert bit values (0,1) to spin values (-1,+1)
-            ar1 = -1.0 + 2.0 * ((report.bitstrings())[t])
-            nsh1 = ar1.shape[0]
-            
-            # Process based on readout type
-            if custom_readouts is not None:
-                # Use custom readout configuration if provided
-                for readout in custom_readouts:
-                    value = readout(ar1, nsh1)
-                    embedding.append(value)
-            else:
-                # Calculate Z expectation values for each atom
-                for i in range(atom_number):
-                    embedding.append(np.sum(ar1[:, i])/nsh1)
-                
-                # Add ZZ correlators if specified
-                if readout_type == "ZZ" or readout_type == "all":
-                    for i in range(atom_number):
-                        for j in range(i+1, atom_number):
-                            embedding.append(np.sum(ar1[:, i]*ar1[:, j])/nsh1)
-                
-                # Add other correlators if needed
-                if readout_type == "all":
-                    # Example: Add three-body ZZZ correlators
-                    for i in range(atom_number):
-                        for j in range(i+1, atom_number):
-                            for k in range(j+1, atom_number):
-                                embedding.append(np.sum(ar1[:, i]*ar1[:, j]*ar1[:, k])/nsh1)
-                        
-    except Exception as e:
-        print(f"Error processing results: {e}")
-        # Fallback to zeros if no results obtained
-        # Calculate expected number of readouts based on configuration
-        expected_readouts = 0
+    # Process bitstrings for each time step
+    for t in range(time_steps):
+        # Convert bit values (0,1) to spin values (-1,+1)
+        spin_values = -1.0 + 2.0 * (report.bitstrings()[t])
+        n_shots = spin_values.shape[0]
         
-        if custom_readouts is not None:
-            expected_readouts = len(custom_readouts) * QRC_parameters["time_steps"]
-        else:
-            # Z readouts
-            expected_readouts = atom_number * QRC_parameters["time_steps"]
-            
-            # ZZ readouts
-            if readout_type == "ZZ" or readout_type == "all":
-                expected_readouts += atom_number * (atom_number - 1) // 2 * QRC_parameters["time_steps"]
-            
-            # Other correlators
-            if readout_type == "all":
-                expected_readouts += atom_number * (atom_number - 1) * (atom_number - 2) // 6 * QRC_parameters["time_steps"]
+        # Process based on readout type
         
-        embedding = [0.0] * expected_readouts
+        # Calculate Z expectation values for each atom
+        for i in range(atom_number):
+            embedding.append(np.sum(spin_values[:, i])/n_shots)
+        
+        # Add ZZ correlators if specified
+        if readout_type == "ZZ" or readout_type == "all":
+            for i in range(atom_number):
+                for j in range(i+1, atom_number):
+                    embedding.append(np.sum(spin_values[:, i]*spin_values[:, j])/n_shots)
+        
+        # Add other correlators if needed
+        if readout_type == "all":
+            # Add three-body ZZZ correlators
+            for i in range(atom_number):
+                for j in range(i+1, atom_number):
+                    for k in range(j+1, atom_number):
+                        embedding.append(np.sum(spin_values[:, i]*spin_values[:, j]*spin_values[:, k])/n_shots)
+                    
     
     return np.array(embedding)
 
@@ -156,28 +130,25 @@ def get_embeddings_emulation(xs: np.ndarray, qrc_params: Dict[str, Any],
     """    
     embeddings = []
     
-    # Process each example one at a time
-    for i in range(num_examples):
-        try:
-            # Extract features for current example 
-            features = xs[:, i] if len(xs.shape) > 1 else xs
-            
-            # Build and run quantum task
-            task = build_task(qrc_params, features)
-            result = task.bloqade.python().run(shots=n_shots).report()
-            
-            # Process results and add to embeddings
-            embedding = process_results(qrc_params, result)
-            embeddings.append(embedding)
-        except Exception as e:
-            print(f"Error processing example {i}: {e}")
-            # Create dummy embedding by calling process_results with None
-            # This ensures consistent output size even if simulation fails
-            dummy_report = None
-            embedding = process_results(qrc_params, dummy_report)
-            embeddings.append(embedding)
+    iterator = tqdm(range(num_examples), desc="Quantum simulation", unit="sample") 
     
-    return np.array(embeddings)
+    # Process each example one at a time
+    for i in iterator:   
+        # Extract features for current example 
+        features = xs[:, i] if len(xs.shape) > 1 else xs
+        
+        # Build and run quantum task
+        task = build_task(
+                    QRC_parameters=qrc_params, 
+                    detunings=features
+                )
+        result = task.bloqade.python().run(shots=n_shots).report()
+        
+        # Process results and add to embeddings
+        embedding = process_results(qrc_params, result)
+        embeddings.append(embedding)
+    
+    return np.column_stack(embeddings)
 
 def get_embeddings_with_checkpoint(xs: np.ndarray, qrc_params: Dict[str, Any], 
                                  num_examples: int, n_shots: int = 1000, 

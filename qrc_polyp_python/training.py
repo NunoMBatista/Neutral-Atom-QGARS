@@ -70,13 +70,23 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     else:
         model = LinearClassifier(input_dim, output_dim)
     
+    
     # Define loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=regularization)
+    optimizer = optim.Adam(
+                        params=model.parameters(), 
+                        lr=learning_rate, 
+                        weight_decay=regularization
+                    )
+    
     
     # Create DataLoader
     train_dataset = TensorDataset(x_train_tensor, y_train_tensor)
-    train_loader = DataLoader(train_dataset, batch_size=adjusted_batchsize, shuffle=True)
+    train_loader = DataLoader(
+                            dataset=train_dataset, 
+                            batch_size=adjusted_batchsize, 
+                            shuffle=True
+                        )
     
     # Training loop
     if verbose:
@@ -88,11 +98,10 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     
     # Enhanced progress bar with description
     for epoch in tqdm(range(nepochs), desc="Training epochs", unit="epoch") if verbose else range(nepochs):
-        model.train()
+        model.train() # Set the model to training mode
         epoch_loss = 0.0
         
-        # Add progress bar for batches within each epoch if there are many batches
-        batch_iterator = tqdm(train_loader, desc=f"Epoch {epoch+1}/{nepochs}", leave=False) if verbose and len(train_loader) > 10 else train_loader
+        batch_iterator = tqdm(train_loader, desc=f"Epoch {epoch+1}/{nepochs}", leave=False) if (verbose and len(train_loader) > 10) else train_loader
         for x_batch, y_batch in batch_iterator:
             # Zero the gradients
             optimizer.zero_grad()
@@ -104,13 +113,13 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
             loss = criterion(outputs, torch.argmax(y_batch, dim=1))
             
             # Backward pass and optimize
-            loss.backward()
-            optimizer.step()
+            loss.backward() # Compute gradients
+            optimizer.step() # Update weights
             
             epoch_loss += loss.item()
         
         # Evaluate
-        model.eval()
+        model.eval() # Set the model to evaluation mode
         with torch.no_grad():
             # Training accuracy
             train_outputs = model(x_train_tensor)

@@ -1,0 +1,46 @@
+{
+  "parameters": {
+    "geometry": "chain",
+    "dim_reduction": 8,
+    "rabi_freq": 4.0,
+    "time_steps": 4,
+    "readout_type": "Z",
+    "dataset_type": "cvc_clinic_db_patches",
+    "reduction_method": "guided_autoencoder",
+    "learning_rate": 0.01,
+    "regularization": 1.0,
+    "autoencoder_hidden_dims": [
+      1024,
+      512,
+      256
+    ],
+    "autoencoder_learning_rate": 0.0001,
+    "autoencoder_batch_size": 128,
+    "autoencoder_epochs": 40,
+    "dropout": 0.30000000000000004,
+    "use_batch_norm": false,
+    "guided_alpha": 0.9000000000000001,
+    "guided_beta": 0.1,
+    "quantum_update_frequency": 7,
+    "num_examples": 100,
+    "num_test_examples": 50,
+    "nepochs": 100,
+    "no_progress": false,
+    "no_plot": true
+  },
+  "test_accuracies": {
+    "GUIDED_AUTOENCODER+linear": 72.0,
+    "QRC": 60.0,
+    "GUIDED_AUTOENCODER+NN": 70.0
+  },
+  "qrc_accuracy": 60.0,
+  "best_model": "GUIDED_AUTOENCODER+linear",
+  "best_accuracy": 72.0,
+  "execution_time": 200.4849967956543,
+  "status": "success",
+  "metadata": {
+    "timestamp": "20250509_023424",
+    "test_name": "cvc_clinic_db_patches_test",
+    "id": "2b1e1596"
+  }
+}

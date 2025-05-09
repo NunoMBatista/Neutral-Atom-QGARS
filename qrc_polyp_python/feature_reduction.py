@@ -111,14 +111,27 @@ def apply_autoencoder(data: Dict[str, Any],
     # Train autoencoder
     print("Training autoencoder...")
     model, spectral = train_autoencoder(
-        data_flat, encoding_dim, hidden_dims, 
-        batch_size, epochs, learning_rate, device, 
-        verbose, use_batch_norm, dropout, weight_decay
+        data=data_flat, 
+        encoding_dim=encoding_dim, 
+        hidden_dims=hidden_dims, 
+        batch_size=batch_size, 
+        epochs=epochs, 
+        learning_rate=learning_rate, 
+        device=device, 
+        verbose=verbose, 
+        use_batch_norm=use_batch_norm, 
+        dropout=dropout, 
+        weight_decay=weight_decay
     )
     
     # Encode data
     print("Encoding data...")
-    encoded_data = encode_data(model, data_flat, device, verbose)
+    encoded_data = encode_data(
+                            model=model,
+                            data=data_flat, 
+                            device=device, 
+                            verbose=verbose
+                        )
     
     # Verify encoded data has meaningful values
     if np.all(encoded_data == 0):
@@ -131,8 +144,11 @@ def apply_autoencoder(data: Dict[str, Any],
     
     return xs, model, spectral
 
-def apply_pca_to_test_data(data: Dict[str, Any], pca_model: PCA, spectral: float, 
-                           dim_pca: int, num_examples: int) -> np.ndarray:
+def apply_pca_to_test_data(data: Dict[str, Any], 
+                           pca_model: PCA, 
+                           dim_pca: int, 
+                           num_examples: int
+                           ) -> np.ndarray:
     """
     Apply pre-trained PCA to test data.
     
@@ -163,7 +179,7 @@ def apply_pca_to_test_data(data: Dict[str, Any], pca_model: PCA, spectral: float
     for i in tqdm(range(min(data_flat.shape[0], num_examples)), desc="PCA transform"):
         test_features[i] = pca_model.transform(data_flat[i].reshape(1, -1))[0]
     
-    # Return in the same format as training features
+    # Return in the same format as training features 
     test_features = test_features.T  # Match the format of training features
     
     return test_features

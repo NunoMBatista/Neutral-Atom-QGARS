@@ -117,11 +117,10 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         # Apply PCA to test data
         print("Applying PCA to test data...")
         test_features_raw = apply_pca_to_test_data(
-            data_test,
-            reduction_model,
-            spectral,
-            dim_reduction,
-            args.num_test_examples
+            data=data_test,
+            pca_model=reduction_model,
+            dim_pca=dim_reduction,
+            num_examples=args.num_test_examples
         )
         
     elif method_name == "autoencoder":
@@ -134,7 +133,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         
         # Apply autoencoder reduction with improved parameters
         xs_raw, reduction_model, spectral = apply_autoencoder(
-            data_train,
+            data=data_train,
             encoding_dim=dim_reduction,
             num_examples=args.num_examples,
             hidden_dims=args.autoencoder_hidden_dims,
@@ -143,9 +142,9 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             learning_rate=args.autoencoder_learning_rate,
             device=device,
             verbose=not args.no_progress,
-            use_batch_norm=True,  # Enable batch normalization
-            dropout=0.1,  # Add dropout for regularization
-            weight_decay=1e-5  # Add weight decay
+            use_batch_norm=True,
+            dropout=0.1,
+            weight_decay=1e-5
         )
         
         # Log the spectral range to help diagnose scaling issues
@@ -231,12 +230,13 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         =========================================
     
         """)
-    
+
 
     # Perform one-hot encoding
     n_classes = data_train["metadata"]["n_classes"]
     ys_encoded, encoder = one_hot_encode(train_targets, n_classes)
     ys = ys_encoded.T  # Transpose to match expected format
+
 
     print("""
           
@@ -245,6 +245,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         =========================================
         
         """)
+
     
     # Scale features to detuning range with more diagnostic info
     print(f"Scaling features with spectral value: {spectral}")
@@ -280,7 +281,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     
     print("Computing quantum embeddings for training data...")
     embeddings = quantum_layer.apply_layer(
-        xs, 
+        x=xs, 
         n_shots=args.n_shots, 
         show_progress=not args.no_progress
     )
@@ -306,7 +307,10 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     results = {}
     
     loss_lin, accs_train_lin, accs_test_lin, model_lin = train(
-        xs, ys, test_features, test_targets, 
+        x_train=xs, 
+        y_train=ys, 
+        x_test=test_features, 
+        y_test=test_targets, 
         regularization=args.regularization, 
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
