@@ -19,8 +19,8 @@ project_root = os.path.dirname(parent_dir)
 sys.path.insert(0, project_root)  # Add the project root directory
 
 # Use absolute imports from the project
-from qrc_polyp_python.main import main
-from qrc_polyp_python.cli_utils import AVAILABLE_READOUT_TYPES
+from main import main
+from cli_utils import AVAILABLE_READOUT_TYPES
 
 # Create results directory if it doesn't exist
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")

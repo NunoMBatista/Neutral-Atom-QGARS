@@ -113,6 +113,8 @@ class DatasetLoader:
     def load_image_folder_dataset(self, data_dir: str, 
                                  target_size: Tuple[int, int] = (28, 28),
                                  split_ratio: float = 0.8,
+                                 num_examples: Optional[int] = None,
+                                 num_test_examples: Optional[int] = None,
                                  **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Load a dataset from a directory with class subfolders.
@@ -125,6 +127,10 @@ class DatasetLoader:
             Size to resize images to, by default (28, 28)
         split_ratio : float, optional
             Ratio for train/test split, by default 0.8
+        num_examples : Optional[int], optional
+            Maximum number of training examples to load, by default None (load all)
+        num_test_examples : Optional[int], optional
+            Maximum number of test examples to load, by default None (load all)
             
         Returns
         -------
@@ -162,6 +168,15 @@ class DatasetLoader:
         split = int(len(files) * split_ratio)
         train_indices = indices[:split]
         test_indices = indices[split:]
+        
+        # If num_examples or num_test_examples specified, only use that many samples
+        if num_examples is not None and num_examples < len(train_indices):
+            train_indices = train_indices[:num_examples]
+            print(f"Using {num_examples} training examples out of {split} available")
+        
+        if num_test_examples is not None and num_test_examples < len(test_indices):
+            test_indices = test_indices[:num_test_examples]
+            print(f"Using {num_test_examples} test examples out of {len(indices) - split} available")
         
         train_files = [files[i] for i in train_indices]
         train_targets = [targets[i] for i in train_indices]
@@ -395,3 +410,47 @@ def one_hot_encode(targets: np.ndarray, n_classes: int) -> Tuple[np.ndarray, One
     print(f"Encoded {len(targets)} targets into {n_classes} classes")
     
     return encoded_targets, encoder
+
+def select_random_samples(data: Dict[str, Any], num_samples: int, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Select random samples from a dataset.
+    
+    Parameters
+    ----------
+    data : Dict[str, Any]
+        Dataset containing 'features' and 'targets'
+    num_samples : int
+        Number of samples to select
+    seed : Optional[int], optional
+        Random seed for reproducibility, by default None
+        
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray, np.ndarray]
+        selected_indices, selected_features, selected_targets
+    """
+    # Get total number of samples
+    n_samples = data["features"].shape[2] if len(data["features"].shape) > 2 else len(data["features"])
+    
+    # Cap num_samples to available samples
+    num_samples = min(num_samples, n_samples)
+    
+    # Set random seed if provided
+    if seed is not None:
+        np.random.seed(seed)
+    
+    # Select random indices
+    selected_indices = np.random.choice(n_samples, size=num_samples, replace=False)
+    
+    # Get corresponding features
+    if len(data["features"].shape) > 2:
+        # For image data with shape (height, width, n_samples)
+        selected_features = data["features"][:, :, selected_indices]
+    else:
+        # For flattened data
+        selected_features = data["features"][selected_indices]
+    
+    # Get corresponding targets
+    selected_targets = data["targets"][selected_indices]
+    
+    return selected_indices, selected_features, selected_targets

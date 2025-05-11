@@ -1,0 +1,276 @@
+import os
+import numpy as np
+import itertools
+import pandas as pd
+from typing import Dict, List, Any, Tuple, Optional, Union, Callable
+from tqdm import tqdm
+import json
+import datetime
+import argparse
+import matplotlib.pyplot as plt
+import multiprocessing as mp
+
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from main import main
+from config_manager import ConfigManager
+from results_manager import save_experiment_results
+
+class ParameterSweep:
+    """
+    Manages parameter sweeps for QRC experiments.
+    
+    Parameters
+    ----------
+    base_config : Dict[str, Any]
+        Base configuration to use for all experiments
+    output_dir : str
+        Directory to save results
+    """
+    def __init__(self, 
+                 base_config: Optional[Dict[str, Any]] = None, 
+                 output_dir: str = "../results/parameter_sweep"):
+        """Initialize parameter sweep with base configuration"""
+        self.base_config = base_config if base_config is not None else ConfigManager.get_default_config()
+        self.output_dir = output_dir
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(self.output_dir, exist_ok=True)
+        
+        # Generate timestamp for this sweep
+        self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.experiment_counter = 0
+        
+    def _create_experiment_configs(self, 
+                                  param_grid: Dict[str, List[Any]]) -> List[Dict[str, Any]]:
+        """
+        Create experiment configurations from parameter grid.
+        
+        Parameters
+        ----------
+        param_grid : Dict[str, List[Any]]
+            Dictionary mapping parameter names to lists of values
+            
+        Returns
+        -------
+        List[Dict[str, Any]]
+            List of experiment configurations
+        """
+        # Get parameter names and values
+        param_names = list(param_grid.keys())
+        param_values = list(param_grid.values())
+        
+        # Generate all combinations
+        configs = []
+        for combo in itertools.product(*param_values):
+            config = self.base_config.copy()
+            # Update with parameter values
+            for name, value in zip(param_names, combo):
+                config[name] = value
+            configs.append(config)
+            
+        return configs
+    
+    def run_sweep(self, 
+                 param_grid: Dict[str, List[Any]], 
+                 experiment_name: str,
+                 run_parallel: bool = False,
+                 n_workers: int = 4) -> pd.DataFrame:
+        """
+        Run parameter sweep experiments.
+        
+        Parameters
+        ----------
+        param_grid : Dict[str, List[Any]]
+            Dictionary mapping parameter names to lists of values
+        experiment_name : str
+            Name for this experiment sweep
+        run_parallel : bool, optional
+            Whether to run experiments in parallel, by default False
+        n_workers : int, optional
+            Number of workers for parallel execution, by default 4
+            
+        Returns
+        -------
+        pd.DataFrame
+            Results dataframe
+        """
+        # Create experiment configurations
+        configs = self._create_experiment_configs(param_grid)
+        
+        print(f"Starting parameter sweep with {len(configs)} configurations")
+        
+        # Create directory for this sweep
+        sweep_dir = os.path.join(self.output_dir, f"{experiment_name}_{self.timestamp}")
+        os.makedirs(sweep_dir, exist_ok=True)
+        
+        # Save parameter grid for reference
+        with open(os.path.join(sweep_dir, "param_grid.json"), "w") as f:
+            grid_serializable = {k: v if not isinstance(v, np.ndarray) else v.tolist() 
+                                for k, v in param_grid.items()}
+            json.dump(grid_serializable, f, indent=4)
+        
+        # Run experiments
+        all_results = []
+        
+        if run_parallel and n_workers > 1:
+            import concurrent.futures
+            with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
+                futures = []
+                for i, config in enumerate(configs):
+                    futures.append(executor.submit(self._run_single_experiment, 
+                                                  config, sweep_dir, f"exp_{i}"))
+                
+                # Process results as they complete
+                for future in tqdm(concurrent.futures.as_completed(futures), 
+                                  total=len(futures), 
+                                  desc="Running experiments"):
+                    all_results.append(future.result())
+        else:
+            # Run sequentially
+            for i, config in enumerate(tqdm(configs, desc="Running experiments")):
+                result = self._run_single_experiment(config, sweep_dir, f"exp_{i}")
+                all_results.append(result)
+        
+        # Compile results into dataframe
+        results_df = pd.DataFrame(all_results)
+        
+        # Save compiled results
+        results_df.to_csv(os.path.join(sweep_dir, "all_results.csv"), index=False)
+        
+        return results_df
+    
+    def _run_single_experiment(self, 
+                              config: Dict[str, Any], 
+                              sweep_dir: str,
+                              exp_id: str) -> Dict[str, Any]:
+        """
+        Run a single experiment with the given configuration.
+        
+        Parameters
+        ----------
+        config : Dict[str, Any]
+            Experiment configuration
+        sweep_dir : str
+            Directory to save results
+        exp_id : str
+            Experiment identifier
+            
+        Returns
+        -------
+        Dict[str, Any]
+            Experiment results with configuration parameters
+        """
+        # Convert config to argparse Namespace
+        args = ConfigManager.config_to_args(config)
+        
+        # Disable plotting for individual runs
+        args.no_plot = True
+        
+        # Run the experiment
+        try:
+            self.experiment_counter += 1
+            print(f"\nExperiment {self.experiment_counter}: Running with {exp_id}\n")
+            
+            # Run main function with args
+            results = main(args)
+            
+            # Extract metrics
+            metrics = self._extract_metrics(results)
+            
+            # Add configuration parameters to metrics
+            for key, value in config.items():
+                # Skip large configurations
+                if key not in ['autoencoder_hidden_dims', 'target_size']:
+                    metrics[key] = value
+                    
+            # Save individual experiment results
+            exp_dir = os.path.join(sweep_dir, exp_id)
+            os.makedirs(exp_dir, exist_ok=True)
+            
+            # Save configuration
+            with open(os.path.join(exp_dir, "config.json"), "w") as f:
+                config_serializable = {k: str(v) if isinstance(v, np.ndarray) else v 
+                                     for k, v in config.items()}
+                json.dump(config_serializable, f, indent=4)
+                
+            # Save metrics
+            with open(os.path.join(exp_dir, "metrics.json"), "w") as f:
+                json.dump(metrics, f, indent=4)
+                
+            # Save detailed results
+            save_experiment_results(results, os.path.join(exp_dir, "results.pkl"))
+            
+            return metrics
+            
+        except Exception as e:
+            print(f"Error in experiment {exp_id}: {str(e)}")
+            # Return error metrics
+            return {
+                "error": str(e),
+                "status": "failed",
+                **{k: v for k, v in config.items() if k not in ['autoencoder_hidden_dims', 'target_size']}
+            }
+    
+    def _extract_metrics(self, results: Dict[str, Tuple]) -> Dict[str, Any]:
+        """
+        Extract metrics from experiment results.
+        
+        Parameters
+        ----------
+        results : Dict[str, Tuple]
+            Results dictionary from main function
+            
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary of metrics
+        """
+        metrics = {
+            "status": "success",
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        # Extract final metrics from each model
+        for model_name, (losses, accs_train, accs_test, _) in results.items():
+            metrics[f"{model_name}_final_train_acc"] = float(accs_train[-1])
+            metrics[f"{model_name}_final_test_acc"] = float(accs_test[-1])
+            metrics[f"{model_name}_final_loss"] = float(losses[-1])
+            
+            # Calculate convergence metrics
+            if len(accs_test) > 5:
+                # Calculate when model reached 90% of its final accuracy
+                final_acc = accs_test[-1]
+                threshold = 0.9 * final_acc
+                for i, acc in enumerate(accs_test):
+                    if acc >= threshold:
+                        metrics[f"{model_name}_epochs_to_90pct"] = i + 1
+                        break
+                
+                # Calculate stability (std dev of last 10% of training)
+                stability_window = max(1, int(len(accs_test) * 0.1))
+                metrics[f"{model_name}_stability"] = float(np.std(accs_test[-stability_window:]))
+        
+        return metrics
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run parameter sweeps for QRC experiments")
+    parser.add_argument("--sweep-type", type=str, required=True,
+                       choices=["encoding", "quantum", "guided", "dataset", "custom"],
+                       help="Type of sweep to run")
+    parser.add_argument("--config", type=str, default=None,
+                       help="Path to base configuration JSON file")
+    
+    args = parser.parse_args()
+    
+    # Load base config
+    if args.config:
+        base_config = ConfigManager.load_config(args.config)
+        base_args = ConfigManager.config_to_args(base_config)
+    else:
+        base_args = None
+    
+    # Run appropriate sweep
+    if args.sweep_type == "custom":
+        print("For custom sweeps, please import and use the ParameterSweep class directly.")

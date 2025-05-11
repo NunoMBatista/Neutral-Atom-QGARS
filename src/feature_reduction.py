@@ -9,7 +9,8 @@ from autoencoder import *
 
 def apply_pca(data: Dict[str, Any], 
               dim_pca: int = 8, 
-              num_examples: int = 1000) -> Tuple[np.ndarray, PCA, float]:
+              selected_indices: Optional[np.ndarray] = None,
+              selected_features: Optional[np.ndarray] = None) -> Tuple[np.ndarray, PCA, float]:
     """
     Apply PCA to the image features.
     
@@ -19,8 +20,10 @@ def apply_pca(data: Dict[str, Any],
         Dictionary containing 'features' (image data) and 'targets' (labels)
     dim_pca : int, optional
         Number of principal components to extract, by default 8
-    num_examples : int, optional
-        Number of examples to process, by default 1000
+    selected_indices : Optional[np.ndarray], optional
+        Indices of selected samples, by default None
+    selected_features : Optional[np.ndarray], optional
+        Pre-selected features to use, by default None
     
     Returns
     -------
@@ -29,9 +32,17 @@ def apply_pca(data: Dict[str, Any],
         - pca: The fitted PCA model
         - spectral: Max absolute value of the PCA components (for scaling)
     """
+    # Use provided features if available, otherwise use all data
+    if selected_features is not None:
+        print(f"Using {selected_features.shape[2]} pre-selected samples for PCA")
+        data_to_use = selected_features
+    else:
+        # If no pre-selection, use full dataset
+        data_to_use = data["features"]
+        
     # Flatten images
     print("Flattening images...")
-    data_flat = flatten_images(data["features"])
+    data_flat = flatten_images(data_to_use)
     
     # Apply PCA
     print("Fitting PCA model...")
@@ -47,16 +58,17 @@ def apply_pca(data: Dict[str, Any],
         x = tranformed_data.T
         pbar.update(data_flat.shape[1])
     
-    xs = x[:, :num_examples]  # Take first num_examples samples
+    # We don't need to select a subset now, as we already have the selected samples
+    xs = x
     
     # Calculate spectral range (max absolute value)
     spectral = max(abs(xs.max()), abs(xs.min()))
     
     return xs, pca, spectral
 
+
 def apply_autoencoder(data: Dict[str, Any],
                     encoding_dim: int = 8,
-                    num_examples: int = 1000,
                     hidden_dims: Optional[List[int]] = None,
                     batch_size: int = 64,
                     epochs: int = 50,
@@ -65,7 +77,9 @@ def apply_autoencoder(data: Dict[str, Any],
                     verbose: bool = True,
                     use_batch_norm: bool = True,
                     dropout: float = 0.1,
-                    weight_decay: float = 1e-5) -> Tuple[np.ndarray, Autoencoder, float]:
+                    weight_decay: float = 1e-5,
+                    selected_indices: Optional[np.ndarray] = None,
+                    selected_features: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Autoencoder, float]:
     """
     Apply improved autoencoder to reduce image dimensions.
     
@@ -75,8 +89,6 @@ def apply_autoencoder(data: Dict[str, Any],
         Dictionary containing 'features' (image data) and 'targets' (labels)
     encoding_dim : int, optional
         Dimension of the encoded representation, by default 8
-    num_examples : int, optional
-        Number of examples to process, by default 1000
     hidden_dims : Optional[List[int]], optional
         Dimensions of hidden layers, by default None
     batch_size : int, optional
@@ -95,6 +107,10 @@ def apply_autoencoder(data: Dict[str, Any],
         Dropout probability, by default 0.1
     weight_decay : float, optional
         Weight decay for regularization, by default 1e-5
+    selected_indices : Optional[np.ndarray], optional
+        Indices of selected samples, by default None
+    selected_features : Optional[np.ndarray], optional
+        Pre-selected features to use, by default None
         
     Returns
     -------
@@ -104,9 +120,17 @@ def apply_autoencoder(data: Dict[str, Any],
         - spectral: Max absolute value of the encoded features (for scaling)
     """
     
+    # Use provided features if available, otherwise use all data
+    if selected_features is not None:
+        print(f"Using {selected_features.shape[2]} pre-selected samples for autoencoder")
+        data_to_use = selected_features
+    else:
+        # If no pre-selection, use full dataset
+        data_to_use = data["features"]
+    
     # Flatten images
     print("Flattening images...")
-    data_flat = flatten_images(data["features"])
+    data_flat = flatten_images(data_to_use)
     
     # Train autoencoder
     print("Training autoencoder...")
@@ -139,16 +163,17 @@ def apply_autoencoder(data: Dict[str, Any],
     elif np.allclose(encoded_data, 0, atol=1e-5):
         print("WARNING: Encoded data is very close to zero. Features may not be discriminative.")
     
-    # Take first num_examples samples
-    xs = encoded_data[:, :num_examples]
+    # No need to select a subset now, as we already have the selected samples
+    xs = encoded_data
     
     return xs, model, spectral
+
 
 def apply_pca_to_test_data(data: Dict[str, Any], 
                            pca_model: PCA, 
                            dim_pca: int, 
-                           num_examples: int
-                           ) -> np.ndarray:
+                           selected_indices: Optional[np.ndarray] = None,
+                           selected_features: Optional[np.ndarray] = None) -> np.ndarray:
     """
     Apply pre-trained PCA to test data.
     
@@ -158,25 +183,33 @@ def apply_pca_to_test_data(data: Dict[str, Any],
         Test dataset containing 'features'
     pca_model : PCA
         Trained PCA model
-    spectral : float
-        Scaling factor from training
     dim_pca : int
         Number of PCA components
-    num_examples : int
-        Number of samples to process
+    selected_indices : Optional[np.ndarray], optional
+        Indices of selected samples, by default None
+    selected_features : Optional[np.ndarray], optional
+        Pre-selected features to use, by default None
         
     Returns
     -------
     np.ndarray
         Transformed features (not scaled)
     """
+    # Use provided features if available, otherwise use all data
+    if selected_features is not None:
+        print(f"Using {selected_features.shape[2]} pre-selected test samples for PCA")
+        data_to_use = selected_features
+    else:
+        # If no pre-selection, use full dataset
+        data_to_use = data["features"]
+        
     print("Flattening test data...")
-    data_flat = flatten_images(data["features"], desc="Flattening test data")
+    data_flat = flatten_images(data_to_use, desc="Flattening test data")
     data_flat = data_flat.T  # Transpose for sklearn PCA
     
     print("Applying PCA to test data...")
-    test_features = np.zeros((min(data_flat.shape[0], num_examples), dim_pca))
-    for i in tqdm(range(min(data_flat.shape[0], num_examples)), desc="PCA transform"):
+    test_features = np.zeros((data_flat.shape[0], dim_pca))
+    for i in tqdm(range(data_flat.shape[0]), desc="PCA transform"):
         test_features[i] = pca_model.transform(data_flat[i].reshape(1, -1))[0]
     
     # Return in the same format as training features 
@@ -184,11 +217,13 @@ def apply_pca_to_test_data(data: Dict[str, Any],
     
     return test_features
 
+
 def apply_autoencoder_to_test_data(data: Dict[str, Any], 
                                   autoencoder_model: Autoencoder,
-                                  num_examples: int,
                                   device: str = 'cpu',
-                                  verbose: bool = True) -> np.ndarray:
+                                  verbose: bool = True,
+                                  selected_indices: Optional[np.ndarray] = None,
+                                  selected_features: Optional[np.ndarray] = None) -> np.ndarray:
     """
     Apply trained autoencoder to test data.
     
@@ -198,12 +233,14 @@ def apply_autoencoder_to_test_data(data: Dict[str, Any],
         Test dataset containing 'features'
     autoencoder_model : Autoencoder
         Trained autoencoder model
-    num_examples : int
-        Number of samples to process
     device : str, optional
         Device to use ('cpu' or 'cuda'), by default 'cpu'
     verbose : bool, optional
         Whether to show progress bars, by default True
+    selected_indices : Optional[np.ndarray], optional
+        Indices of selected samples, by default None
+    selected_features : Optional[np.ndarray], optional
+        Pre-selected features to use, by default None
         
     Returns
     -------
@@ -211,12 +248,16 @@ def apply_autoencoder_to_test_data(data: Dict[str, Any],
         Encoded features
     """
     
-    print("Flattening test data...")
-    data_flat = flatten_images(data["features"], desc="Flattening test data")
+    # Use provided features if available, otherwise use all data
+    if selected_features is not None:
+        print(f"Using {selected_features.shape[2]} pre-selected test samples for autoencoder")
+        data_to_use = selected_features
+    else:
+        # If no pre-selection, use full dataset
+        data_to_use = data["features"]
     
-    # Limit to the requested number of examples
-    if data_flat.shape[1] > num_examples:
-        data_flat = data_flat[:, :num_examples]
+    print("Flattening test data...")
+    data_flat = flatten_images(data_to_use, desc="Flattening test data")
     
     # Encode data
     print("Encoding test data...")
@@ -225,6 +266,7 @@ def apply_autoencoder_to_test_data(data: Dict[str, Any],
     )
     
     return encoded_features
+
 
 def scale_to_detuning_range(xs: np.ndarray, spectral: float, detuning_max: float = 6.0) -> np.ndarray:
     """
@@ -257,10 +299,10 @@ def scale_to_detuning_range(xs: np.ndarray, spectral: float, detuning_max: float
     
     return scaled_data
 
+
 def apply_guided_autoencoder(data: Dict[str, Any],
                             quantum_layer,
                             encoding_dim: int = 8,
-                            num_examples: int = 1000,
                             hidden_dims: Optional[List[int]] = None,
                             alpha: float = 0.7,
                             beta: float = 0.3,
@@ -273,7 +315,10 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             verbose: bool = True,
                             use_batch_norm: bool = True,
                             dropout: float = 0.1,
-                            weight_decay: float = 1e-5) -> Tuple[np.ndarray, GuidedAutoencoder, float]:
+                            weight_decay: float = 1e-5,
+                            selected_indices: Optional[np.ndarray] = None,
+                            selected_features: Optional[np.ndarray] = None,
+                            selected_targets: Optional[np.ndarray] = None) -> Tuple[np.ndarray, GuidedAutoencoder, float]:
     """
     Apply guided autoencoder to reduce image dimensions with quantum guidance.
     
@@ -285,8 +330,6 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Quantum reservoir layer for generating embeddings
     encoding_dim : int, optional
         Dimension of the encoded representation, by default 8
-    num_examples : int, optional
-        Number of examples to process, by default 1000
     hidden_dims : Optional[List[int]], optional
         Dimensions of hidden layers, by default None
     alpha : float, optional
@@ -313,6 +356,12 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Dropout probability, by default 0.1
     weight_decay : float, optional
         Weight decay for regularization, by default 1e-5
+    selected_indices : Optional[np.ndarray], optional
+        Indices of selected samples, by default None
+    selected_features : Optional[np.ndarray], optional
+        Pre-selected features to use, by default None
+    selected_targets : Optional[np.ndarray], optional
+        Pre-selected targets to use, by default None
         
     Returns
     -------
@@ -322,16 +371,19 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         - spectral: Max absolute value of the encoded features (for scaling)
     """
     
+    # Use provided features if available, otherwise use all data
+    if selected_features is not None and selected_targets is not None:
+        print(f"Using {selected_features.shape[2]} pre-selected samples for guided autoencoder")
+        data_to_use = selected_features
+        targets = selected_targets
+    else:
+        # If no pre-selection, use full dataset
+        data_to_use = data["features"]
+        targets = data["targets"]
+    
     # Flatten images
     print("Flattening images...")
-    data_flat = flatten_images(data["features"])
-    
-    # Limit to the requested number of examples for efficiency
-    if data_flat.shape[1] > num_examples:
-        data_flat = data_flat[:, :num_examples]
-        targets = data["targets"][:num_examples]
-    else:
-        targets = data["targets"]
+    data_flat = flatten_images(data_to_use)
     
     # Train guided autoencoder
     print("Training guided autoencoder with quantum feedback...")
@@ -352,16 +404,18 @@ def apply_guided_autoencoder(data: Dict[str, Any],
     elif np.allclose(encoded_data, 0, atol=1e-5):
         print("WARNING: Encoded data is very close to zero. Features may not be discriminative.")
     
-    # Take first num_examples samples (already limited earlier)
+    # No need to select a subset now, as we already have the selected samples
     xs = encoded_data
     
     return xs, model, spectral
 
+
 def apply_guided_autoencoder_to_test_data(data: Dict[str, Any], 
                                          guided_autoencoder_model: GuidedAutoencoder,
-                                         num_examples: int,
                                          device: str = 'cpu',
-                                         verbose: bool = True) -> np.ndarray:
+                                         verbose: bool = True,
+                                         selected_indices: Optional[np.ndarray] = None,
+                                         selected_features: Optional[np.ndarray] = None) -> np.ndarray:
     """
     Apply trained guided autoencoder to test data.
     
@@ -371,12 +425,14 @@ def apply_guided_autoencoder_to_test_data(data: Dict[str, Any],
         Test dataset containing 'features'
     guided_autoencoder_model : GuidedAutoencoder
         Trained guided autoencoder model
-    num_examples : int
-        Number of samples to process
     device : str, optional
         Device to use ('cpu' or 'cuda'), by default 'cpu'
     verbose : bool, optional
         Whether to show progress bars, by default True
+    selected_indices : Optional[np.ndarray], optional
+        Indices of selected samples, by default None
+    selected_features : Optional[np.ndarray], optional
+        Pre-selected features to use, by default None
         
     Returns
     -------
@@ -384,12 +440,16 @@ def apply_guided_autoencoder_to_test_data(data: Dict[str, Any],
         Encoded features
     """
     
-    print("Flattening test data...")
-    data_flat = flatten_images(data["features"], desc="Flattening test data")
+    # Use provided features if available, otherwise use all data
+    if selected_features is not None:
+        print(f"Using {selected_features.shape[2]} pre-selected test samples for guided autoencoder")
+        data_to_use = selected_features
+    else:
+        # If no pre-selection, use full dataset
+        data_to_use = data["features"]
     
-    # Limit to the requested number of examples
-    if data_flat.shape[1] > num_examples:
-        data_flat = data_flat[:, :num_examples]
+    print("Flattening test data...")
+    data_flat = flatten_images(data_to_use, desc="Flattening test data")
     
     # Encode data
     print("Encoding test data with guided autoencoder...")

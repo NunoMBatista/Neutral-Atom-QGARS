@@ -1,11 +1,12 @@
 {
-    "dataset_type": "generated_polyp_dataset",
+    "dataset_type": "cvc_clinic_db_patches",
     "data_dir": null,
     "target_size": [
         128,
         128
     ],
     "split_ratio": 0.8,
+    "reduction_method": "guided_autoencoder",
     "dim_reduction": 12,
     "num_examples": 10000,
     "num_test_examples": 400,

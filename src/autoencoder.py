@@ -367,7 +367,6 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     return model, spectral
 
 
-
 def encode_data(model: Autoencoder, data: np.ndarray, device: str = 'cpu', 
                verbose: bool = True, batch_size: int = 256) -> np.ndarray:
     """
@@ -416,7 +415,6 @@ def encode_data(model: Autoencoder, data: np.ndarray, device: str = 'cpu',
     
     # Concatenate all batches and transpose to match expected shape
     return np.vstack(encoded_data).T
-
 
 
 class GuidedAutoencoder:
@@ -865,4 +863,3 @@ def encode_data_guided(model: GuidedAutoencoder, data: np.ndarray, device: str =
     
     # Concatenate all batches and transpose to match expected shape
     return np.vstack(encoded_data).T
-

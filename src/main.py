@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import custom modules
 from autoencoder import Autoencoder, GuidedAutoencoder
 
-from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode
+from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
 from feature_reduction import (
     apply_pca, apply_pca_to_test_data, 
     apply_autoencoder, apply_autoencoder_to_test_data,
@@ -81,7 +81,9 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             'image_folder',
             data_dir=DATASET_DIR,
             target_size=tuple(args.target_size),
-            split_ratio=args.split_ratio
+            split_ratio=args.split_ratio,
+            num_examples=args.num_examples,
+            num_test_examples=args.num_test_examples
         )
 
     print(f"Dataset loaded: {args.dataset_type}")
@@ -89,6 +91,11 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     print(f"Number of test samples: {data_test['metadata']['n_samples']}")
     print(f"Number of classes: {data_train['metadata']['n_classes']}")
     
+    # Prepare variables for feature reduction
+    train_features = data_train["features"]
+    train_targets = data_train["targets"]
+    test_features = data_test["features"]
+    test_targets = data_test["targets"]
     
     print("""
           
@@ -111,7 +118,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         xs_raw, reduction_model, spectral = apply_pca(
             data=data_train, 
             dim_pca=dim_reduction, 
-            num_examples=args.num_examples
+            selected_features=train_features
         )
         
         # Apply PCA to test data
@@ -120,7 +127,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             data=data_test,
             pca_model=reduction_model,
             dim_pca=dim_reduction,
-            num_examples=args.num_test_examples
+            selected_features=test_features
         )
         
     elif method_name == "autoencoder":
@@ -135,7 +142,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         xs_raw, reduction_model, spectral = apply_autoencoder(
             data=data_train,
             encoding_dim=dim_reduction,
-            num_examples=args.num_examples,
             hidden_dims=args.autoencoder_hidden_dims,
             batch_size=args.autoencoder_batch_size,
             epochs=args.autoencoder_epochs,
@@ -144,7 +150,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             verbose=not args.no_progress,
             use_batch_norm=True,
             dropout=0.1,
-            weight_decay=1e-5
+            weight_decay=1e-5,
+            selected_features=train_features
         )
         
         # Log the spectral range to help diagnose scaling issues
@@ -155,9 +162,9 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         test_features_raw = apply_autoencoder_to_test_data(
             data_test,
             reduction_model,
-            args.num_test_examples,
             device=device,
-            verbose=not args.no_progress
+            verbose=not args.no_progress,
+            selected_features=test_features
         )
     
     elif method_name == "guided_autoencoder":
@@ -187,7 +194,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             data_train,
             quantum_layer=quantum_layer,
             encoding_dim=dim_reduction,
-            num_examples=args.num_examples,
             hidden_dims=args.autoencoder_hidden_dims,
             alpha=args.guided_alpha,
             beta=args.guided_beta,
@@ -200,7 +206,9 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             verbose=not args.no_progress,
             use_batch_norm=True,  # Enable batch normalization
             dropout=0.1,  # Add dropout for regularization
-            weight_decay=1e-5  # Add weight decay
+            weight_decay=1e-5,  # Add weight decay
+            selected_features=train_features,
+            selected_targets=train_targets
         )
         
         # Log the spectral range to help diagnose scaling issues
@@ -211,30 +219,16 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         test_features_raw = apply_guided_autoencoder_to_test_data(
             data_test,
             reduction_model,
-            args.num_test_examples,
             device=device,
-            verbose=not args.no_progress
+            verbose=not args.no_progress,
+            selected_features=test_features
         )
         
     else:
         raise ValueError(f"Unknown reduction method: {method_name}")
     
-    # Get targets for training and testing (limited to the examples we're using)
-    train_targets = data_train["targets"][:args.num_examples]
-    test_targets = data_test["targets"][:args.num_test_examples]
-
-    print("""
-    
-        =========================================
-                  ONE-HOT ENCODING TARGETS
-        =========================================
-    
-        """)
-
-
-    # Perform one-hot encoding
-    n_classes = data_train["metadata"]["n_classes"]
-    ys_encoded, encoder = one_hot_encode(train_targets, n_classes)
+    # We already have our targets from the random selection
+    ys_encoded, encoder = one_hot_encode(train_targets, data_train["metadata"]["n_classes"])
     ys = ys_encoded.T  # Transpose to match expected format
 
 
