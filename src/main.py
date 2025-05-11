@@ -97,6 +97,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     test_features = data_test["features"]
     test_targets = data_test["targets"]
     
+    
     print("""
           
           =========================================
@@ -104,6 +105,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
           =========================================
           
           """)
+    
     
     # Determine reduction dimension
     dim_reduction = args.dim_reduction
