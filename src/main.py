@@ -314,7 +314,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         verbose=not args.no_progress,
         nonlinear=False
     )
-    results[f"{reduction_name}+linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
+    results["linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
     
     print("""
           
@@ -354,9 +354,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         verbose=not args.no_progress,
         nonlinear=True
     )
-    results[f"{reduction_name}+NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
-    
-
+    results["NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
     
     print(f"""
         ==========================================

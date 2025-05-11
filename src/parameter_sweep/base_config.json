@@ -2,7 +2,7 @@
     "dataset_type": "generated_polyp_dataset",
     "data_dir": null,
     "num_examples": 1000,
-    "num_test_examples": 200,
+    "num_test_examples": 100,
     "target_size": [28, 28],
     "split_ratio": 0.8,
     
@@ -39,7 +39,7 @@
     "nepochs": 100,
     "learning_rate": 0.01,
     "regularization": 0.0001,
-    "batch_size": 64,
+    "batchsize": 1000,
 
     "gpu": false,
 

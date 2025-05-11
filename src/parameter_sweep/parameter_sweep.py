@@ -2,20 +2,16 @@ import os
 import numpy as np
 import itertools
 import pandas as pd
-from typing import Dict, List, Any, Tuple, Optional, Union, Callable
+from typing import Dict, List, Any, Tuple, Optional
 from tqdm import tqdm
 import json
 import datetime
 import argparse
-import matplotlib.pyplot as plt
-import multiprocessing as mp
-
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from main import main
 from config_manager import ConfigManager
-from results_manager import save_experiment_results
 
 class ParameterSweep:
     """
@@ -165,9 +161,6 @@ class ParameterSweep:
         # Convert config to argparse Namespace
         args = ConfigManager.config_to_args(config)
         
-        # Disable plotting for individual runs
-        args.no_plot = True
-        
         # Run the experiment
         try:
             self.experiment_counter += 1
@@ -198,9 +191,6 @@ class ParameterSweep:
             # Save metrics
             with open(os.path.join(exp_dir, "metrics.json"), "w") as f:
                 json.dump(metrics, f, indent=4)
-                
-            # Save detailed results
-            save_experiment_results(results, os.path.join(exp_dir, "results.pkl"))
             
             return metrics
             
@@ -238,39 +228,9 @@ class ParameterSweep:
             metrics[f"{model_name}_final_test_acc"] = float(accs_test[-1])
             metrics[f"{model_name}_final_loss"] = float(losses[-1])
             
-            # Calculate convergence metrics
+            # Calculate stability (std dev of last 10% of training)
             if len(accs_test) > 5:
-                # Calculate when model reached 90% of its final accuracy
-                final_acc = accs_test[-1]
-                threshold = 0.9 * final_acc
-                for i, acc in enumerate(accs_test):
-                    if acc >= threshold:
-                        metrics[f"{model_name}_epochs_to_90pct"] = i + 1
-                        break
-                
-                # Calculate stability (std dev of last 10% of training)
                 stability_window = max(1, int(len(accs_test) * 0.1))
                 metrics[f"{model_name}_stability"] = float(np.std(accs_test[-stability_window:]))
         
         return metrics
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run parameter sweeps for QRC experiments")
-    parser.add_argument("--sweep-type", type=str, required=True,
-                       choices=["encoding", "quantum", "guided", "dataset", "custom"],
-                       help="Type of sweep to run")
-    parser.add_argument("--config", type=str, default=None,
-                       help="Path to base configuration JSON file")
-    
-    args = parser.parse_args()
-    
-    # Load base config
-    if args.config:
-        base_config = ConfigManager.load_config(args.config)
-        base_args = ConfigManager.config_to_args(base_config)
-    else:
-        base_args = None
-    
-    # Run appropriate sweep
-    if args.sweep_type == "custom":
-        print("For custom sweeps, please import and use the ParameterSweep class directly.")
