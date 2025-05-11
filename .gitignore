@@ -16,4 +16,4 @@
 
 data/datasets/**
 
-qrc_polyp_pyhton/benchmarking/results/**
+src/parameter_sweep/results/**
