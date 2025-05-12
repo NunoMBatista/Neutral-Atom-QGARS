@@ -213,7 +213,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
                      verbose: bool = True,
                      use_batch_norm: bool = True,
                      dropout: float = 0.1,
-                     weight_decay: float = 1e-5) -> Tuple[Autoencoder, float]:
+                     autoencoder_regularization: float = 1e-5) -> Tuple[Autoencoder, float]:
+                     #weight_decay: float = 1e-5
     
     """
     Train an autoencoder for dimensionality reduction with improved feature extraction.
@@ -240,8 +241,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         Whether to use batch normalization, by default True
     dropout : float, optional
         Dropout probability, by default 0.1
-    weight_decay : float, optional
-        Weight decay for regularization, by default 1e-5
+    autoencoder_regularization : float, optional
+        Regularization parameter for autoencoder, by default 1e-5
         
     Returns
     -------
@@ -283,7 +284,11 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     
     # Define loss and optimizer
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    optimizer = optim.Adam(
+            model.parameters(), 
+            lr=learning_rate, 
+            weight_decay=autoencoder_regularization
+        )
     
     # Learning rate scheduler (remove verbose parameter)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
@@ -433,10 +438,9 @@ class GuidedAutoencoder:
         Dimension of quantum embeddings
     hidden_dims : Optional[List[int]], optional
         Dimensions of hidden layers for autoencoder, by default None
-    alpha : float, optional
-        Weight for reconstruction loss, by default 0.7
-    beta : float, optional
-        Weight for classification loss, by default 0.3
+    guided_lambda : float, optional
+        Weight for classification loss (0-1), by default 0.3
+        Loss = (1-lambda)*reconstruction_loss + lambda*classification_loss
     use_batch_norm : bool, optional
         Whether to use batch normalization, by default True
     dropout : float, optional
@@ -448,8 +452,7 @@ class GuidedAutoencoder:
                  output_dim: int,
                  quantum_dim: int = None,
                  hidden_dims: Optional[List[int]] = None,
-                 alpha: float = 0.7, 
-                 beta: float = 0.3,
+                 guided_lambda: float = 0.3,
                  use_batch_norm: bool = True,
                  dropout: float = 0.1):
         self.autoencoder = Autoencoder(
@@ -459,8 +462,7 @@ class GuidedAutoencoder:
                                 use_batch_norm=use_batch_norm, 
                                 dropout=dropout
                                 )
-        self.alpha = alpha
-        self.beta = beta
+        self.guided_lambda = guided_lambda
         self.encoding_dim = encoding_dim
         self.output_dim = output_dim
         self.quantum_dim = quantum_dim
@@ -474,6 +476,8 @@ class GuidedAutoencoder:
     def initialize_classifier(self, quantum_dim: int):
         """Initialize classifier with the correct input dimension"""
         self.quantum_dim = quantum_dim
+        
+        # TODO: MIGHT USE MORE THAN A SINGLE LINEAR LAYER
         self.classifier = nn.Sequential(
             nn.Linear(
                     in_features=quantum_dim, 
@@ -507,8 +511,7 @@ def train_guided_autoencoder(
     quantum_layer: DetuningLayer,
     encoding_dim: int,
     hidden_dims: Optional[List[int]] = None,
-    alpha: float = 0.7,
-    beta: float = 0.3,
+    guided_lambda: float = 0.3,
     batch_size: int = 32,
     epochs: int = 50,
     learning_rate: float = 0.001,
@@ -518,7 +521,8 @@ def train_guided_autoencoder(
     verbose: bool = True,
     use_batch_norm: bool = True,
     dropout: float = 0.1,
-    weight_decay: float = 1e-5,
+    #weight_decay: float = 1e-5,
+    autoencoder_regularization: float = 1e-5,
     detuning_max: float = 6.0
 ) -> Tuple[GuidedAutoencoder, float]:
     """
@@ -536,10 +540,9 @@ def train_guided_autoencoder(
         Dimension of the encoded representation
     hidden_dims : Optional[List[int]], optional
         Dimensions of hidden layers, by default None
-    alpha : float, optional
-        Weight for reconstruction loss, by default 0.7
-    beta : float, optional
-        Weight for classification loss, by default 0.3
+    guided_lambda : float, optional
+        Weight for classification loss (0-1), by default 0.3
+        Loss = (1-lambda)*reconstruction_loss + lambda*classification_loss
     batch_size : int, optional
         Batch size for training, by default 32
     epochs : int, optional
@@ -558,8 +561,8 @@ def train_guided_autoencoder(
         Whether to use batch normalization, by default True
     dropout : float, optional
         Dropout probability, by default 0.1
-    weight_decay : float, optional
-        Weight decay for regularization, by default 1e-5
+    autoencoder_regularization : float, optional
+        Regularization parameter for autoencoder, by default 1e-5
     detuning_max : float, optional
         Maximum detuning for scaling, by default 6.0    
         
@@ -608,8 +611,7 @@ def train_guided_autoencoder(
                     encoding_dim=encoding_dim, 
                     output_dim=output_dim, 
                     hidden_dims=hidden_dims, 
-                    alpha=alpha, 
-                    beta=beta,
+                    guided_lambda=guided_lambda,
                     use_batch_norm=use_batch_norm,
                     dropout=dropout
                 )
@@ -655,7 +657,7 @@ def train_guided_autoencoder(
     optimizer = optim.Adam(
                         params=(list(model.autoencoder.parameters()) + list(model.classifier.parameters())), 
                         lr=learning_rate, 
-                        weight_decay=weight_decay
+                        weight_decay=autoencoder_regularization
                     )
     
     
@@ -754,8 +756,8 @@ def train_guided_autoencoder(
             # Compute classification loss
             class_loss = class_criterion(batch_output, torch.argmax(batch_y, dim=1))
             
-            # Compute total loss with weighting
-            total_loss = model.alpha * recon_loss + model.beta * class_loss
+            # Compute total loss with the new weighting approach: (1-lambda)*recon_loss + lambda*class_loss
+            total_loss = (1 - model.guided_lambda) * recon_loss + model.guided_lambda * class_loss
             
             # Backward pass and optimize
             total_loss.backward() # Compute gradients

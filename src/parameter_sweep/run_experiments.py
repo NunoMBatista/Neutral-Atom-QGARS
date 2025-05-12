@@ -11,6 +11,8 @@ from config_manager import ConfigManager
 
 # Define experiment profiles with parameter ranges
 EXPERIMENT_PROFILES = {
+    # NOT DONE
+    # SHOULD SHOW THAT USING MORE QUBITS IS BETTER
     "encoding_dimensions": {
         "description": "Sweep over encoding dimensions and methods",
         "param_grid": {
@@ -19,16 +21,30 @@ EXPERIMENT_PROFILES = {
             "n_shots": [500]
         }
     },
+    
+    "autoencoder_regularization": {
+        "description": "Sweep over autoencoder regularization parameters",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
+            "dim_reduction": [12],
+            "n_shots": [500]
+        }
+    },
+    
+    # NOT DONE
     "quantum_readouts": {
         "description": "Sweep over quantum readout types and time steps",
         "param_grid": {
             "readout_type": ["Z", "ZZ", "all"],
             "time_steps": [4, 8, 12, 16],
-            "n_shots": [500],
             "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
+    # UNSURE
     "shot_noise": {
         "description": "Sweep over number of quantum shots",
         "param_grid": {
@@ -38,25 +54,42 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [12]
         }
     },
-    "guided_autoencoder": {
-        "description": "Sweep over guided autoencoder parameters",
+    
+    # RUNNING THIS ONE NOW
+    "guided_autoencoder_lambda": {
+        "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_alpha": [0.3, 0.5, 0.7],
-            "guided_beta": [0.7, 0.5, 0.3],
+            "guided_lambda": [0.1, 0.3, 0.5, 0.7, 0.9],
+            "quantum_update_frequency": [1],
+            "dim_reduction": [12]
+        }
+    },
+    
+    # NOT DONE
+    # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
+    "guided_autoencoder_update_frequency": {
+        "description": "Sweep over guided autoencoder update frequency",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "guided_lambda": [0.5], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
             "quantum_update_frequency": [1, 3, 5, 10],
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
     "evolution_time": {
         "description": "Sweep over quantum evolution time and steps",
         "param_grid": {
             "evolution_time": [2.0, 4.0, 6.0],
-            "time_steps": [8, 12, 16],
+            "time_steps": [8, 12, 16], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
             "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
     "encoding_scale": {
         "description": "Sweep over encoding scale parameter",
         "param_grid": {
@@ -66,6 +99,8 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
     "full_dataset": {
         "description": "Compare performance with different dataset sizes",
         "param_grid": {
@@ -75,6 +110,9 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
+    # RUN THIS ONE NEXT TO FIND THE LEARNING RATE AND REGULARIZATION
     "training_parameters": {
         "description": "Sweep over training hyperparameters",
         "param_grid": {

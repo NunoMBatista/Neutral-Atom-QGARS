@@ -8,9 +8,8 @@
     
     "reduction_method": "autoencoder",
     "dim_reduction": 12,
-    "guided_alpha": 0.5,
-    "guided_beta": 0.5,
-    "quantum_update_frequency": 5,
+    "guided_lambda": 0.5,
+    "quantum_update_frequency": 1,
     
     "n_shots": 1000,
     "readout_type": "all",
@@ -22,6 +21,7 @@
     "autoencoder_epochs": 50,
     "autoencoder_batch_size": 64,
     "autoencoder_learning_rate": 0.001,
+    "autoencoder_regularization": 1e-5,
 
     "guided_batch_size": 64,
 
@@ -35,10 +35,9 @@
 
     "time_steps": 16,
     
-    
     "nepochs": 100,
     "learning_rate": 0.01,
-    "regularization": 0.0001,
+    "classifier_regularization": 0.0001,
     "batchsize": 1000,
 
     "gpu": false,

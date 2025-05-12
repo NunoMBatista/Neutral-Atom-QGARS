@@ -78,6 +78,7 @@ def apply_autoencoder(data: Dict[str, Any],
                     use_batch_norm: bool = True,
                     dropout: float = 0.1,
                     weight_decay: float = 1e-5,
+                    autoencoder_regularization: Optional[float] = None,
                     selected_indices: Optional[np.ndarray] = None,
                     selected_features: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Autoencoder, float]:
     """
@@ -107,6 +108,8 @@ def apply_autoencoder(data: Dict[str, Any],
         Dropout probability, by default 0.1
     weight_decay : float, optional
         Weight decay for regularization, by default 1e-5
+    autoencoder_regularization : Optional[float], optional
+        Regularization parameter for autoencoder, by default None
     selected_indices : Optional[np.ndarray], optional
         Indices of selected samples, by default None
     selected_features : Optional[np.ndarray], optional
@@ -145,7 +148,8 @@ def apply_autoencoder(data: Dict[str, Any],
         verbose=verbose, 
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
-        weight_decay=weight_decay
+        #weight_decay=weight_decay,
+        autoencoder_regularization=autoencoder_regularization
     )
     
     # Encode data
@@ -304,8 +308,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             quantum_layer,
                             encoding_dim: int = 8,
                             hidden_dims: Optional[List[int]] = None,
-                            alpha: float = 0.7,
-                            beta: float = 0.3,
+                            guided_lambda: float = 0.3,
                             batch_size: int = 32,
                             epochs: int = 50,
                             learning_rate: float = 0.001,
@@ -316,6 +319,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             use_batch_norm: bool = True,
                             dropout: float = 0.1,
                             weight_decay: float = 1e-5,
+                            autoencoder_regularization: Optional[float] = None,
                             selected_indices: Optional[np.ndarray] = None,
                             selected_features: Optional[np.ndarray] = None,
                             selected_targets: Optional[np.ndarray] = None) -> Tuple[np.ndarray, GuidedAutoencoder, float]:
@@ -332,10 +336,9 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Dimension of the encoded representation, by default 8
     hidden_dims : Optional[List[int]], optional
         Dimensions of hidden layers, by default None
-    alpha : float, optional
-        Weight for reconstruction loss, by default 0.7
-    beta : float, optional
-        Weight for classification loss, by default 0.3
+    guided_lambda : float, optional
+        Weight for classification loss (0-1), by default 0.3
+        Loss = (1-lambda)*reconstruction_loss + lambda*classification_loss
     batch_size : int, optional
         Batch size for autoencoder training, by default 32
     epochs : int, optional
@@ -356,6 +359,8 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Dropout probability, by default 0.1
     weight_decay : float, optional
         Weight decay for regularization, by default 1e-5
+    autoencoder_regularization : Optional[float], optional
+        Regularization parameter for guided autoencoder, by default None
     selected_indices : Optional[np.ndarray], optional
         Indices of selected samples, by default None
     selected_features : Optional[np.ndarray], optional
@@ -388,10 +393,22 @@ def apply_guided_autoencoder(data: Dict[str, Any],
     # Train guided autoencoder
     print("Training guided autoencoder with quantum feedback...")
     model, spectral = train_guided_autoencoder(
-        data_flat, targets, quantum_layer, encoding_dim, hidden_dims, 
-        alpha, beta, batch_size, epochs, learning_rate, 
-        device, quantum_update_frequency, n_shots, verbose,
-        use_batch_norm, dropout, weight_decay
+        data=data_flat, 
+        labels=targets, 
+        quantum_layer=quantum_layer, 
+        encoding_dim=encoding_dim, 
+        hidden_dims=hidden_dims, 
+        guided_lambda=guided_lambda, 
+        batch_size=batch_size, 
+        epochs=epochs, 
+        learning_rate=learning_rate,
+        device=device, 
+        quantum_update_frequency=quantum_update_frequency, 
+        n_shots=n_shots, 
+        verbose=verbose,
+        use_batch_norm=use_batch_norm, 
+        dropout=dropout, 
+        autoencoder_regularization=autoencoder_regularization
     )
     
     # Encode data
