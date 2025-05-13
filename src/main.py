@@ -5,6 +5,7 @@ import random
 import torch
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional
+import time
 
 # Fix the import path for the qrc_polyp_python module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -51,6 +52,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     
+    # torch.manual_seed(int(time.time()))
 
     print("""
           

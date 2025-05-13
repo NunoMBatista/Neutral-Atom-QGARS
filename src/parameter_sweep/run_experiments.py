@@ -27,8 +27,7 @@ EXPERIMENT_PROFILES = {
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
             "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
-            "dim_reduction": [12],
-            "n_shots": [500]
+            "dim_reduction": [12]
         }
     },
     
@@ -60,7 +59,7 @@ EXPERIMENT_PROFILES = {
         "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [0.1, 0.3, 0.5, 0.7, 0.9],
+            "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0],
             "quantum_update_frequency": [1],
             "dim_reduction": [12]
         }
@@ -205,7 +204,7 @@ def main():
                               help="Directory to save results")
     profile_parser.add_argument("--parallel", action="store_true",
                               help="Run experiments in parallel")
-    profile_parser.add_argument("--workers", type=int, default=4,
+    profile_parser.add_argument("--workers", type=int, default=5,
                               help="Number of workers for parallel execution")
     
     # List profiles command

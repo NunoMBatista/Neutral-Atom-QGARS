@@ -262,7 +262,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     # Adjust batch size if it's larger than dataset size
     adjusted_batch_size = min(batch_size, X.shape[0])
     if adjusted_batch_size != batch_size and verbose:
-        print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
+        #print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
+        tqdm.write(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
     
     # Create dataset and dataloader
     dataset = TensorDataset(X, X)  # Input = target for autoencoder because we want to reconstruct the input
@@ -683,7 +684,7 @@ def train_guided_autoencoder(
     
     iterator = range(epochs)
     if(verbose):
-        iterator = tqdm(iterator, desc="Training guided autoencoder")
+        iterator = tqdm(iterator, desc="Training guided autoencoder", position=0, leave=False)
     
     for epoch in iterator:
         running_recon_loss = 0.0
@@ -693,7 +694,8 @@ def train_guided_autoencoder(
         # Update quantum embeddings periodically to save computation
         if epoch % quantum_update_frequency == 0:
             if verbose:
-                print(f"Epoch {epoch+1}: Updating quantum embeddings...")
+                #print(f"Epoch {epoch+1}: Updating quantum embeddings...")
+                tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings...")
             model.clear_cache()
             
             # Get encoder's current state
@@ -701,7 +703,10 @@ def train_guided_autoencoder(
             # Get quantum embeddings for all samples
             with torch.no_grad():
                 batch_size_qe = 50  # Process in smaller batches for memory efficiency
-                for i in range(0, n_samples, batch_size_qe):
+                
+                batch_iterator = tqdm(range(0, n_samples, batch_size_qe), desc="Updating embeddings in batches", position=1, leave=False) if verbose else range(0, n_samples, batch_size_qe)
+                #for i in range(0, n_samples, batch_size_qe):
+                for i in batch_iterator:
                     end_idx = min(i + batch_size_qe, n_samples)
                     batch_indices = sample_indices[i:end_idx]
                     batch_X = X[batch_indices].to(device)
@@ -755,6 +760,25 @@ def train_guided_autoencoder(
 
             # Compute classification loss
             class_loss = class_criterion(batch_output, torch.argmax(batch_y, dim=1))
+
+
+            # The scales of the losses were way different, so we need to scale them (or just set guided_lambda to a value closer to 0)
+            # if epoch == 0 and batch_idx == 0:
+            #     with torch.no_grad():
+            #         # Calculate ideal scale to achieve target ratio
+            #         loss_ratio = class_loss.item() / recon_loss.item()
+            #         target_ratio = 1.0
+            #         recon_scale = loss_ratio / target_ratio
+            #         class_scale = 1.0 / target_ratio
+            
+            # recon_loss *= recon_scale
+            # class_loss *= class_scale                    
+            recon_loss *= 100.0
+            class_loss *= 1.0
+
+            #print(f"Reconstruction Loss Influence: {((1-model.guided_lambda)*recon_loss.item()):.4f}, Classification Loss Influence: {(model.guided_lambda*class_loss.item()):.4f}")
+            #Print on top of progress bar
+            tqdm.write(f"Reconstruction Loss Influence: {((1-model.guided_lambda)*recon_loss.item()):.4f}, Classification Loss Influence: {(model.guided_lambda*class_loss.item()):.4f}")
             
             # Compute total loss with the new weighting approach: (1-lambda)*recon_loss + lambda*class_loss
             total_loss = (1 - model.guided_lambda) * recon_loss + model.guided_lambda * class_loss
@@ -763,11 +787,16 @@ def train_guided_autoencoder(
             total_loss.backward() # Compute gradients
             optimizer.step() # Update weights
             
+            for name, param in model.classifier.named_parameters():
+                if param.grad is None or torch.all(param.grad == 0):
+                    print(f"Warning: {name} has no gradient!")
+                print(param.grad)
+            
             # Track losses
             running_recon_loss += recon_loss.item()
             running_class_loss += class_loss.item()
             running_total_loss += total_loss.item()
-        
+
         # Calculate average losses
         avg_recon_loss = running_recon_loss / len(dataloader)
         avg_class_loss = running_class_loss / len(dataloader)
