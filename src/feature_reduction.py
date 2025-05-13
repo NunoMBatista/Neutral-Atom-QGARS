@@ -4,7 +4,8 @@ from sklearn.decomposition import PCA
 from tqdm import tqdm
 from data_processing import flatten_images
 
-from autoencoder import *
+from autoencoder import Autoencoder, train_autoencoder, encode_data
+from guided_autoencoder import GuidedAutoencoder, train_guided_autoencoder, encode_data_guided
 
 
 def apply_pca(data: Dict[str, Any], 

@@ -11,7 +11,8 @@ import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
-from autoencoder import Autoencoder, GuidedAutoencoder
+from autoencoder import Autoencoder
+from guided_autoencoder import GuidedAutoencoder
 
 from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
 from feature_reduction import (
