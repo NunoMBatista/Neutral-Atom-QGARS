@@ -8,6 +8,7 @@ from typing import Tuple, List, Dict, Any, Optional
 
 from autoencoder import Autoencoder
 from qrc_layer import DetuningLayer
+from quantum_surrogate import QuantumSurrogate, create_and_train_surrogate, train_surrogate
     
 class GuidedAutoencoder:
     """
@@ -57,6 +58,9 @@ class GuidedAutoencoder:
         # Classifier will be initialized when quantum_dim is known
         self.classifier = None
         
+        # Quantum surrogate model (can only be initialized after quantum_dim is known)
+        self.surrogate = None
+        
         # Embedding cache
         self.quantum_embeddings_cache = {}
     
@@ -75,12 +79,19 @@ class GuidedAutoencoder:
                 )
         )
         return self.classifier
+    
+    def initialize_surrogate(self, surrogate_model: QuantumSurrogate):
+        """Initialize surrogate model"""
+        self.surrogate = surrogate_model
+        return self.surrogate
         
     def to(self, device):
         """Move the model to specified device"""
         self.autoencoder = self.autoencoder.to(device)
         if self.classifier is not None:
             self.classifier = self.classifier.to(device)
+        if self.surrogate is not None:
+            self.surrogate = self.surrogate.to(device)
         return self
     
     def get_encoder(self):
@@ -167,7 +178,7 @@ def train_guided_autoencoder(
     X = torch.tensor(
                 data=data.T, 
                 dtype=torch.float32
-            )
+            ).to(device)
     
     # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
     batch_size = int(batch_size)
@@ -177,11 +188,10 @@ def train_guided_autoencoder(
     if adjusted_batch_size != batch_size and verbose:
         print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
 
-
+    # One-hot encode labels
     y_one_hot = np.zeros((n_samples, output_dim))
     y_one_hot[np.arange(n_samples), labels] = 1
-    y = torch.tensor(y_one_hot, dtype=torch.float32)
-    
+    y = torch.tensor(y_one_hot, dtype=torch.float32).to(device)
     
     # Create dataset and dataloader
     dataset = TensorDataset(X, y)
@@ -203,17 +213,13 @@ def train_guided_autoencoder(
                 )
     model = model.to(device)
     
-    # Store indices to embeddings mapping (memory efficient)
-    sample_indices = torch.arange(n_samples)
-    
     # Process one quantum embedding to determine dimension
     model.autoencoder.eval()
     with torch.no_grad():
-        initial_encoding = model.autoencoder.encode(X[:1].to(device)).cpu().numpy()
+        initial_encoding = model.autoencoder.encode(X[:1]).cpu().numpy()
         
         spectral = max(abs(initial_encoding.max()), abs(initial_encoding.min()))
         initial_encoding_scaled = initial_encoding.T / spectral * detuning_max
-        
         
         if verbose:
             print(f"Getting initial quantum embeddings to determine dimension...")
@@ -245,7 +251,6 @@ def train_guided_autoencoder(
                         weight_decay=autoencoder_regularization
                     )
     
-    
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
                                         optimizer=optimizer, 
@@ -270,96 +275,156 @@ def train_guided_autoencoder(
     if(verbose):
         iterator = tqdm(iterator, desc="Training guided autoencoder", position=0, leave=False)
     
+    # Initialize surrogate to None - will be created during first update
+    surrogate = None
+    
     for epoch in iterator:
         running_recon_loss = 0.0
         running_class_loss = 0.0
         running_total_loss = 0.0
         
-        # Update quantum embeddings periodically to save computation
+        # Update quantum embeddings and surrogate periodically
         if epoch % quantum_update_frequency == 0:
             if verbose:
-                tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings...")
+                tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings and surrogate model...")
             model.clear_cache()
             
             # Get encoder's current state
-            model.autoencoder.eval() # Set autoencoder to evaluation mode
+            model.autoencoder.eval()
+            
             # Get quantum embeddings for all samples
             with torch.no_grad():
-                batch_size_qe = 50  # Process in smaller batches for memory efficiency
+                # Process in batches for memory efficiency
+                batch_size_qe = 50
+                all_encodings = []
+                all_quantum_embs = []
                 
-                batch_iterator = tqdm(range(0, n_samples, batch_size_qe), desc="Updating embeddings in batches", position=1, leave=False) if verbose else range(0, n_samples, batch_size_qe)
+                batch_iterator = tqdm(range(0, n_samples, batch_size_qe), desc="Computing quantum embeddings", 
+                                     position=1, leave=False) if verbose else range(0, n_samples, batch_size_qe)
+                
                 for i in batch_iterator:
                     end_idx = min(i + batch_size_qe, n_samples)
-                    batch_indices = sample_indices[i:end_idx]
-                    batch_X = X[batch_indices].to(device)
+                    batch_X = X[i:end_idx]
                     
                     # Encode with current autoencoder
-                    batch_encoding = model.autoencoder.encode(batch_X).cpu().numpy()
+                    batch_encoding = model.autoencoder.encode(batch_X)
+                    all_encodings.append(batch_encoding)
+                    
+                    # Get numpy encoding for quantum layer
+                    batch_encoding_np = batch_encoding.cpu().numpy()
                     
                     # Scale for quantum processing
-                    cur_spectral = max(abs(batch_encoding.max()), abs(batch_encoding.min()))
+                    cur_spectral = max(abs(batch_encoding_np.max()), abs(batch_encoding_np.min()))
                     if cur_spectral > 0:  # Avoid division by zero
-                        batch_encoding_scaled = batch_encoding.T / cur_spectral * detuning_max
+                        batch_encoding_scaled = batch_encoding_np.T / cur_spectral * detuning_max
                     else:
-                        batch_encoding_scaled = batch_encoding.T
+                        batch_encoding_scaled = batch_encoding_np.T
                     
                     # Get quantum embeddings
                     quantum_embs = quantum_layer.apply_layer(
                                                 x=batch_encoding_scaled, 
                                                 n_shots=n_shots, 
-                                                show_progress=True
+                                                show_progress=False
                                             )
                     
-                    # Cache quantum embeddings for each sample index
-                    for j, idx in enumerate(batch_indices.numpy()):
+                    # Cache quantum embeddings and collect for surrogate training
+                    for j, idx in enumerate(range(i, end_idx)):
                         model.quantum_embeddings_cache[idx] = quantum_embs[:, j]
+                    
+                    # Convert to tensor and collect for surrogate training
+                    quantum_embs_tensor = torch.tensor(
+                                            quantum_embs.T, 
+                                            dtype=torch.float32
+                                        ).to(device)
+                    all_quantum_embs.append(quantum_embs_tensor)
+                
+                # Concatenate all encodings and quantum embeddings for surrogate training
+                all_encodings_tensor = torch.cat(all_encodings, dim=0)
+                all_quantum_embs_tensor = torch.cat(all_quantum_embs, dim=0)
+                
+                # Train or update surrogate model
+                if verbose:
+                    tqdm.write("Training surrogate model with current quantum embeddings...")
+                
+                if surrogate is None or epoch == 0:
+                    # Create and train new surrogate
+                    surrogate = create_and_train_surrogate(
+                        quantum_layer=quantum_layer,
+                        encodings=all_encodings_tensor,
+                        quantum_embeddings=all_quantum_embs_tensor,
+                        device=device,
+                        verbose=verbose,
+                        n_shots=n_shots
+                    )
+                else:
+                    # Update existing surrogate
+                    surrogate = train_surrogate(
+                        surrogate_model=surrogate,
+                        quantum_layer=quantum_layer,
+                        input_data=all_encodings_tensor,
+                        quantum_embeddings=all_quantum_embs_tensor,
+                        epochs=20,  # Fewer epochs for updates
+                        batch_size=32,
+                        learning_rate=learning_rate / 2,  # Lower learning rate for fine-tuning
+                        device=device,
+                        verbose=verbose,
+                        n_shots=n_shots
+                    )
+                
+                # Set surrogate in model
+                model.initialize_surrogate(surrogate)
             
             model.autoencoder.train()
-            
-        # Training batches
+        
+        # Training batches with surrogate
         for batch_idx, (batch_X, batch_y) in enumerate(dataloader):
             batch_X = batch_X.to(device)
             batch_y = batch_y.to(device)
-            batch_indices = sample_indices[batch_idx * batch_size:batch_idx * batch_size + len(batch_X)]
-
+            
             # Zero gradients
             optimizer.zero_grad()
 
             # Forward pass through autoencoder
             batch_encoding, reconstructed = model.autoencoder(batch_X)
 
+            if not batch_encoding.requires_grad:
+                # If encoding is not differentiable, set requires_grad to True
+                #batch_encoding.requires_grad = True
+                batch_encoding.requires_grad_(True)
+
             # Compute reconstruction loss
             recon_loss = recon_criterion(reconstructed, batch_X)
-
-            # Get quantum embeddings from cache for these samples
-            quantum_embs_batch = []
-            for idx in batch_indices.numpy():
-                quantum_embs_batch.append(model.quantum_embeddings_cache[idx])
-
-            # Create a classifier for the current batch's quantum embeddings
-            quantum_embs_tensor = torch.tensor(np.array(quantum_embs_batch), dtype=torch.float32).to(device)
-            batch_output = model.classifier(quantum_embs_tensor)
-
-            # Compute classification loss
-            class_loss = class_criterion(batch_output, torch.argmax(batch_y, dim=1))
-
-            # Scale the losses
-            recon_loss *= 100.0
-            class_loss *= 1.0
-
-            tqdm.write(f"Reconstruction Loss Influence: {((1-model.guided_lambda)*recon_loss.item()):.4f}, Classification Loss Influence: {(model.guided_lambda*class_loss.item()):.4f}")
             
-            # Compute total loss with the new weighting approach: (1-lambda)*recon_loss + lambda*class_loss
-            total_loss = (1 - model.guided_lambda) * recon_loss + model.guided_lambda * class_loss
+            # Forward pass through surrogate for differentiable training
+            if model.surrogate is not None:
+                # Use surrogate to get differentiable quantum embeddings
+                surrogate_quantum_embs = model.surrogate(batch_encoding)
+                
+                # Forward pass through classifier
+                batch_output = model.classifier(surrogate_quantum_embs)
+                
+                # Compute classification loss
+                class_loss = class_criterion(batch_output, torch.argmax(batch_y, dim=1))
+                
+                # Scale the losses
+                recon_loss_scaled = recon_loss * 100.0
+                class_loss_scaled = class_loss * 1.0
+
+                if verbose and batch_idx % 10 == 0:
+                    tqdm.write(f"Batch {batch_idx}: Recon Loss Influence: {((1-model.guided_lambda)*recon_loss_scaled.item()):.4f}, "
+                              f"Class Loss Influence: {(model.guided_lambda*class_loss_scaled.item()):.4f}")
+                
+                # Compute total loss with the weighting approach
+                total_loss = (1 - model.guided_lambda) * recon_loss_scaled + model.guided_lambda * class_loss_scaled
+            else:
+                # If surrogate not available yet, use only reconstruction loss
+                total_loss = recon_loss * 100.0
+                class_loss = torch.tensor(0.0).to(device)
+                class_loss_scaled = class_loss
             
             # Backward pass and optimize
-            total_loss.backward() # Compute gradients
-            optimizer.step() # Update weights
-            
-            for name, param in model.classifier.named_parameters():
-                if param.grad is None or torch.all(param.grad == 0):
-                    print(f"Warning: {name} has no gradient!")
-                print(param.grad)
+            total_loss.backward()
+            optimizer.step()
             
             # Track losses
             running_recon_loss += recon_loss.item()
@@ -393,7 +458,8 @@ def train_guided_autoencoder(
             # Save best model state
             best_model_state = {
                 'autoencoder': model.autoencoder.state_dict().copy(),
-                'classifier': model.classifier.state_dict().copy()
+                'classifier': model.classifier.state_dict().copy(),
+                'surrogate': model.surrogate.state_dict().copy() if model.surrogate is not None else None
             }
         else:
             patience_counter += 1
@@ -403,6 +469,8 @@ def train_guided_autoencoder(
                 # Restore best model state
                 model.autoencoder.load_state_dict(best_model_state['autoencoder'])
                 model.classifier.load_state_dict(best_model_state['classifier'])
+                if best_model_state['surrogate'] is not None and model.surrogate is not None:
+                    model.surrogate.load_state_dict(best_model_state['surrogate'])
                 break
     
     # Get final encoded representations for all data
@@ -411,7 +479,7 @@ def train_guided_autoencoder(
     batch_size_eval = 256  # Larger batch size for evaluation
     with torch.no_grad():
         for i in range(0, X.shape[0], batch_size_eval):
-            batch_X = X[i:i+batch_size_eval].to(device)
+            batch_X = X[i:i+batch_size_eval]
             batch_encoding = model.autoencoder.encode(batch_X).cpu().numpy()
             encodings.append(batch_encoding)
     
