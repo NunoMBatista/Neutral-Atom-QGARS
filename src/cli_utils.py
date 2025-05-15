@@ -32,9 +32,7 @@ def parse_args() -> argparse.Namespace:
                        help="Number of examples to use for testing")
     
     # Guided Autoencoder parameters
-    parser.add_argument("--guided-alpha", type=float, default=0.7,
-                      help="Weight for reconstruction loss in guided autoencoding (0-1)")
-    parser.add_argument("--guided-beta", type=float, default=0.3,
+    parser.add_argument("--guided-lambda", type=float, default=0.3,
                       help="Weight for classification loss in guided autoencoding (0-1)")
     parser.add_argument("--quantum-update-frequency", type=int, default=1,
                       help="Update quantum embeddings every N epochs")
@@ -50,6 +48,8 @@ def parse_args() -> argparse.Namespace:
                        help="Learning rate for autoencoder training")
     parser.add_argument("--autoencoder-hidden-dims", type=int, nargs="+", default=None,
                        help="Hidden dimensions for autoencoder (e.g. --autoencoder-hidden-dims 256 128)")
+    parser.add_argument("--autoencoder-regularization", type=float, default=1e-5,
+                       help="Regularization strength for autoencoder training (weight decay)")
     parser.add_argument("--gpu", action="store_true", help="Use GPU for autoencoder training if available")
     
     # Quantum parameters
@@ -73,8 +73,8 @@ def parse_args() -> argparse.Namespace:
                        help="Scale for encoding features as detunings")
     
     # Training parameters
-    parser.add_argument("--regularization", type=float, default=0.0005,
-                       help="Regularization strength")
+    parser.add_argument("--classifier-regularization", type=float, default=0.0005,
+                       help="Regularization strength for final classifiers")
     parser.add_argument("--nepochs", type=int, default=100,
                        help="Number of training epochs")
     parser.add_argument("--batchsize", type=int, default=1000,

@@ -1,0 +1,165 @@
+# Quantum Guided Autoencoder Pipeline
+
+## Overview
+
+The Quantum Guided Autoencoder (QGAE) is an innovative architecture that combines classical 
+autoencoders with quantum computing to enable quantum-guided feature learning. 
+It addresses a fundamental challenge in quantum-classical hybrid learning: the non-differentiable 
+nature of quantum operations that prevents gradient flow from quantum outputs back to classical inputs.
+
+## The Gradient Barrier Problem
+
+In a naive implementation:
+1. Classical autoencoder produces an encoding
+2. Quantum layer processes this encoding to produce quantum embeddings
+3. A classifier uses these embeddings for prediction
+4. We want the classification loss to guide the autoencoder's learning
+
+WITHOUT our surrogate approach, the gradient cannot flow back from the classification loss to the autoencoder because:
+- Converting classical data to quantum states is non-differentiable
+- Quantum measurements break the computational graph
+- Gradients cannot propagate through the quantum layer
+
+## The Surrogate Solution
+
+Our implementation creates a differentiable surrogate model that mimics the quantum layer:
+
+```
+   Classical Network      |      Quantum System      |      Classical Network
+--------------------------+---------------------------+-------------------------
+                          |                          |
+ INPUT --> AUTOENCODER ---|---> QUANTUM LAYER -------|---> CLASSIFIER --> OUTPUT
+     \                    |          ^                \          ^ 
+      \                   |          |                 \         |
+       \                  |          |                  \        |
+        \                 |          |                   \       |
+         \-> SURROGATE ---------------------------------->-------/
+                          |                           |
+                          |                           |
+     (differentiable)     |    (non-differentiable)   |     (differentiable)
+```
+
+## Pipeline Components
+
+1. **Autoencoder**: Compresses high-dimensional input data into a lower-dimensional encoding
+   - Encoder: Input → Encoding
+   - Decoder: Encoding → Reconstruction
+
+2. **Quantum Layer**: Processes encodings through a quantum circuit
+   - Detuning Layer: Maps encodings to atom detuning parameters
+   - Quantum Dynamics: Evolves the quantum system
+   - Measurement: Captures expectation values as quantum embeddings
+
+3. **Surrogate Model**: Neural network that approximates the quantum layer
+   - Trained to mimic the input-output behavior of the quantum layer
+   - Provides a differentiable path for gradients
+
+4. **Classifier**: Maps quantum embeddings to class predictions
+
+## Training Process
+
+1. **Initialization Phase**:
+   - Initialize autoencoder with random weights
+   - Sample initial encodings to determine quantum embedding dimension
+   - Initialize classifier based on quantum embedding dimension
+
+2. **Surrogate Training Cycle** (every few epochs):
+   - Compute current encodings from autoencoder
+   - Scale encodings to appropriate detuning range
+   - Run quantum simulations to get quantum embeddings
+   - Train surrogate model to replicate quantum layer behavior
+   - Cache quantum embeddings for efficiency
+
+3. **Guided Training Batches**:
+   - Forward pass:
+     * Input → Autoencoder → Encoding
+     * Encoding → Reconstruction (for reconstruction loss)
+     * Encoding → Surrogate → Simulated Quantum Embeddings
+     * Simulated Quantum Embeddings → Classifier → Class Predictions
+
+   - Loss calculation:
+     * Reconstruction Loss: How well the autoencoder reconstructs the input
+     * Classification Loss: How well the classifier predicts the correct class
+     * Total Loss = (1-λ)*Reconstruction_Loss + λ*Classification_Loss
+       where λ is the guided_lambda parameter (0-1)
+
+   - Backward pass:
+     * Compute gradients of total loss
+     * Update autoencoder and classifier weights
+     * Note: Surrogate enables gradients to flow from classification loss to autoencoder
+
+4. **Periodic Quantum Updates**:
+   - Every quantum_update_frequency epochs:
+     * Update real quantum embeddings with current autoencoder
+     * Retrain surrogate to match updated quantum behavior
+
+5. **Testing and Inference**:
+   - For inference, we only use the encoder part of the autoencoder
+   - The quantum layer or surrogate is not needed for encoding new data
+
+## Technical Implementation Details
+
+- **Gradient Flow**: The surrogate model creates a differentiable path from classification loss to autoencoder
+- **Memory Efficiency**: Quantum embeddings are cached to avoid redundant quantum simulations
+- **Early Stopping**: Training stops when validation loss plateaus
+- **Flexible Architecture**: Supports various autoencoder architectures and quantum configurations
+- **Error Handling**: Robust handling of gradient tracking issues
+
+## Comparison to Classical Approaches
+
+Unlike standard autoencoders that only optimize for reconstruction, the quantum guided autoencoder:
+1. Learns features that work well with quantum processing
+2. Optimizes for both reconstruction AND classification performance
+3. Creates encodings tailored to quantum advantage regions
+4. Provides a true end-to-end differentiable quantum-classical hybrid pipeline
+
+## Visual Representation of the Pipeline
+
+```
+[INPUT DATA] ---> [AUTOENCODER ENCODER] ---> [ENCODING]
+                                                |
+                        /---------------------/ |
+                       /                        |
+                      /                         |
+[RECONSTRUCTION] <--- [AUTOENCODER DECODER]     |
+      |                                         |
+      |                                         v
+      |                                   [QUANTUM LAYER]
+      |                                         |
+      |                                         v
+      |                          [QUANTUM EMBEDDINGS] -----> [CACHE]
+      |                                         |                |
+      |         /------------------------------/ |                |
+      |        /                                 |                |
+      |       /                                  v                |
+      |      /                         [SURROGATE TRAINING] <----/
+      |     /                                    |
+      |    v                                     |
+[RECONSTRUCTION LOSS] <--                        v
+      |             \                    [SURROGATE MODEL]
+      |              \                          |
+      |               \                         v
+      |                \            [SIMULATED QUANTUM EMBEDDINGS]
+      |                 \                       |
+      |                  \                      v
+      |                   \               [CLASSIFIER]
+      |                    \                    |
+      |                     \                   v
+      v                      \          [CLASS PREDICTIONS]
+[TOTAL LOSS] <------------------ [CLASSIFICATION LOSS]
+      |                                         ^
+      |                                         |
+      v                                         |
+[BACKPROPAGATION]                        [TRUE LABELS]
+      |
+      v
+[PARAMETER UPDATES]
+```
+
+## Benefits
+
+1. **Training Efficiency**: Requires fewer quantum simulations
+2. **Improved Learning**: Classification loss effectively guides autoencoder learning
+3. **Quantum Advantage**: Encodes features that work well with quantum processing
+4. **Performance**: Better classification accuracy compared to non-guided approaches
+5. **Flexibility**: Works with various quantum configurations and datasets

@@ -5,12 +5,14 @@ import random
 import torch
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional
+import time
 
 # Fix the import path for the qrc_polyp_python module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
-from autoencoder import Autoencoder, GuidedAutoencoder
+from autoencoder import Autoencoder
+from guided_autoencoder import GuidedAutoencoder
 
 from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
 from feature_reduction import (
@@ -51,6 +53,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     
+    # torch.manual_seed(int(time.time()))
 
     print("""
           
@@ -114,6 +117,10 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     method_name = args.reduction_method.lower()
     reduction_name = method_name.upper()  # For display in result labels
     
+    # Clean memory between runs to avoid cache issues
+    import gc
+    gc.collect()
+    
     if method_name == "pca":
         # Apply PCA reduction
         print("Using PCA for feature reduction...")
@@ -152,7 +159,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             verbose=not args.no_progress,
             use_batch_norm=True,
             dropout=0.1,
-            weight_decay=1e-5,
+            autoencoder_regularization=args.autoencoder_regularization,
             selected_features=train_features
         )
         
@@ -197,8 +204,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             quantum_layer=quantum_layer,
             encoding_dim=dim_reduction,
             hidden_dims=args.autoencoder_hidden_dims,
-            alpha=args.guided_alpha,
-            beta=args.guided_beta,
+            guided_lambda=args.guided_lambda,
             batch_size=args.guided_batch_size,
             epochs=args.autoencoder_epochs,
             learning_rate=args.autoencoder_learning_rate,
@@ -208,10 +214,13 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             verbose=not args.no_progress,
             use_batch_norm=True,  # Enable batch normalization
             dropout=0.1,  # Add dropout for regularization
-            weight_decay=1e-5,  # Add weight decay
+            autoencoder_regularization=args.autoencoder_regularization,  # Use autoencoder regularization
             selected_features=train_features,
             selected_targets=train_targets
         )
+        
+        # Explicitly clear cache after training
+        reduction_model.clear_cache()
         
         # Log the spectral range to help diagnose scaling issues
         print(f"Encoded data spectral range: {spectral}")
@@ -307,14 +316,14 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         y_train=ys, 
         x_test=test_features, 
         y_test=test_targets, 
-        regularization=args.regularization, 
+        regularization=args.classifier_regularization,  # Use classifier regularization 
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
         learning_rate=args.learning_rate,
         verbose=not args.no_progress,
         nonlinear=False
     )
-    results[f"{reduction_name}+linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
+    results["linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
     
     print("""
           
@@ -327,7 +336,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     
     loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc = train(
         embeddings, ys, test_embeddings, test_targets, 
-        regularization=args.regularization, 
+        regularization=args.classifier_regularization,  # Use classifier regularization
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
         learning_rate=args.learning_rate,
@@ -347,16 +356,14 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         """)
     loss_nn, accs_train_nn, accs_test_nn, model_nn = train(
         xs, ys, test_features, test_targets, 
-        regularization=args.regularization, 
+        regularization=args.classifier_regularization,  # Use classifier regularization 
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
         learning_rate=args.learning_rate,
         verbose=not args.no_progress,
         nonlinear=True
     )
-    results[f"{reduction_name}+NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
-    
-
+    results["NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
     
     print(f"""
         ==========================================
@@ -369,7 +376,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             Number of epochs: {args.nepochs}
             Batch size: {args.batchsize}
             Learning rate: {args.learning_rate}
-            Regularization: {args.regularization}
+            Classifier regularization: {args.classifier_regularization}
+            Autoencoder regularization: {args.autoencoder_regularization}
             Number of shots: {args.n_shots}
         ===========================================
           """)

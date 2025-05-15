@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional
-from qrc_layer import DetuningLayer
 
 class Autoencoder(nn.Module):
     """
@@ -34,7 +33,6 @@ class Autoencoder(nn.Module):
 
         # Default architecture if hidden_dims not provided
         if hidden_dims is None:
-            # TODO: MIGHT BE BETTER TO USE A FUNCTION OF THE INPUT DIMENSION
             hidden_dims = [
                 max(input_dim // 2, encoding_dim * 8),
                 max(input_dim // 4, encoding_dim * 4), 
@@ -44,7 +42,6 @@ class Autoencoder(nn.Module):
             # Remove layers that are smaller than encoding_dim
             hidden_dims = [dim for dim in hidden_dims if dim > encoding_dim]
 
-
         print("""
 
             **************************
@@ -52,7 +49,6 @@ class Autoencoder(nn.Module):
             **************************        
         
             """)
-
 
         # Create encoder layers
         encoder_layers = []
@@ -93,7 +89,6 @@ class Autoencoder(nn.Module):
             # Update previous dimension
             prev_dim = dim
         
-        
         # Final encoding layer
         encoder_layers.append(
             nn.Linear(
@@ -112,7 +107,6 @@ class Autoencoder(nn.Module):
             
         self.encoder = nn.Sequential(*encoder_layers)
         
-        
         print("""
 
             **************************
@@ -120,7 +114,6 @@ class Autoencoder(nn.Module):
             **************************    
         
             """)
-
 
         # Create decoder layers (reverse of encoder)
         decoder_layers = []
@@ -204,6 +197,205 @@ class Autoencoder(nn.Module):
         return self.encoder(x)
 
 
+def prepare_autoencoder_data(data: np.ndarray, batch_size: int, verbose: bool = True) -> Tuple[torch.Tensor, torch.utils.data.DataLoader]:
+    """
+    Prepare data for autoencoder training.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        Input data with shape (n_features, n_samples)
+    batch_size : int
+        Batch size for training
+    verbose : bool, optional
+        Whether to show warning messages, by default True
+        
+    Returns
+    -------
+    Tuple[torch.Tensor, torch.utils.data.DataLoader]
+        Input tensor and data loader
+    """
+    # Transpose data to have samples as first dimension (PyTorch convention)
+    X = torch.tensor(data.T, dtype=torch.float32)
+    
+    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
+    batch_size = int(batch_size)
+    
+    # Adjust batch size if it's larger than dataset size
+    adjusted_batch_size = min(batch_size, X.shape[0])
+    if adjusted_batch_size != batch_size and verbose:
+        tqdm.write(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
+    
+    # Create dataset and dataloader - input and target are the same for autoencoder
+    dataset = TensorDataset(X, X)
+    dataloader = DataLoader(dataset=dataset, batch_size=adjusted_batch_size, shuffle=True)
+    
+    return X, dataloader
+
+
+def initialize_autoencoder(input_dim: int, encoding_dim: int, hidden_dims: Optional[List[int]] = None, 
+                           use_batch_norm: bool = True, dropout: float = 0.1, device: str = 'cpu') -> Autoencoder:
+    """
+    Initialize the autoencoder model.
+    
+    Parameters
+    ----------
+    input_dim : int
+        Dimension of input features
+    encoding_dim : int
+        Dimension of the encoded representation
+    hidden_dims : Optional[List[int]], optional
+        Dimensions of hidden layers, by default None
+    use_batch_norm : bool, optional
+        Whether to use batch normalization, by default True
+    dropout : float, optional
+        Dropout probability, by default 0.1
+    device : str, optional
+        Device to use ('cpu' or 'cuda'), by default 'cpu'
+        
+    Returns
+    -------
+    Autoencoder
+        Initialized autoencoder model
+    """
+    # Initialize model
+    model = Autoencoder(
+        input_dim=input_dim,
+        encoding_dim=encoding_dim,
+        hidden_dims=hidden_dims,
+        use_batch_norm=use_batch_norm,
+        dropout=dropout
+    )
+    # Move model to specified device
+    return model.to(device)
+
+
+def setup_training(model: nn.Module, learning_rate: float, autoencoder_regularization: float = 1e-5) -> Tuple[nn.Module, optim.Optimizer, optim.lr_scheduler.ReduceLROnPlateau]:
+    """
+    Set up training components: loss function, optimizer, and scheduler.
+    
+    Parameters
+    ----------
+    model : nn.Module
+        The autoencoder model
+    learning_rate : float
+        Initial learning rate
+    autoencoder_regularization : float, optional
+        Weight decay for regularization, by default 1e-5
+        
+    Returns
+    -------
+    Tuple[nn.Module, optim.Optimizer, optim.lr_scheduler.ReduceLROnPlateau]
+        Loss criterion, optimizer, and learning rate scheduler
+    """
+    # Define loss function
+    criterion = nn.MSELoss()
+    
+    # Define optimizer with weight decay for regularization
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=autoencoder_regularization
+    )
+    
+    # Learning rate scheduler that reduces LR when loss plateaus
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, 
+        mode='min',  # Reduce LR when monitored quantity stops decreasing
+        patience=5,  # Number of epochs with no improvement after which LR will be reduced
+        factor=0.5   # Multiply LR by this factor when reducing
+    )
+    
+    return criterion, optimizer, scheduler
+
+
+def train_epoch(model: nn.Module, dataloader: torch.utils.data.DataLoader, 
+                criterion: nn.Module, optimizer: optim.Optimizer, device: str = 'cpu') -> float:
+    """
+    Train the autoencoder for one epoch.
+    
+    Parameters
+    ----------
+    model : nn.Module
+        The autoencoder model
+    dataloader : torch.utils.data.DataLoader
+        DataLoader for training data
+    criterion : nn.Module
+        Loss function
+    optimizer : optim.Optimizer
+        Optimizer
+    device : str, optional
+        Device to use, by default 'cpu'
+        
+    Returns
+    -------
+    float
+        Average loss for the epoch
+    """
+    model.train()  # Set model to training mode
+    running_loss = 0.0
+    
+    # Iterate through batches
+    for batch_X, _ in dataloader:
+        batch_X = batch_X.to(device)
+        
+        # Zero gradients before forward pass
+        optimizer.zero_grad()
+        
+        # Forward pass through autoencoder
+        _, reconstructed = model(batch_X)
+        
+        # Compute reconstruction loss
+        loss = criterion(reconstructed, batch_X)
+        
+        # Backward pass and optimize
+        loss.backward()  # Compute gradients
+        optimizer.step()  # Update weights
+        
+        # Track loss
+        running_loss += loss.item()
+    
+    # Calculate average loss for the epoch
+    avg_loss = running_loss / len(dataloader)
+    return avg_loss
+
+
+def encode_all_data(model: nn.Module, X: torch.Tensor, device: str = 'cpu', batch_size: int = 256) -> np.ndarray:
+    """
+    Encode all data using the trained autoencoder.
+    
+    Parameters
+    ----------
+    model : nn.Module
+        Trained autoencoder model
+    X : torch.Tensor
+        Input data tensor
+    device : str, optional
+        Device to use, by default 'cpu'
+    batch_size : int, optional
+        Batch size for processing, by default 256
+        
+    Returns
+    -------
+    np.ndarray
+        Encoded representations
+    """
+    model.eval()  # Set model to evaluation mode
+    encodings = []
+    
+    # Process data in batches to avoid memory issues
+    with torch.no_grad():  # No need to track gradients for inference
+        for i in range(0, X.shape[0], batch_size):
+            batch_X = X[i:i+batch_size].to(device)
+            batch_encoding = model.encode(batch_X).cpu().numpy()
+            encodings.append(batch_encoding)
+    
+    # Concatenate all batches
+    encoded_data = np.vstack(encodings)
+    
+    return encoded_data
+
+
 def train_autoencoder(data: np.ndarray, encoding_dim: int, 
                      hidden_dims: Optional[List[int]] = None,
                      batch_size: int = 64, 
@@ -213,8 +405,7 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
                      verbose: bool = True,
                      use_batch_norm: bool = True,
                      dropout: float = 0.1,
-                     weight_decay: float = 1e-5) -> Tuple[Autoencoder, float]:
-    
+                     autoencoder_regularization: float = 1e-5) -> Tuple[Autoencoder, float]:
     """
     Train an autoencoder for dimensionality reduction with improved feature extraction.
     
@@ -240,8 +431,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         Whether to use batch normalization, by default True
     dropout : float, optional
         Dropout probability, by default 0.1
-    weight_decay : float, optional
-        Weight decay for regularization, by default 1e-5
+    autoencoder_regularization : float, optional
+        Regularization parameter for autoencoder, by default 1e-5
         
     Returns
     -------
@@ -249,82 +440,53 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         Trained autoencoder and maximum absolute value for scaling
     """
     # Prepare data
-    input_dim = data.shape[0]
-    X = torch.tensor(
-                data=data.T, 
-                dtype=torch.float32
-            )
-    
-    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
-    batch_size = int(batch_size)
-    
-    # Adjust batch size if it's larger than dataset size
-    adjusted_batch_size = min(batch_size, X.shape[0])
-    if adjusted_batch_size != batch_size and verbose:
-        print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
-    
-    # Create dataset and dataloader
-    dataset = TensorDataset(X, X)  # Input = target for autoencoder because we want to reconstruct the input
-    dataloader = DataLoader(
-            dataset=dataset, 
-            batch_size=adjusted_batch_size, 
-            shuffle=True
-        )
+    input_dim = data.shape[0]  # Number of features
+    X, dataloader = prepare_autoencoder_data(data, batch_size, verbose)
     
     # Initialize model
-    model = Autoencoder(
-                    input_dim=input_dim, 
-                    encoding_dim=encoding_dim, 
-                    hidden_dims=hidden_dims, 
-                    use_batch_norm=use_batch_norm, 
-                    dropout=dropout
-                )
-    model = model.to(device)
+    model = initialize_autoencoder(
+        input_dim=input_dim,
+        encoding_dim=encoding_dim,
+        hidden_dims=hidden_dims,
+        use_batch_norm=use_batch_norm,
+        dropout=dropout,
+        device=device
+    )
     
-    # Define loss and optimizer
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    
-    # Learning rate scheduler (remove verbose parameter)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
+    # Setup training components
+    criterion, optimizer, scheduler = setup_training(
+        model=model,
+        learning_rate=learning_rate,
+        autoencoder_regularization=autoencoder_regularization
+    )
     
     # Store current learning rate for tracking changes
     current_lr = learning_rate
     
-    # Training loop
-    model.train()
+    # Early stopping parameters
     best_loss = float('inf')
     patience_counter = 0
-    patience = 10  # Early stopping patience
+    patience = 10  # Early stopping after 10 epochs without improvement
+    best_model_state = None
     
+    # Create progress bar for training
     progress_bar = tqdm(range(epochs), desc="Training autoencoder") if verbose else range(epochs)
+    
+    # Training loop
     for epoch in progress_bar:
-        running_loss = 0.0
+        # Train for one epoch
+        avg_loss = train_epoch(
+            model=model,
+            dataloader=dataloader,
+            criterion=criterion,
+            optimizer=optimizer,
+            device=device
+        )
         
-        for batch_X, _ in dataloader:
-            batch_X = batch_X.to(device)
-            
-            # Reset gradients
-            optimizer.zero_grad()
-            
-            # Forward pass
-            _, reconstructed = model(batch_X)
-            
-            # Compute loss
-            loss = criterion(reconstructed, batch_X)
-            
-            # Backward pass and optimize
-            loss.backward() # Compute the gradients
-            optimizer.step() # Update weights
-            
-            running_loss += loss.item()
-        
-        # Calculate average loss for the epoch
-        avg_loss = running_loss / len(dataloader)
-        
-        # Update learning rate
+        # Update learning rate using scheduler
         prev_lr = current_lr
         scheduler.step(avg_loss)
+        
         # Check if learning rate changed
         current_lr = optimizer.param_groups[0]['lr']
         if verbose and current_lr != prev_lr:
@@ -350,16 +512,7 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
                 break
     
     # Get encoded representations for all data
-    model.eval()
-    encodings = []
-    batch_size_eval = 256  # Larger batch size for evaluation
-    with torch.no_grad():
-        for i in range(0, X.shape[0], batch_size_eval):
-            batch_X = X[i:i+batch_size_eval].to(device)
-            batch_encoding = model.encode(batch_X).cpu().numpy()
-            encodings.append(batch_encoding)
-    
-    encoded_data = np.vstack(encodings)
+    encoded_data = encode_all_data(model, X, device)
     
     # Compute max absolute value for scaling
     spectral = max(abs(encoded_data.max()), abs(encoded_data.min()))
@@ -396,8 +549,6 @@ def encode_data(model: Autoencoder, data: np.ndarray, device: str = 'cpu',
     
     # Process data in batches
     with torch.no_grad():
-        #batch_iterator = tqdm(range(0, n_samples, batch_size), desc="Encoding data") if verbose else range(0, n_samples, batch_size)
-        
         batch_iterator = range(0, n_samples, batch_size)
         if verbose:
             batch_iterator = tqdm(batch_iterator, desc="Encoding data")
@@ -411,454 +562,6 @@ def encode_data(model: Autoencoder, data: np.ndarray, device: str = 'cpu',
                     ).to(device)
             
             batch_encoded = model.encode(batch).cpu().numpy()
-            encoded_data.append(batch_encoded)
-    
-    # Concatenate all batches and transpose to match expected shape
-    return np.vstack(encoded_data).T
-
-
-class GuidedAutoencoder:
-    """
-    Quantum guided autoencoder that jointly optimizes reconstruction and quantum classification.
-    
-    Parameters
-    ----------
-    input_dim : int
-        Dimension of input features (flattened image size)
-    encoding_dim : int
-        Dimension of the encoded representation
-    output_dim : int
-        Number of output classes
-    quantum_dim : int
-        Dimension of quantum embeddings
-    hidden_dims : Optional[List[int]], optional
-        Dimensions of hidden layers for autoencoder, by default None
-    alpha : float, optional
-        Weight for reconstruction loss, by default 0.7
-    beta : float, optional
-        Weight for classification loss, by default 0.3
-    use_batch_norm : bool, optional
-        Whether to use batch normalization, by default True
-    dropout : float, optional
-        Dropout probability, by default 0.1
-    """
-    def __init__(self, 
-                 input_dim: int,
-                 encoding_dim: int, 
-                 output_dim: int,
-                 quantum_dim: int = None,
-                 hidden_dims: Optional[List[int]] = None,
-                 alpha: float = 0.7, 
-                 beta: float = 0.3,
-                 use_batch_norm: bool = True,
-                 dropout: float = 0.1):
-        self.autoencoder = Autoencoder(
-                                input_dim=input_dim, 
-                                encoding_dim=encoding_dim, 
-                                hidden_dims=hidden_dims, 
-                                use_batch_norm=use_batch_norm, 
-                                dropout=dropout
-                                )
-        self.alpha = alpha
-        self.beta = beta
-        self.encoding_dim = encoding_dim
-        self.output_dim = output_dim
-        self.quantum_dim = quantum_dim
-        
-        # Classifier will be initialized when quantum_dim is known
-        self.classifier = None
-        
-        # Embedding cache
-        self.quantum_embeddings_cache = {}
-    
-    def initialize_classifier(self, quantum_dim: int):
-        """Initialize classifier with the correct input dimension"""
-        self.quantum_dim = quantum_dim
-        self.classifier = nn.Sequential(
-            nn.Linear(
-                    in_features=quantum_dim, 
-                    out_features=self.output_dim
-                ),
-            nn.Softmax(
-                    dim=1
-                )
-        )
-        return self.classifier
-        
-    def to(self, device):
-        """Move the model to specified device"""
-        self.autoencoder = self.autoencoder.to(device)
-        if self.classifier is not None:
-            self.classifier = self.classifier.to(device)
-        return self
-    
-    def get_encoder(self):
-        """Get the encoder part of the autoencoder"""
-        return self.autoencoder.encoder
-    
-    def clear_cache(self):
-        """Clear the quantum embeddings cache"""
-        self.quantum_embeddings_cache = {}
-
-
-def train_guided_autoencoder(
-    data: np.ndarray, 
-    labels: np.ndarray,
-    quantum_layer: DetuningLayer,
-    encoding_dim: int,
-    hidden_dims: Optional[List[int]] = None,
-    alpha: float = 0.7,
-    beta: float = 0.3,
-    batch_size: int = 32,
-    epochs: int = 50,
-    learning_rate: float = 0.001,
-    device: str = 'cpu',
-    quantum_update_frequency: int = 5,
-    n_shots: int = 1000,
-    verbose: bool = True,
-    use_batch_norm: bool = True,
-    dropout: float = 0.1,
-    weight_decay: float = 1e-5,
-    detuning_max: float = 6.0
-) -> Tuple[GuidedAutoencoder, float]:
-    """
-    Train a guided autoencoder jointly with quantum embeddings.
-    
-    Parameters
-    ----------
-    data : np.ndarray
-        Input data (flattened images) with shape (n_features, n_samples)
-    labels : np.ndarray
-        Class labels with shape (n_samples,)
-    quantum_layer : DetuningLayer
-        Quantum reservoir layer to generate embeddings
-    encoding_dim : int
-        Dimension of the encoded representation
-    hidden_dims : Optional[List[int]], optional
-        Dimensions of hidden layers, by default None
-    alpha : float, optional
-        Weight for reconstruction loss, by default 0.7
-    beta : float, optional
-        Weight for classification loss, by default 0.3
-    batch_size : int, optional
-        Batch size for training, by default 32
-    epochs : int, optional
-        Number of training epochs, by default 50
-    learning_rate : float, optional
-        Learning rate, by default 0.001
-    device : str, optional
-        Device to use ('cpu' or 'cuda'), by default 'cpu'
-    quantum_update_frequency : int, optional
-        Update quantum embeddings every N epochs, by default 5
-    n_shots : int, optional
-        Number of shots for quantum simulation, by default 1000
-    verbose : bool, optional
-        Whether to show progress bars, by default True
-    use_batch_norm : bool, optional
-        Whether to use batch normalization, by default True
-    dropout : float, optional
-        Dropout probability, by default 0.1
-    weight_decay : float, optional
-        Weight decay for regularization, by default 1e-5
-    detuning_max : float, optional
-        Maximum detuning for scaling, by default 6.0    
-        
-    Returns
-    -------
-    Tuple[GuidedAutoencoder, float]
-        Trained guided autoencoder and maximum absolute value for scaling
-    """
-    
-    # Prepare data
-    input_dim = data.shape[0]
-    n_samples = data.shape[1]
-    output_dim = len(np.unique(labels))
-    
-    # Convert to PyTorch tensors
-    X = torch.tensor(
-                data=data.T, 
-                dtype=torch.float32
-            )
-    
-    # Convert batch_size to Python native int to avoid PyTorch DataLoader errors
-    batch_size = int(batch_size)
-
-    # Adjust batch size if it's larger than dataset size
-    adjusted_batch_size = min(batch_size, n_samples)
-    if adjusted_batch_size != batch_size and verbose:
-        print(f"Warning: Reducing batch size from {batch_size} to {adjusted_batch_size} to match dataset size")
-
-
-    y_one_hot = np.zeros((n_samples, output_dim))
-    y_one_hot[np.arange(n_samples), labels] = 1
-    y = torch.tensor(y_one_hot, dtype=torch.float32)
-    
-    
-    # Create dataset and dataloader
-    dataset = TensorDataset(X, y)
-    dataloader = DataLoader(
-            dataset=dataset, 
-            batch_size=adjusted_batch_size, 
-            shuffle=True
-        )
-    
-    # Initialize model
-    model = GuidedAutoencoder(
-                    input_dim=input_dim, 
-                    encoding_dim=encoding_dim, 
-                    output_dim=output_dim, 
-                    hidden_dims=hidden_dims, 
-                    alpha=alpha, 
-                    beta=beta,
-                    use_batch_norm=use_batch_norm,
-                    dropout=dropout
-                )
-    model = model.to(device)
-    
-    # Store indices to embeddings mapping (memory efficient)
-    sample_indices = torch.arange(n_samples)
-    
-    # Process one quantum embedding to determine dimension
-    # initial_batch_size = min(5, n_samples)
-    model.autoencoder.eval()
-    with torch.no_grad():
-        initial_encoding = model.autoencoder.encode(X[:1].to(device)).cpu().numpy()
-        
-        spectral = max(abs(initial_encoding.max()), abs(initial_encoding.min()))
-        initial_encoding_scaled = initial_encoding.T / spectral * detuning_max
-        
-        
-        if verbose:
-            print(f"Getting initial quantum embeddings to determine dimension...")
-        
-        # Get quantum embeddings to determine dimension
-        initial_quantum_embs = quantum_layer.apply_layer(
-                    x=initial_encoding_scaled, 
-                    n_shots=n_shots, 
-                    show_progress=True
-                )
-        
-        quantum_dim = initial_quantum_embs.shape[0]
-        
-        if verbose:
-            print(f"Quantum embedding dimension detected: {quantum_dim}")
-        
-        # Initialize classifier with correct dimension
-        model.initialize_classifier(quantum_dim)
-        model.classifier = model.classifier.to(device)
-    
-    # Define loss functions
-    recon_criterion = nn.MSELoss()
-    class_criterion = nn.CrossEntropyLoss()
-    
-    # Add optimizer for both autoencoder and classifier
-    optimizer = optim.Adam(
-                        params=(list(model.autoencoder.parameters()) + list(model.classifier.parameters())), 
-                        lr=learning_rate, 
-                        weight_decay=weight_decay
-                    )
-    
-    
-    # Learning rate scheduler (remove verbose parameter)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-                                        optimizer=optimizer, 
-                                        mode='min', 
-                                        patience=5, 
-                                        factor=0.5
-                                    )
-    
-    # Store current learning rate for tracking changes
-    current_lr = learning_rate
-    
-    # Training loop
-    model.autoencoder.train() # Set autoencoder to training mode
-    
-    # For early stopping
-    best_loss = float('inf') 
-    patience_counter = 0
-    patience = 10
-    best_model_state = None
-    
-    iterator = range(epochs)
-    if(verbose):
-        iterator = tqdm(iterator, desc="Training guided autoencoder")
-    
-    for epoch in iterator:
-        running_recon_loss = 0.0
-        running_class_loss = 0.0
-        running_total_loss = 0.0
-        
-        # Update quantum embeddings periodically to save computation
-        if epoch % quantum_update_frequency == 0:
-            if verbose:
-                print(f"Epoch {epoch+1}: Updating quantum embeddings...")
-            model.clear_cache()
-            
-            # Get encoder's current state
-            model.autoencoder.eval() # Set autoencoder to evaluation mode
-            # Get quantum embeddings for all samples
-            with torch.no_grad():
-                batch_size_qe = 50  # Process in smaller batches for memory efficiency
-                for i in range(0, n_samples, batch_size_qe):
-                    end_idx = min(i + batch_size_qe, n_samples)
-                    batch_indices = sample_indices[i:end_idx]
-                    batch_X = X[batch_indices].to(device)
-                    
-                    # Encode with current autoencoder
-                    batch_encoding = model.autoencoder.encode(batch_X).cpu().numpy()
-                    
-                    # Scale for quantum processing
-                    cur_spectral = max(abs(batch_encoding.max()), abs(batch_encoding.min()))
-                    if cur_spectral > 0:  # Avoid division by zero
-                        batch_encoding_scaled = batch_encoding.T / cur_spectral * detuning_max
-                    else:
-                        batch_encoding_scaled = batch_encoding.T
-                    
-                    # Get quantum embeddings
-                    quantum_embs = quantum_layer.apply_layer(
-                                                x=batch_encoding_scaled, 
-                                                n_shots=n_shots, 
-                                                show_progress=True
-                                            )
-                    
-                    # Cache quantum embeddings for each sample index
-                    for j, idx in enumerate(batch_indices.numpy()):
-                        model.quantum_embeddings_cache[idx] = quantum_embs[:, j]
-            
-            model.autoencoder.train()
-            
-        # Training batches
-        for batch_idx, (batch_X, batch_y) in enumerate(dataloader):
-            batch_X = batch_X.to(device)
-            batch_y = batch_y.to(device)
-            batch_indices = sample_indices[batch_idx * batch_size:batch_idx * batch_size + len(batch_X)]
-
-            # Zero gradients
-            optimizer.zero_grad()
-
-            # Forward pass through autoencoder
-            batch_encoding, reconstructed = model.autoencoder(batch_X)
-
-            # Compute reconstruction loss
-            recon_loss = recon_criterion(reconstructed, batch_X)
-
-            # Get quantum embeddings from cache for these samples
-            quantum_embs_batch = []
-            for idx in batch_indices.numpy():
-                quantum_embs_batch.append(model.quantum_embeddings_cache[idx])
-
-            # Create a classifier for the current batch's quantum embeddings
-            quantum_embs_tensor = torch.tensor(np.array(quantum_embs_batch), dtype=torch.float32).to(device)
-            batch_output = model.classifier(quantum_embs_tensor)
-
-            # Compute classification loss
-            class_loss = class_criterion(batch_output, torch.argmax(batch_y, dim=1))
-            
-            # Compute total loss with weighting
-            total_loss = model.alpha * recon_loss + model.beta * class_loss
-            
-            # Backward pass and optimize
-            total_loss.backward() # Compute gradients
-            optimizer.step() # Update weights
-            
-            # Track losses
-            running_recon_loss += recon_loss.item()
-            running_class_loss += class_loss.item()
-            running_total_loss += total_loss.item()
-        
-        # Calculate average losses
-        avg_recon_loss = running_recon_loss / len(dataloader)
-        avg_class_loss = running_class_loss / len(dataloader)
-        avg_total_loss = running_total_loss / len(dataloader)
-        
-        # Update learning rate scheduler
-        prev_lr = current_lr
-        scheduler.step(avg_total_loss)
-        # Check if learning rate changed
-        current_lr = optimizer.param_groups[0]['lr']
-        if verbose and current_lr != prev_lr:
-            tqdm.write(f"Learning rate changed from {prev_lr:.6f} to {current_lr:.6f}")
-        
-        # Report progress
-        if verbose:
-            tqdm.write(f"Epoch {epoch+1}/{epochs}, "
-                      f"Recon Loss: {avg_recon_loss:.6f}, "
-                      f"Class Loss: {avg_class_loss:.6f}, "
-                      f"Total Loss: {avg_total_loss:.6f}")
-        
-        # Early stopping check
-        if avg_total_loss < best_loss:
-            best_loss = avg_total_loss
-            patience_counter = 0
-            # Save best model state
-            best_model_state = {
-                'autoencoder': model.autoencoder.state_dict().copy(),
-                'classifier': model.classifier.state_dict().copy()
-            }
-        else:
-            patience_counter += 1
-            if patience_counter >= patience:
-                if verbose:
-                    tqdm.write(f"Early stopping triggered after {epoch+1} epochs")
-                # Restore best model state
-                model.autoencoder.load_state_dict(best_model_state['autoencoder'])
-                model.classifier.load_state_dict(best_model_state['classifier'])
-                break
-    
-    # Get final encoded representations for all data
-    model.autoencoder.eval()
-    encodings = []
-    batch_size_eval = 256  # Larger batch size for evaluation
-    with torch.no_grad():
-        for i in range(0, X.shape[0], batch_size_eval):
-            batch_X = X[i:i+batch_size_eval].to(device)
-            batch_encoding = model.autoencoder.encode(batch_X).cpu().numpy()
-            encodings.append(batch_encoding)
-    
-    encoded_data = np.vstack(encodings)
-    
-    # Compute max absolute value for scaling
-    spectral = max(abs(encoded_data.max()), abs(encoded_data.min()))
-    if spectral == 0:  # Avoid division by zero
-        spectral = 1.0
-    
-    return model, spectral
-
-
-def encode_data_guided(model: GuidedAutoencoder, data: np.ndarray, device: str = 'cpu', 
-                      verbose: bool = True, batch_size: int = 256) -> np.ndarray:
-    """
-    Encode data using a trained guided autoencoder model.
-    
-    Parameters
-    ----------
-    model : GuidedAutoencoder
-        Trained guided autoencoder model
-    data : np.ndarray
-        Input data with shape (features, samples)
-    device : str, optional
-        Device to run encoding on ('cpu' or 'cuda'), by default 'cpu'
-    verbose : bool, optional
-        Whether to show progress bar, by default True
-    batch_size : int, optional
-        Batch size for processing data, by default 256
-        
-    Returns
-    -------
-    np.ndarray
-        Encoded data with shape (encoding_dim, samples)
-    """
-    model.autoencoder.eval()
-    n_samples = data.shape[1]
-    encoded_data = []
-    
-    # Process data in batches
-    with torch.no_grad():
-        batch_iterator = tqdm(range(0, n_samples, batch_size), desc="Encoding data") if verbose else range(0, n_samples, batch_size)
-        for i in batch_iterator:
-            batch_end = min(i + batch_size, n_samples)
-            batch = torch.tensor(data[:, i:batch_end].T, dtype=torch.float32).to(device)
-            batch_encoded = model.autoencoder.encode(batch).cpu().numpy()
             encoded_data.append(batch_encoded)
     
     # Concatenate all batches and transpose to match expected shape

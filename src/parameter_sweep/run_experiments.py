@@ -1,68 +1,94 @@
 import os
 import argparse
-import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 import pandas as pd
-
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from parameter_sweep import ParameterSweep
-
 from config_manager import ConfigManager
-from visualization_sweep import create_summary_dashboard, create_publication_figure
 
 # Define experiment profiles with parameter ranges
 EXPERIMENT_PROFILES = {
+    # NOT DONE
+    # SHOULD SHOW THAT USING MORE QUBITS IS BETTER
     "encoding_dimensions": {
         "description": "Sweep over encoding dimensions and methods",
         "param_grid": {
             "dim_reduction": [4, 6, 8, 10, 12],
             "reduction_method": ["pca", "autoencoder", "guided_autoencoder"],
-            "num_examples": [1000],  # Reduced for faster execution
-            "num_test_examples": [200],  # Reduced for faster execution
-            "n_shots": [500]  # Reduced for faster execution
+            "n_shots": [500]
         }
     },
+    
+    "autoencoder_regularization": {
+        "description": "Sweep over autoencoder regularization parameters",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
+            "dim_reduction": [12]
+        }
+    },
+    
+    # NOT DONE
     "quantum_readouts": {
         "description": "Sweep over quantum readout types and time steps",
         "param_grid": {
             "readout_type": ["Z", "ZZ", "all"],
             "time_steps": [4, 8, 12, 16],
-            "n_shots": [500],  # Fixed shots for this sweep
-            "reduction_method": ["guided_autoencoder"],  # Fixed to autoencoder
-            "dim_reduction": [12]  # Fixed dimension
+            "reduction_method": ["guided_autoencoder"],
+            "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
+    # UNSURE
     "shot_noise": {
         "description": "Sweep over number of quantum shots",
         "param_grid": {
             "n_shots": [100, 500, 1000, 2000],
-            "readout_type": ["all"],  # Fixed readout
-            "reduction_method": ["guided_autoencoder"],  # Fixed to autoencoder
-            "dim_reduction": [12]  # Fixed dimension
+            "readout_type": ["all"],
+            "reduction_method": ["guided_autoencoder"],
+            "dim_reduction": [12]
         }
     },
-    "guided_autoencoder": {
-        "description": "Sweep over guided autoencoder parameters",
+    
+    # RUNNING THIS ONE NOW
+    "guided_autoencoder_lambda": {
+        "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_alpha": [0.3, 0.5, 0.7],
-            "guided_beta": [0.7, 0.5, 0.3],
+            "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0],
+            "quantum_update_frequency": [1],
+            "dim_reduction": [12]
+        }
+    },
+    
+    # NOT DONE
+    # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
+    "guided_autoencoder_update_frequency": {
+        "description": "Sweep over guided autoencoder update frequency",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "guided_lambda": [0.5], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
             "quantum_update_frequency": [1, 3, 5, 10],
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
     "evolution_time": {
         "description": "Sweep over quantum evolution time and steps",
         "param_grid": {
             "evolution_time": [2.0, 4.0, 6.0],
-            "time_steps": [8, 12, 16],
+            "time_steps": [8, 12, 16], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
             "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
     "encoding_scale": {
         "description": "Sweep over encoding scale parameter",
         "param_grid": {
@@ -72,6 +98,8 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
     "full_dataset": {
         "description": "Compare performance with different dataset sizes",
         "param_grid": {
@@ -81,6 +109,9 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [12]
         }
     },
+    
+    # NOT DONE
+    # RUN THIS ONE NEXT TO FIND THE LEARNING RATE AND REGULARIZATION
     "training_parameters": {
         "description": "Sweep over training hyperparameters",
         "param_grid": {
@@ -156,77 +187,6 @@ def run_experiment_profile(profile_name: str,
     
     return results
 
-def create_sweep_dashboard(results_file: str, output_dir: str, main_params: List[str] = None) -> None:
-    """
-    Create a dashboard of plots for a parameter sweep.
-    
-    Parameters
-    ----------
-    results_file : str
-        Path to CSV file with sweep results
-    output_dir : str
-        Directory to save visualization outputs
-    main_params : List[str], optional
-        Main parameters to highlight in publication figure, by default None
-    """
-    # Load results
-    df = pd.read_csv(results_file)
-    
-    # Create output directory
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Create dashboard
-    create_summary_dashboard(df, output_dir)
-    
-    # Create publication figure if main parameters specified
-    if main_params:
-        pub_fig_path = os.path.join(output_dir, "publication_figure.png")
-        create_publication_figure(df, pub_fig_path, main_params)
-        
-    print(f"Dashboard created in {output_dir}")
-
-def run_comparison_sweep(config_path: str, sweep_params: Dict[str, List[Any]], 
-                        output_dir: Optional[str] = None) -> pd.DataFrame:
-    """
-    Run a custom parameter sweep based on a config file.
-    
-    Parameters
-    ----------
-    config_path : str
-        Path to base configuration JSON file
-    sweep_params : Dict[str, List[Any]]
-        Parameters to sweep over
-    output_dir : Optional[str], optional
-        Directory to save results, by default None
-        
-    Returns
-    -------
-    pd.DataFrame
-        Results dataframe
-    """
-    # Load base config
-    base_config = ConfigManager.load_config(config_path)
-    
-    # Set output directory
-    if output_dir is None:
-        output_dir = os.path.join("..", "results", "parameter_sweep")
-    
-    # Configure sweep
-    sweep = ParameterSweep(base_config, output_dir)
-    
-    # Run sweep
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    experiment_name = f"custom_sweep_{timestamp}"
-    
-    print(f"Running custom parameter sweep")
-    print(f"Base config: {config_path}")
-    print(f"Sweep parameters: {sweep_params}")
-    
-    # Run the sweep
-    results = sweep.run_sweep(sweep_params, experiment_name)
-    
-    return results
-
 def main():
     """Main function to parse arguments and run experiments"""
     parser = argparse.ArgumentParser(description="Run parameter sweeps for QRC experiments")
@@ -244,26 +204,8 @@ def main():
                               help="Directory to save results")
     profile_parser.add_argument("--parallel", action="store_true",
                               help="Run experiments in parallel")
-    profile_parser.add_argument("--workers", type=int, default=4,
+    profile_parser.add_argument("--workers", type=int, default=5,
                               help="Number of workers for parallel execution")
-    
-    # Dashboard command
-    dashboard_parser = subparsers.add_parser("dashboard", help="Create a dashboard of plots")
-    dashboard_parser.add_argument("results_file", type=str,
-                                help="Path to CSV file with sweep results")
-    dashboard_parser.add_argument("output_dir", type=str,
-                                help="Directory to save visualization outputs")
-    dashboard_parser.add_argument("--main-params", type=str, nargs="+",
-                                help="Main parameters to highlight in publication figure")
-    
-    # Custom sweep command
-    custom_parser = subparsers.add_parser("custom", help="Run a custom parameter sweep")
-    custom_parser.add_argument("config", type=str,
-                             help="Path to base configuration JSON file")
-    custom_parser.add_argument("sweep_file", type=str,
-                             help="Path to JSON file with sweep parameters")
-    custom_parser.add_argument("--output-dir", type=str, default=None,
-                             help="Directory to save results")
     
     # List profiles command
     list_parser = subparsers.add_parser("list", help="List available experiment profiles")
@@ -282,18 +224,6 @@ def main():
         run_experiment_profile(args.profile_name, base_config, args.output_dir, 
                               parallel=args.parallel, n_workers=args.workers)
         
-    elif args.command == "dashboard":
-        # Create dashboard
-        create_sweep_dashboard(args.results_file, args.output_dir, args.main_params)
-        
-    elif args.command == "custom":
-        # Load sweep parameters
-        with open(args.sweep_file, 'r') as f:
-            sweep_params = json.load(f)
-        
-        # Run custom sweep
-        run_comparison_sweep(args.config, sweep_params, args.output_dir)
-        
     elif args.command == "list":
         # List available profiles
         print("Available experiment profiles:")
@@ -306,5 +236,4 @@ def main():
         parser.print_help()
 
 if __name__ == "__main__":
-    import pandas as pd
     main()

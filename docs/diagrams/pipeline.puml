@@ -1,0 +1,54 @@
+@startuml
+skinparam monochrome true
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor black
+
+component "INPUT DATA" as input
+component "AUTOENCODER ENCODER" as encoder
+component "ENCODING" as encoding
+component "AUTOENCODER DECODER" as decoder
+component "RECONSTRUCTION" as reconstruction
+component "QUANTUM LAYER" as quantum
+component "QUANTUM EMBEDDINGS" as q_embeddings
+component "CACHE" as cache
+component "SURROGATE TRAINING" as surr_training
+component "SURROGATE MODEL" as surrogate
+component "SIMULATED QUANTUM EMBEDDINGS" as sim_embeddings
+component "CLASSIFIER" as classifier
+component "CLASS PREDICTIONS" as predictions
+component "RECONSTRUCTION LOSS" as rec_loss
+component "CLASSIFICATION LOSS" as class_loss
+component "TRUE LABELS" as labels
+component "TOTAL LOSS" as total_loss
+component "BACKPROPAGATION" as backprop
+component "PARAMETER UPDATES" as updates
+
+input -right-> encoder
+encoder -right-> encoding
+encoding -down-> quantum
+encoding -right-> decoder
+decoder -right-> reconstruction
+reconstruction -down-> rec_loss
+quantum -down-> q_embeddings
+q_embeddings -right-> cache
+q_embeddings -down-> surr_training
+cache -down-> surr_training
+surr_training -down-> surrogate
+encoding -down-> surrogate
+surrogate -down-> sim_embeddings
+sim_embeddings -down-> classifier
+classifier -down-> predictions
+predictions -down-> class_loss
+labels -up-> class_loss
+rec_loss -down-> total_loss
+class_loss -left-> total_loss
+total_loss -down-> backprop
+backprop -down-> updates
+
+note right of surrogate: Differentiable proxy
+note right of quantum: Non-differentiable barrier
+note right of total_loss: (1-λ)*Recon + λ*Class
+
+@enduml
