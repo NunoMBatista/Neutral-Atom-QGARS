@@ -17,3 +17,4 @@
 data/datasets/**
 
 src/parameter_sweep/results/**
+src/run_stats/**
