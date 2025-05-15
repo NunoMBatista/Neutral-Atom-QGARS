@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-GIC-quAI-QRC is a quantum-classical hybrid system that leverages neutral atom quantum processors for image classification tasks. The system combines quantum reservoir computing (QRC) with classical deep learning techniques and introduces two key innovations: quantum guided autoencoders and quantum surrogate models to address the challenges of gradient-based training in quantum-classical hybrid architectures.
+GIC-quAI-QRC is a quantum-classical hybrid system that leverages neutral atom quantum processors for image classification tasks. The system combines quantum reservoir computing (QRC) with classical deep learning techniques and introduces two key improvements: quantum guided autoencoders and quantum surrogate models to address the challenges of gradient-based training in quantum-classical hybrid architectures.
 
-## Key Innovations
+## Key Improvements
 
 ### Classical Autoencoder vs PCA
 
@@ -32,14 +32,14 @@ While standard autoencoders optimize solely for reconstruction quality, the Quan
 
 The total loss function for the Quantum Guided Autoencoder combines reconstruction loss and classification loss:
 
-$$\mathcal{L}_{\text{total}} = (1-\lambda) \cdot \mathcal{L}_{\text{reconstruction}} + \lambda \cdot \mathcal{L}_{\text{classification}}$$
+$\mathcal{L}_{\text{total}} = (1-\lambda) \cdot \mathcal{L}_{\text{reconstruction}} + \lambda \cdot \mathcal{L}_{\text{classification}}$
 
 Where:
 - $\lambda$ is the guided_lambda parameter (0-1) that balances the two loss components
 - $\mathcal{L}_{\text{reconstruction}}$ is the Mean Squared Error (MSE) between input and reconstruction:
-  $$\mathcal{L}_{\text{reconstruction}} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{x}_i)^2$$
+  $\mathcal{L}_{\text{reconstruction}} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{x}_i)^2$
 - $\mathcal{L}_{\text{classification}}$ is the Cross-Entropy loss for classification:
-  $$\mathcal{L}_{\text{classification}} = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j=1}^{C} y_{ij} \log(\hat{y}_{ij})$$
+  $\mathcal{L}_{\text{classification}} = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j=1}^{C} y_{ij} \log(\hat{y}_{ij})$
 
 ### The Quantum Surrogate Model Problem
 
@@ -68,10 +68,7 @@ Our system leverages neutral atom arrays as a quantum reservoir for information 
 
 The quantum reservoir is governed by the Rydberg atom Hamiltonian:
 
-$$\begin{align}
-    H(t) &= \dfrac{\Omega(t)}{2}\sum_j \left(\ket{g_j}\bra{r_j}+\ket{r_j}\bra{g_j}\right) \\
-    &+ \sum_{j<k}V_{jk}n_jn_k-\sum_j \left[\Delta_{\mathrm{g}}(t) + \alpha_j\Delta_{\mathrm{l}}(t)\right] n_j
-\end{align}$$
+$H(t) = \dfrac{\Omega(t)}{2}\sum_j (\ket{g_j}\bra{r_j}+\ket{r_j}\bra{g_j})+ \sum_{j<k}V_{jk}n_jn_k-\sum_j [\Delta_{\mathrm{g}}(t) + \alpha_j\Delta_{\mathrm{l}}(t)] n_j$
 
 Where:
 - $\Omega(t)$ is the global Rabi drive amplitude between ground state $\ket{g_j}$ and Rydberg state $\ket{r_j}$
@@ -94,13 +91,13 @@ Future extensions of this work will explore additional encoding schemes:
 We support multiple types of quantum observables as readouts from the system:
 
 1. **Single-atom measurements** ($\langle Z_i \rangle$): Expectation values of the Z operator for each atom $i$, representing the population difference between ground and Rydberg states.
-   $$\langle Z_i \rangle = \langle \psi | Z_i | \psi \rangle = P(|g_i\rangle) - P(|r_i\rangle)$$
+   $\langle Z_i \rangle = \langle \psi | Z_i | \psi \rangle = P(|g_i\rangle) - P(|r_i\rangle)$
 
 2. **Two-atom correlations** ($\langle Z_i Z_j \rangle$): Two-body correlations between all pairs of atoms $i$ and $j$.
-   $$\langle Z_i Z_j \rangle = \langle \psi | Z_i Z_j | \psi \rangle$$
+   $\langle Z_i Z_j \rangle = \langle \psi | Z_i Z_j | \psi \rangle$
 
 3. **Three-atom correlations** ($\langle Z_i Z_j Z_k \rangle$): Three-body correlations between atom triplets $i$, $j$, and $k$.
-   $$\langle Z_i Z_j Z_k \rangle = \langle \psi | Z_i Z_j Z_k | \psi \rangle$$
+   $\langle Z_i Z_j Z_k \rangle = \langle \psi | Z_i Z_j Z_k | \psi \rangle$
 
 These readout options can be selected via the `readout_type` parameter:
 - `"Z"`: Only single-atom measurements
@@ -113,86 +110,6 @@ The richness of these quantum correlations provides a high-dimensional feature s
 
 ![Quantum Guided Autoencoder Pipeline](docs/images/pipeline.svg)
 
-The complete pipeline works as follows:
-
-1. **Initialization Phase**:
-   - Initialize autoencoder with random weights
-   - Sample initial encodings to determine quantum embedding dimension
-   - Initialize classifier based on quantum embedding dimension
-
-2. **Surrogate Training Cycle** (every few epochs):
-   - Compute current encodings from autoencoder
-   - Scale encodings to appropriate detuning range
-   - Run quantum simulations to get quantum embeddings
-   - Train surrogate model to replicate quantum layer behavior
-   - Cache quantum embeddings for efficiency
-
-3. **Guided Training Batches**:
-   - Forward pass:
-     * Input → Autoencoder → Encoding
-     * Encoding → Reconstruction (for reconstruction loss)
-     * Encoding → Surrogate → Simulated Quantum Embeddings
-     * Simulated Quantum Embeddings → Classifier → Class Predictions
-
-   - Loss calculation:
-     * Reconstruction Loss: How well the autoencoder reconstructs the input
-     * Classification Loss: How well the classifier predicts the correct class
-     * Total Loss = (1-λ)*Reconstruction_Loss + λ*Classification_Loss
-       where λ is the guided_lambda parameter (0-1)
-
-   - Backward pass:
-     * Compute gradients of total loss
-     * Update autoencoder and classifier weights
-     * Note: Surrogate enables gradients to flow from classification loss to autoencoder
-
-4. **Periodic Quantum Updates**:
-   - Every quantum_update_frequency epochs:
-     * Update real quantum embeddings with current autoencoder
-     * Retrain surrogate to match updated quantum behavior
-
-## Visual Representation of the Pipeline
-
-```
-[INPUT DATA] ---> [AUTOENCODER ENCODER] ---> [ENCODING]
-                                                |
-                        /---------------------/ |
-                       /                        |
-                      /                         |
-[RECONSTRUCTION] <--- [AUTOENCODER DECODER]     |
-      |                                         |
-      |                                         v
-      |                                   [QUANTUM LAYER]
-      |                                         |
-      |                                         v
-      |                          [QUANTUM EMBEDDINGS] -----> [CACHE]
-      |                                         |                |
-      |         /------------------------------/ |                |
-      |        /                                 |                |
-      |       /                                  v                |
-      |      /                         [SURROGATE TRAINING] <----/
-      |     /                                    |
-      |    v                                     |
-[RECONSTRUCTION LOSS] <--                        v
-      |             \                    [SURROGATE MODEL]
-      |              \                          |
-      |               \                         v
-      |                \            [SIMULATED QUANTUM EMBEDDINGS]
-      |                 \                       |
-      |                  \                      v
-      |                   \               [CLASSIFIER]
-      |                    \                    |
-      |                     \                   v
-      v                      \          [CLASS PREDICTIONS]
-[TOTAL LOSS] <------------------ [CLASSIFICATION LOSS]
-      |                                         ^
-      |                                         |
-      v                                         |
-[BACKPROPAGATION]                        [TRUE LABELS]
-      |
-      v
-[PARAMETER UPDATES]
-```
-
 ## Key Benefits
 
 1. **Training Efficiency**: Requires fewer quantum simulations through surrogate modeling
@@ -201,16 +118,7 @@ The complete pipeline works as follows:
 4. **Performance**: Better classification accuracy compared to non-guided approaches
 5. **Flexibility**: Works with various quantum configurations and datasets
 
-## Installation and Usage
-
-[Installation instructions to be added]
 
 ## License
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENCE](LICENCE) file for details.
-
-The GPL-3.0 is a strong copyleft license that requires anyone who distributes this code or derivative works to make the source available under the same terms. This is particularly important for quantum computing software to ensure that innovations remain accessible to the research community.
-
-## Acknowledgments
-
-[Acknowledgments to be added]

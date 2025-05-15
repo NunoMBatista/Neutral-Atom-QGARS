@@ -1,39 +1,25 @@
-@startuml surrogate_model
-skinparam backgroundColor transparent
-skinparam defaultTextAlignment center
+@startuml
+skinparam monochrome true
 skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowColor black
 
-package "Classical Network" as ClassicalNetwork1 {
-  [INPUT] as Input
-  [AUTOENCODER] as Autoencoder
-  [SURROGATE] as Surrogate
-}
+component "Classical Encoding" as encoding
+component "Neural Network Surrogate" as surrogate
+component "Quantum Layer" as quantum
+component "Quantum Embeddings" as q_embeddings
+component "Surrogate Embeddings" as s_embeddings
 
-package "Quantum System" as QuantumSystem {
-  [QUANTUM LAYER] as QuantumLayer
-}
+note top of encoding : From autoencoder
+note top of quantum : Non-differentiable barrier
+note top of surrogate : Differentiable proxy
 
-package "Classical Network" as ClassicalNetwork2 {
-  [CLASSIFIER] as Classifier
-  [OUTPUT] as Output
-}
+encoding -right-> quantum : Forward
+quantum -down-> q_embeddings : Forward
+encoding -down-> surrogate : Forward
+surrogate -right-> s_embeddings : Forward
 
-Input -> Autoencoder
-Autoencoder -> QuantumLayer : "non-differentiable"
-Input -> Surrogate : differentiable
-QuantumLayer -> Classifier
-Surrogate -> Classifier : differentiable
-
-Classifier -> Output
-
-note bottom of Surrogate
-  Creates differentiable path
-  for backpropagation
-end note
-
-note bottom of QuantumLayer
-  Non-differentiable
-  quantum operations
-end note
+q_embeddings .. s_embeddings : Train to match
 
 @enduml
