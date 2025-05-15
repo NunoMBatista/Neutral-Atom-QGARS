@@ -3,7 +3,7 @@ skinparam monochrome true
 skinparam componentStyle rectangle
 skinparam defaultFontName Arial
 skinparam defaultFontSize 12
-skinparam ArrowColor black
+skinparam ArrowThickness 2
 
 component "INPUT DATA" as input
 component "AUTOENCODER ENCODER" as encoder
@@ -25,27 +25,27 @@ component "TOTAL LOSS" as total_loss
 component "BACKPROPAGATION" as backprop
 component "PARAMETER UPDATES" as updates
 
-input -right-> encoder
-encoder -right-> encoding
-encoding -down-> quantum
-encoding -right-> decoder
-decoder -right-> reconstruction
-reconstruction -down-> rec_loss
-quantum -down-> q_embeddings
-q_embeddings -right-> cache
-q_embeddings -down-> surr_training
-cache -down-> surr_training
-surr_training -down-> surrogate
-encoding -down-> surrogate
-surrogate -down-> sim_embeddings
-sim_embeddings -down-> classifier
-classifier -down-> predictions
-predictions -down-> class_loss
-labels -up-> class_loss
-rec_loss -down-> total_loss
-class_loss -left-> total_loss
-total_loss -down-> backprop
-backprop -down-> updates
+input -[#black;#white]right-> encoder
+encoder -[#black;#white]right-> encoding
+encoding -[#black;#white]down-> quantum
+encoding -[#black;#white]right-> decoder
+decoder -[#black;#white]right-> reconstruction
+reconstruction -[#black;#white]down-> rec_loss
+quantum -[#black;#white]down-> q_embeddings
+q_embeddings -[#black;#white]right-> cache
+q_embeddings -[#black;#white]down-> surr_training
+cache -[#black;#white]down-> surr_training
+surr_training -[#black;#white]down-> surrogate
+encoding -[#black;#white]down-> surrogate
+surrogate -[#black;#white]down-> sim_embeddings
+sim_embeddings -[#black;#white]down-> classifier
+classifier -[#black;#white]down-> predictions
+predictions -[#black;#white]down-> class_loss
+labels -[#black;#white]up-> class_loss
+rec_loss -[#black;#white]down-> total_loss
+class_loss -[#black;#white]left-> total_loss
+total_loss -[#black;#white]down-> backprop
+backprop -[#black;#white]down-> updates
 
 note right of surrogate: Differentiable proxy
 note right of quantum: Non-differentiable barrier
