@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
-from typing import Dict, Tuple, List, Any
+from typing import Dict, Tuple, List, Any, Optional
 
-def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> None:
+def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
+                          save_path: Optional[str] = None) -> None:
     """
     Plot training results for multiple models.
     
@@ -9,6 +10,8 @@ def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float]
     ----------
     results_dict : Dict[str, Tuple[List[float], List[float], List[float], Any]]
         Dictionary mapping model names to (losses, accs_train, accs_test, model) tuples
+    save_path : Optional[str], optional
+        Path to save the figure, by default None (only display)
     """
     plt.figure(figsize=(12, 6))
     
@@ -34,6 +37,11 @@ def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float]
     plt.title("Training Loss")
     
     plt.tight_layout()
+    
+    # Save figure if path provided
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    
     plt.show()
 
 def print_results(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> None:

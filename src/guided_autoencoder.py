@@ -247,7 +247,7 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
                              device: str,
                              batch_size_qe: int = 50,
                              detuning_max: float = 6.0,
-                             verbose: bool = True) -> QuantumSurrogate:
+                             verbose: bool = True) -> Tuple[QuantumSurrogate, List[float]]:
     """
     Update quantum embeddings and train surrogate model.
     
@@ -272,8 +272,8 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
         
     Returns
     -------
-    QuantumSurrogate
-        Trained surrogate model
+    Tuple[QuantumSurrogate, List[float]]
+        Trained surrogate model and surrogate loss history
     """
     model.clear_cache()
     n_samples = X.shape[0]
@@ -334,9 +334,11 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
         if verbose:
             tqdm.write("Training surrogate model with current quantum embeddings...")
         
+        surrogate_loss_history = []
+        
         if model.surrogate is None:
             # Create and train new surrogate
-            surrogate = create_and_train_surrogate(
+            surrogate, surrogate_loss_history = create_and_train_surrogate(
                 quantum_layer=quantum_layer,
                 encodings=all_encodings_tensor,
                 quantum_embeddings=all_quantum_embs_tensor,
@@ -346,7 +348,7 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
             )
         else:
             # Update existing surrogate
-            surrogate = train_surrogate(
+            surrogate, surrogate_loss_history = train_surrogate(
                 surrogate_model=model.surrogate,
                 quantum_layer=quantum_layer,
                 input_data=all_encodings_tensor,
@@ -363,7 +365,7 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
         model.initialize_surrogate(surrogate)
         
     model.autoencoder.train()
-    return surrogate
+    return surrogate, surrogate_loss_history
 
 def train_guided_epoch(model: GuidedAutoencoder,
                       dataloader: torch.utils.data.DataLoader,
@@ -488,7 +490,7 @@ def train_guided_autoencoder(
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
     class_scale: float = 1.0
-) -> Tuple[GuidedAutoencoder, float]:
+) -> Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Train a guided autoencoder jointly with quantum embeddings.
     
@@ -536,8 +538,8 @@ def train_guided_autoencoder(
         
     Returns
     -------
-    Tuple[GuidedAutoencoder, float]
-        Trained guided autoencoder and maximum absolute value for scaling
+    Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]
+        Trained guided autoencoder, maximum absolute value for scaling, and loss history
     """
     
     # Prepare data
@@ -608,13 +610,22 @@ def train_guided_autoencoder(
     # Initialize surrogate to None - will be created during first update
     surrogate = None
     
+    # Initialize loss tracking
+    loss_history = {
+        'total': [],
+        'reconstruction': [],
+        'classification': [],
+        'learning_rate': [],
+        'surrogate_loss': []  # Add tracking for surrogate loss
+    }
+    
     for epoch in iterator:
         # Update quantum embeddings and surrogate periodically
         if epoch % quantum_update_frequency == 0:
             if verbose:
                 tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings and surrogate model...")
             
-            surrogate = update_quantum_embeddings(
+            surrogate, surrogate_loss = update_quantum_embeddings(
                 model=model,
                 X=X,
                 quantum_layer=quantum_layer,
@@ -624,6 +635,17 @@ def train_guided_autoencoder(
                 detuning_max=detuning_max,
                 verbose=verbose
             )
+            
+            # Record surrogate loss for this epoch
+            if surrogate_loss:
+                # Store the last (best) surrogate loss value
+                loss_history['surrogate_loss'].append(surrogate_loss[-1])
+            else:
+                # In case surrogate_loss is empty
+                loss_history['surrogate_loss'].append(None)
+        else:
+            # No surrogate training this epoch
+            loss_history['surrogate_loss'].append(None)
         
         # Train for one epoch
         avg_recon_loss, avg_class_loss, avg_total_loss = train_guided_epoch(
@@ -637,6 +659,12 @@ def train_guided_autoencoder(
             recon_scale=recon_scale,
             class_scale=class_scale
         )
+        
+        # Track losses
+        loss_history['reconstruction'].append(avg_recon_loss)
+        loss_history['classification'].append(avg_class_loss)
+        loss_history['total'].append(avg_total_loss)
+        loss_history['learning_rate'].append(current_lr)
         
         # Update learning rate scheduler
         prev_lr = current_lr
@@ -692,7 +720,7 @@ def train_guided_autoencoder(
     if spectral == 0:  # Avoid division by zero
         spectral = 1.0
     
-    return model, spectral
+    return model, spectral, loss_history
 
 
 def encode_data_guided(model: GuidedAutoencoder, data: np.ndarray, device: str = 'cpu', 
