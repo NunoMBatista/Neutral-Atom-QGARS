@@ -40,22 +40,15 @@ email address or ORCID}
 
 
 \begin{abstract}
-
-ABSTRACT PLACEHOLDER 
-
-%============================================
-% ABSTRACT
-%============================================
+This paper introduces a novel quantum-classical hybrid system for medical image classification using neutral atom quantum processors. We present the Quantum Guided Autoencoder with Reservoir Surrogate (QGARS), which addresses the gradient barrier problem in quantum-classical hybrid learning by introducing a differentiable surrogate model that enables end-to-end training. Our approach leverages quantum reservoir computing principles with Rydberg atom arrays while optimizing feature encoding through a specialized autoencoder that jointly minimizes reconstruction error and maximizes quantum classification performance. We evaluate our approach on polyp detection and classification tasks, demonstrating superior performance compared to traditional dimensionality reduction techniques and standard quantum reservoir computing implementations. We further present detailed ablation studies analyzing the impact of various quantum parameters, guided learning coefficients, and surrogate model architectures. Our results suggest that quantum guidance can significantly enhance feature encoding for quantum processing, pointing toward a practical pathway for quantum advantage in medical image analysis.
 \end{abstract}
 
 
 \begin{IEEEkeywords}
-
 Reservoir Computing, Quantum-Guided Autoencoding,
 Neutral Atoms, Autoencoder, Dimensionality Reduction, 
 Quantum Machine Learning, Hybrid Quantum-Classical Algorithms, 
 Medical Image Classification
-
 \end{IEEEkeywords}
 
 
@@ -63,41 +56,86 @@ Medical Image Classification
 % INTRODUCTION
 %============================================
 \section{Introduction}
-
-INTRODUCTION PLACEHOLDER
-
-\subsection{Subsection Example}
-
-SUBSECTION PLACEHOLDER
+\subsection{Background and Motivation}
+\subsection{Challenges in Quantum-Classical Hybrid Systems}
+\subsection{Contributions of This Work}
 
 %============================================
-% OVERVIEW OF QUANTUM RESERVOIR COMPUTING
+% BACKGROUND 
 %============================================
-\section{Overview of Quantum Reservoir Computing}
-
-OVERVIEW PLACEHOLDER
-
-\subsection{Neutral Atoms for Reservoir Computing}
-
-\subsection{Feature Encoding in an Atomic Register}
-
-%============================================
-% QUANTUM-GUIDED AUTOENCODING
-%============================================
-\section{Overview of Quantum-Guided Autoencoding}
-
-\subsection{Autoencoders for Dimensionality Reduction}
-
-\subsection{Quantum-Guided Autoencoding}
+\section{Background}
+\subsection{Quantum Computing with Neutral Atoms}
+\subsection{Principles of Reservoir Computing}
+\subsection{Quantum Reservoir Computing}
+\subsection{Dimensionality Reduction for Image Data}
+\subsubsection{Principal Component Analysis}
+\subsubsection{Autoencoder Architectures}
 
 %============================================
-% APPLICATION OF QUANTUM-GUIDED AUTOENCODING TO RESERVOIR COMPUTING
+% METHODOLOGY
 %============================================
-\section{Application of Quantum-Guided Autoencoding to Reservoir Computing}
+\section{Methodology}
+\subsection{System Architecture Overview}
+\subsection{Quantum Guided Autoencoder}
+\subsubsection{Loss Function Design}
+\subsubsection{Balancing Reconstruction and Classification}
+\subsection{The Gradient Barrier Problem}
+\subsection{Surrogate Modeling for Quantum Layers}
+\subsubsection{Architecture and Training}
+\subsubsection{Gradient Flow Through Surrogate Models}
+\subsection{Rydberg Hamiltonian and Quantum Dynamics}
+\subsection{Data Encoding Schemes}
+\subsection{Quantum Readout Methods}
+\subsubsection{Single-atom Measurements}
+\subsubsection{Two-atom Correlations}
+\subsubsection{Three-atom Correlations}
 
+%============================================
+% EXPERIMENTAL SETUP
+%============================================
+\section{Experimental Setup}
+\subsection{Datasets}
+\subsection{Implementation Details}
+\subsubsection{Quantum Simulation Parameters}
+\subsubsection{Classical Network Architectures}
+\subsection{Comparison Methods}
+\subsection{Performance Metrics}
+\subsection{Parameter Sweep Strategy}
 
+%============================================
+% RESULTS
+%============================================
+\section{Results and Discussion}
+\subsection{Classification Performance Comparison}
+\subsection{Ablation Studies}
+\subsubsection{Impact of Guided Lambda Parameter}
+\subsubsection{Effect of Quantum Update Frequency}
+\subsubsection{Influence of Quantum Parameters}
+\subsection{Dimensionality Reduction Comparison}
+\subsection{Surrogate Model Fidelity Analysis}
+\subsection{Generalization to Unseen Data}
 
+%============================================
+% THEORETICAL ANALYSIS
+%============================================
+\section{Theoretical Analysis}
+\subsection{Information Encoding in Quantum Reservoirs}
+\subsection{Gradient Flow in Quantum-Classical Hybrid Systems}
+\subsection{Computational Complexity}
+\subsection{Quantum Resource Requirements}
 
+%============================================
+% LIMITATIONS AND FUTURE WORK
+%============================================
+\section{Limitations and Future Work}
+\subsection{Current Limitations}
+\subsection{Potential Extensions}
+\subsection{Hardware Implementation Considerations}
+
+%============================================
+% CONCLUSION
+%============================================
+\section{Conclusion}
 
 %============================================
 % REFERENCES

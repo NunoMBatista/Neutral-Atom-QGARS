@@ -1,0 +1,50 @@
+Slideshow: The Quantum Gradient Barrier Problem and Surrogate Model Solution
+
+Slide 1: The Quantum Gradient Barrier Problem
+- Diagram showing the quantum-classical interface
+- Key issue: Quantum operations are non-differentiable
+- Three specific barriers:
+  1. Classical-to-quantum state preparation is non-differentiable
+  2. Quantum measurements collapse the computational graph
+  3. Classical gradients cannot flow backward through quantum layers
+
+Slide 2: Impact on Guided Learning
+- Show where the gradient flow stops
+- Consequences: Cannot optimize input encodings for quantum processing
+- Why this matters: Suboptimal utilization of quantum resources
+
+Slide 3: Traditional Workarounds and Their Limitations
+- Parameter shift methods: Computationally expensive
+- Finite differences: Requires many quantum evaluations
+- Black-box optimization: Slow convergence, high variance
+- Random search: Inefficient for high-dimensional spaces
+
+Slide 4: Our Solution: The Surrogate Model Approach
+- Conceptual diagram of the surrogate model
+- Key idea: Create a differentiable proxy for the quantum layer
+- Requirements: Accuracy, efficiency, and differentiability
+- Neural network architecture overview
+
+Slide 5: Implementation Details
+- Surrogate model architecture
+- Training methodology
+- Update frequency considerations
+- Surrogate-to-quantum fidelity metrics
+
+Slide 6: The Complete Gradient Flow
+- Diagram showing the full pipeline with surrogate
+- Highlight where gradients now flow
+- Explain how the surrogate enables end-to-end learning
+- Show the mathematical formulation of backpropagation
+
+Slide 7: Benefits and Implications
+- Dramatically reduced quantum resource requirements
+- Enables efficient hyperparameter tuning
+- Better feature encoding for quantum processing
+- Pathway to practical quantum advantage
+
+Slide 8: Conclusion
+- Summary of the quantum gradient barrier problem
+- Recap of the surrogate model solution
+- Key takeaways and broader impact
+- Thank you and acknowledgments
