@@ -9,7 +9,7 @@
     "reduction_method": "autoencoder",
     "dim_reduction": 12,
     "guided_lambda": 0.5,
-    "quantum_update_frequency": 1,
+    "quantum_update_frequency": 5,
     
     "n_shots": 1000,
     "readout_type": "all",

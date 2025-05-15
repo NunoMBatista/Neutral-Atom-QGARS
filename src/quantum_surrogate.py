@@ -240,14 +240,15 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     if isinstance(input_data, np.ndarray):
         input_tensor = torch.tensor(input_data.T, dtype=torch.float32).to(device)
     else:
-        input_tensor = input_data.detach().to(device)  # Detach to ensure we don't track unnecessary gradients
-    
+        input_tensor = input_data.detach().cpu()#.to(device)  # Detach to ensure we don't track unnecessary gradients
+        
+    quantum_embeddings_cpu = quantum_embeddings.cpu() if hasattr(quantum_embeddings, 'is_cuda') else quantum_embeddings
     # Determine batch size based on dataset size
     num_samples = input_tensor.shape[0]
     actual_batch_size = min(batch_size, num_samples)
     
     # Create simple dataset and dataloader with pinned memory for faster data transfer
-    dataset = torch.utils.data.TensorDataset(input_tensor, quantum_embeddings)
+    dataset = torch.utils.data.TensorDataset(input_tensor, quantum_embeddings_cpu)
     dataloader = torch.utils.data.DataLoader(
         dataset, 
         batch_size=actual_batch_size, 
