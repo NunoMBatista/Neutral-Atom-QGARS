@@ -32,15 +32,17 @@ While standard autoencoders optimize solely for reconstruction quality, the Quan
 
 The total loss function for the Quantum Guided Autoencoder combines reconstruction loss and classification loss:
 
-$\mathcal{L}_{\text{total}} = (1-\lambda) \cdot \mathcal{L}_{\text{reconstruction}} + \lambda \cdot \mathcal{L}_{\text{classification}}$
+```math
+𝓛_{\text{total}} = (1-\lambda) \cdot 𝓛_{\text{reconstruction}} + \lambda \cdot 𝓛_{\text{classification}}
+```
 
 Where:
 
 - $\lambda$ is the guided_lambda parameter (0-1) that balances the two loss components
-- $\mathcal{L}_{\text{reconstruction}}$ is the Mean Squared Error (MSE) between input and reconstruction:
-  $\mathcal{L}_{\text{reconstruction}} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{x}_i)^2$
-- $\mathcal{L}_{\text{classification}}$ is the Cross-Entropy loss for classification:
-  $\mathcal{L}_{\text{classification}} = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j=1}^{C} y_{ij} \log(\hat{y}_{ij})$
+- $𝓛_{\text{reconstruction}}$ is the Mean Squared Error (MSE) between input and reconstruction:
+  $𝓛_{\text{reconstruction}} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{x}_i)^2$
+- $𝓛_{\text{classification}}$ is the Cross-Entropy loss for classification:
+  $𝓛_{\text{classification}} = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j=1}^{C} y_{ij} \log(\hat{y}_{ij})$
 
 ### The Quantum Surrogate Model Problem
 
