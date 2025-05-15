@@ -7,6 +7,9 @@ from ..backend_interface import QuantumBackend, process_results
 class QuTiPBackend(QuantumBackend):
     """QuTiP backend implementation."""
     
+    # Add a class variable to track GPU availability
+    _gpu_memory_insufficient = False
+    
     def create_rydberg_hamiltonian(
         self,
         n_atoms: int, 
@@ -39,6 +42,11 @@ class QuTiPBackend(QuantumBackend):
         qt.Qobj
             QuTiP Hamiltonian operator
         """
+        # If we've already detected insufficient GPU memory, don't try to use GPU
+        if QuTiPBackend._gpu_memory_insufficient:
+            use_gpu = False
+            print("Using CPU mode (GPU previously failed due to memory limitations)")
+        
         # Try to enable CuPy data layer if requested
         data_type = "dense"
         cupyd_available = False
@@ -57,9 +65,11 @@ class QuTiPBackend(QuantumBackend):
                     print(f"CuPy data layer initialization failed: {str(gpu_err)}")
                     print("Falling back to CPU mode")
                     data_type = "dense"
+                    QuTiPBackend._gpu_memory_insufficient = True
             except ImportError:
                 print("qutip_cupy package not available. Using CPU instead.")
                 data_type = "dense"
+                QuTiPBackend._gpu_memory_insufficient = True
         
         # Define operators for each atom
         operators = []
@@ -74,6 +84,7 @@ class QuTiPBackend(QuantumBackend):
                     print("Falling back to CPU mode for all operators")
                     data_type = "dense"
                     cupyd_available = False
+                    QuTiPBackend._gpu_memory_insufficient = True
             operators.append(sz_i)
         
         # Create sigma_x operators for each atom (drive terms)
@@ -83,9 +94,11 @@ class QuTiPBackend(QuantumBackend):
             if data_type == "cupyd" and cupyd_available:
                 try:
                     sx_i = sx_i.to("cupyd")  # Convert to GPU-backed Qobj
-                except Exception:
-                    # We already reported error above, just skip conversion
-                    pass
+                except Exception as e:
+                    print(f"Warning: Failed to convert sx operator to GPU: {str(e)}")
+                    data_type = "dense"
+                    cupyd_available = False
+                    QuTiPBackend._gpu_memory_insufficient = True
             sx_operators.append(sx_i)
         
         # Create the Hamiltonian
@@ -98,6 +111,7 @@ class QuTiPBackend(QuantumBackend):
             except Exception as e:
                 print(f"Error adding drive term: {str(e)}")
                 print("Rebuilding Hamiltonian in CPU mode")
+                QuTiPBackend._gpu_memory_insufficient = True
                 # If we get an error, rebuild everything in CPU mode
                 return self.create_rydberg_hamiltonian(
                     n_atoms=n_atoms,
@@ -117,6 +131,7 @@ class QuTiPBackend(QuantumBackend):
             except Exception as e:
                 print(f"Error adding detuning term: {str(e)}")
                 print("Rebuilding Hamiltonian in CPU mode")
+                QuTiPBackend._gpu_memory_insufficient = True
                 # If we get an error, rebuild everything in CPU mode
                 return self.create_rydberg_hamiltonian(
                     n_atoms=n_atoms,
@@ -135,9 +150,10 @@ class QuTiPBackend(QuantumBackend):
         if data_type == "cupyd" and cupyd_available:
             try:
                 full_identity = full_identity.to("cupyd")
-            except Exception:
-                # We already reported error above, just skip conversion
-                pass
+            except Exception as e:
+                print(f"Warning: Failed to convert identity operator to GPU: {str(e)}")
+                QuTiPBackend._gpu_memory_insufficient = True
+                cupyd_available = False
         
         for i in range(n_atoms):
             for j in range(i+1, n_atoms):
@@ -155,6 +171,7 @@ class QuTiPBackend(QuantumBackend):
                 except Exception as e:
                     print(f"Error adding interaction term: {str(e)}")
                     print("Rebuilding Hamiltonian in CPU mode")
+                    QuTiPBackend._gpu_memory_insufficient = True
                     # If we get an error, rebuild everything in CPU mode
                     return self.create_rydberg_hamiltonian(
                         n_atoms=n_atoms,
@@ -196,13 +213,17 @@ class QuTiPBackend(QuantumBackend):
         List[np.ndarray]
             Measurement samples at each time point
         """
+        # Don't try to use GPU if we've already detected memory issues
+        if QuTiPBackend._gpu_memory_insufficient:
+            use_gpu = False
+        
         # Check if we're using CuPy data layer
         using_gpu_data = False
         if use_gpu and hasattr(H, 'data') and hasattr(H.data, 'type'):
             using_gpu_data = (H.data.type == "cupyd")
         
         # If requested GPU but not using it, try to convert
-        if use_gpu and not using_gpu_data:
+        if use_gpu and not using_gpu_data and not QuTiPBackend._gpu_memory_insufficient:
             try:
                 # Try to convert to CuPy data layer
                 import qutip_cupy
@@ -213,8 +234,10 @@ class QuTiPBackend(QuantumBackend):
                 except Exception as e:
                     print(f"Cannot convert Hamiltonian to GPU: {str(e)}")
                     print("Continuing with CPU data type")
+                    QuTiPBackend._gpu_memory_insufficient = True
             except ImportError:
                 print("qutip_cupy not available. Using CPU data type.")
+                QuTiPBackend._gpu_memory_insufficient = True
         
         # Initial state: all atoms in ground state
         psi0 = qt.tensor([qt.basis(2, 0) for _ in range(n_atoms)])
@@ -226,12 +249,13 @@ class QuTiPBackend(QuantumBackend):
             except Exception as e:
                 print(f"Cannot convert initial state to GPU: {str(e)}")
                 print("Note: Mixed GPU/CPU operations may be slower")
+                QuTiPBackend._gpu_memory_insufficient = True
         
         # Define collapse operators (optional - for dissipative dynamics)
         c_ops = []
         
         # Time evolution - note this runs on CPU regardless of data type
-        print("Running QuTiP mesolve (CPU operation with potential GPU data acceleration)")
+        print(f"Running QuTiP mesolve ({('CPU only mode' if not using_gpu_data else 'CPU operation with GPU data acceleration')})")
         result = qt.mesolve(H, psi0, t_list, c_ops=c_ops)
         
         # Generate measurement samples
@@ -242,11 +266,12 @@ class QuTiPBackend(QuantumBackend):
                         for i in range(n_atoms)]
         
         # Convert measurement operators to same data type as H if needed
-        if using_gpu_data:
+        if using_gpu_data and not QuTiPBackend._gpu_memory_insufficient:
             try:
                 measurements = [m.to("cupyd") for m in measurements]
             except Exception as e:
                 print(f"Cannot convert measurement operators to GPU: {str(e)}")
+                QuTiPBackend._gpu_memory_insufficient = True
         
         # For each time step
         for t_idx, t in enumerate(t_list):
@@ -304,13 +329,18 @@ class QuTiPBackend(QuantumBackend):
         encoding_scale = float(QRC_parameters["encoding_scale"])
         use_gpu = QRC_parameters.get("use_gpu", False)
         
+        # Don't try to use GPU if we've already detected memory issues
+        if QuTiPBackend._gpu_memory_insufficient:
+            use_gpu = False
+            print("Using CPU mode due to previously detected GPU memory limitations")
+        
         # Create time list for simulation
         delta_t = total_time / time_steps
         t_list = np.arange(1, time_steps + 1, 1) * delta_t
         
         # Create Hamiltonian with better error handling
         try:
-            print(f"Creating Hamiltonian for {n_atoms} atoms (GPU mode: {use_gpu})")
+            print(f"Creating Hamiltonian for {n_atoms} atoms (GPU mode: {use_gpu and not QuTiPBackend._gpu_memory_insufficient})")
             H = self.create_rydberg_hamiltonian(
                 n_atoms=n_atoms,
                 lattice_spacing=lattice_spacing, 
@@ -322,6 +352,7 @@ class QuTiPBackend(QuantumBackend):
         except Exception as e:
             print(f"Error creating Hamiltonian: {str(e)}")
             print("Falling back to CPU mode")
+            QuTiPBackend._gpu_memory_insufficient = True
             H = self.create_rydberg_hamiltonian(
                 n_atoms=n_atoms,
                 lattice_spacing=lattice_spacing, 
@@ -348,11 +379,12 @@ class QuTiPBackend(QuantumBackend):
                     t_list=t_list,
                     n_atoms=n_atoms,
                     n_shots=n_shots,
-                    use_gpu=use_gpu
+                    use_gpu=use_gpu and not QuTiPBackend._gpu_memory_insufficient
                 )
             except Exception as e:
                 print(f"Error in simulation: {str(e)}")
                 print("Retrying simulation in CPU mode")
+                QuTiPBackend._gpu_memory_insufficient = True
                 samples = self.simulate_dynamics(
                     H=H,
                     t_list=t_list,
