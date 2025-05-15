@@ -84,7 +84,9 @@ Where:
 
 ### Data Encoding Schemes
 
-Currently, we use local detuning encoding where the autoencoder's output is mapped to the $\alpha_j$ coefficients that modulate the local detuning term. This encoding scheme allows us to imprint input data patterns onto the quantum system's energy landscape.
+In the current implementation, the features are directly mapped to the detuning values $\Delta_j(t)$ for each atom. This encoding scheme allows the input data to modulate the energy landscape of the quantum system, influencing its dynamics.
+
+The detuning values are scaled to a specified range ($[-detuning_{\text{max}}, detuning_{\text{max}}]$) to ensure compatibility with the quantum hardware. This scaling is performed using the spectral range of the encoded features, ensuring that the input data is appropriately normalized.
 
 Future extensions of this work will explore additional encoding schemes:
 
