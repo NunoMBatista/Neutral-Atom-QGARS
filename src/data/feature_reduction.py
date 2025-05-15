@@ -2,10 +2,11 @@ import numpy as np
 from typing import Dict, Tuple, Optional, Any, Union, List, TYPE_CHECKING
 from sklearn.decomposition import PCA
 from tqdm import tqdm
-from data_processing import flatten_images
+from .data_processing import flatten_images  # Fix relative import
 
-from autoencoder import Autoencoder, train_autoencoder, encode_data
-from guided_autoencoder import GuidedAutoencoder, train_guided_autoencoder, encode_data_guided
+# Replace relative imports with absolute imports
+from models.autoencoder import Autoencoder, train_autoencoder, encode_data  # Fix import path
+from models.guided_autoencoder import GuidedAutoencoder, train_guided_autoencoder, encode_data_guided  # Fix import path
 
 
 def apply_pca(data: Dict[str, Any], 

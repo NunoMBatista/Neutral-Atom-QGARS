@@ -40,8 +40,10 @@
     "classifier_regularization": 0.0001,
     "batchsize": 1000,
 
-    "gpu": false,
+    "gpu_autoencoder": false,
 
+    "backend": "bloqade",
+    "gpu_quantum_evolution": false,
 
     "seed": 42,
     "no_plot": true

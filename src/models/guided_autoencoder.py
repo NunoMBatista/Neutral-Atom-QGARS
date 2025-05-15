@@ -6,10 +6,10 @@ import numpy as np
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional
 
-from autoencoder import Autoencoder
-from qrc_layer import DetuningLayer
-from quantum_surrogate import QuantumSurrogate, create_and_train_surrogate, train_surrogate
-from models import LinearClassifier  # Import LinearClassifier from models.py
+from .autoencoder import Autoencoder  # Fix relative import
+from .qrc_layer import DetuningLayer  # Fix import path
+from .quantum_surrogate import QuantumSurrogate, create_and_train_surrogate, train_surrogate  # Fix relative import
+from .models import LinearClassifier  # Fix relative import
 
 class GuidedAutoencoder:
     """

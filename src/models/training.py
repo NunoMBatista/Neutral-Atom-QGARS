@@ -5,7 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional, Union
-from models import LinearClassifier, NeuralNetwork
+from .models import LinearClassifier, NeuralNetwork
 
 def train(x_train: np.ndarray, y_train: np.ndarray, 
           x_test: np.ndarray, y_test: np.ndarray, 

@@ -7,26 +7,27 @@ import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional
 import time
 
-# Fix the import path for the qrc_polyp_python module
+# Fix the import path for modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import custom modules
-from autoencoder import Autoencoder
-from guided_autoencoder import GuidedAutoencoder
+# Import custom modules from new structure
+from models.autoencoder import Autoencoder
+from models.guided_autoencoder import GuidedAutoencoder
 
-from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
-from feature_reduction import (
+from data.data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
+from data.feature_reduction import (
     apply_pca, apply_pca_to_test_data, 
     apply_autoencoder, apply_autoencoder_to_test_data,
     apply_guided_autoencoder, apply_guided_autoencoder_to_test_data,
     scale_to_detuning_range
 )
-from qrc_layer import DetuningLayer
-from training import train
-from visualization import plot_training_results, print_results
+from models.qrc_layer import DetuningLayer
+from models.models import NeuralNetwork, LinearClassifier
+from models.training import train
+from visualization.visualization import plot_training_results, print_results
 
 # Update import to use the new function
-from cli_utils import get_args
+from utils.cli_utils import get_args
 import argparse
 
 def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]:
@@ -141,8 +142,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         
     elif method_name == "autoencoder":
         # Use GPU if available and requested
-        device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
-        if args.gpu and not torch.cuda.is_available():
+        device = 'cuda' if args.gpu_autoencoder and torch.cuda.is_available() else 'cpu'
+        if args.gpu_autoencoder and not torch.cuda.is_available():
             print("Warning: GPU requested but not available. Using CPU instead.")
         
         print(f"Using autoencoder for feature reduction (device: {device})...")
@@ -195,7 +196,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             n_steps=args.time_steps,
             readout_type=args.readout_type,
             encoding_scale=args.encoding_scale,
-            print_params=False  # No need to print params twice
+            backend=args.backend,
+            use_gpu=args.gpu_quantum_evolution  
         )
         
         # Apply guided autoencoder reduction with improved parameters
@@ -273,7 +275,9 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
             t_end=args.evolution_time,
             n_steps=args.time_steps,
             readout_type=args.readout_type,
-            encoding_scale=args.encoding_scale 
+            encoding_scale=args.encoding_scale,
+            backend=args.backend,
+            use_gpu=args.gpu_quantum_evolution
         )
    
     print("""

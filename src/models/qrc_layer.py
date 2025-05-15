@@ -2,11 +2,11 @@ import numpy as np
 from bloqade.analog.ir.location import Chain
 from tqdm import tqdm
 from typing import Dict, Any, Union, Optional, List, Callable
-from quantum_task import get_embeddings_emulation
+from quantum_backends import get_backend  # Direct import from backends package
 
 class DetuningLayer:
     """
-    Bloqade implementation of the quantum dynamics simulation.
+    High-level interface to quantum simulation backends.
     
     Parameters
     ----------
@@ -26,6 +26,10 @@ class DetuningLayer:
         Type of readout measurements ("Z", "ZZ", or "all")
     encoding_scale : float, optional
         Scale for encoding features as detunings
+    backend : str, optional
+        Quantum simulation backend ('bloqade' or 'qutip')
+    use_gpu : bool, optional
+        Whether to use GPU acceleration with QuTiP
     """
     def __init__(self, 
                  geometry: str = 'chain', 
@@ -36,6 +40,8 @@ class DetuningLayer:
                  n_steps: int = 12,
                  readout_type: str = "all",
                  encoding_scale: float = 9.0,
+                 backend: str = "bloqade",
+                 use_gpu: bool = False,
                  print_params: bool = True):
         
         # Create chain geometry (only supported option)
@@ -52,12 +58,18 @@ class DetuningLayer:
         self.qrc_params = {
             "atom_number": n_atoms_int,
             "geometry_spec": atom_geometry,
+            "lattice_spacing": lattice_spacing_float,
             "encoding_scale": float(encoding_scale),
             "rabi_frequency": float(rabi_freq),
             "total_time": float(t_end),
             "time_steps": int(n_steps),
             "readouts": readout_type,
+            "backend": backend,
+            "use_gpu": use_gpu
         }
+        
+        # Initialize the backend
+        self.backend = get_backend(backend)
         
         if print_params:
             print(f"""
@@ -73,6 +85,8 @@ class DetuningLayer:
                     *    Number of time steps: {int(n_steps)}
                     *    Readout type: {readout_type}
                     *    Encoding scale: {float(encoding_scale)}
+                    *    Backend: {backend}
+                    *    Use GPU: {use_gpu}
                     *    
                     *******************************************
                   """)
@@ -97,27 +111,47 @@ class DetuningLayer:
         """
         if len(x.shape) == 1:
             # Single sample
-            return get_embeddings_emulation(x.reshape(-1, 1), self.qrc_params, 1, n_shots)
+            return self.backend.get_embeddings(x.reshape(-1, 1), self.qrc_params, 1, n_shots)
         else:
             # Batch of samples
-            #print(f"Processing {x.shape[1]} samples...")
-            # outputs = []
-            # iterator = tqdm(range(x.shape[1]), desc="Quantum simulation", unit="sample") if show_progress else range(x.shape[1])
-            # for i in iterator:
-            #     outputs.append(get_embeddings_emulation(
-            #                         xs=x[:, i].reshape(-1, 1), 
-            #                         qrc_params=self.qrc_params, 
-            #                         num_examples=1, # Process one example at a time for progress bar purposes
-            #                         n_shots=n_shots)[0]
-            #                    )
-                
-            # return np.column_stack(outputs)
-
-            outputs = get_embeddings_emulation(
-                xs=x, 
-                qrc_params=self.qrc_params, 
-                num_examples=x.shape[1], 
-                n_shots=n_shots
-            )
-            
-            return outputs
+            return self.backend.get_embeddings(x, self.qrc_params, x.shape[1], n_shots)
+    
+    def get_embeddings_with_checkpoint(self, xs: np.ndarray, 
+                                     num_examples: int, n_shots: int = 1000, 
+                                     checkpoint_file: str = 'quantum_embeddings.joblib') -> np.ndarray:
+        """
+        Get embeddings with checkpoint support to avoid recomputing.
+        
+        Parameters
+        ----------
+        xs : np.ndarray
+            Training set
+        num_examples : int
+            Number of examples to process
+        n_shots : int, optional
+            Number of shots for the quantum task, by default 1000
+        checkpoint_file : str, optional
+            Filename to save/load embeddings, by default 'quantum_embeddings.joblib'
+        
+        Returns
+        -------
+        np.ndarray
+            Array with the embeddings
+        """
+        import os
+        from joblib import dump, load
+        
+        # Check if checkpoint exists
+        if os.path.exists(checkpoint_file):
+            print(f"Loading embeddings from checkpoint: {checkpoint_file}")
+            return load(checkpoint_file)
+        
+        # If not, compute embeddings
+        print("Computing embeddings...")
+        embeddings = self.apply_layer(xs, n_shots)
+        
+        # Save checkpoint
+        print(f"Saving embeddings checkpoint: {checkpoint_file}")
+        dump(embeddings, checkpoint_file)
+        
+        return embeddings

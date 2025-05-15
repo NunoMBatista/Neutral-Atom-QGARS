@@ -120,7 +120,7 @@ class ConfigManager:
             "autoencoder_learning_rate": 0.001,
             "autoencoder_hidden_dims": None,
             "autoencoder_regularization": 1e-5,
-            "gpu": False,
+            "gpu_autoencoder": False,  # Updated parameter name
             "geometry": "chain",
             "lattice_spacing": 10.0,
             "rabi_freq": 2*np.pi,
@@ -130,6 +130,8 @@ class ConfigManager:
             "n_shots": 1000,
             "detuning_max": 6.0,
             "encoding_scale": 9.0,
+            "backend": "bloqade",  # Default to Bloqade
+            "gpu_quantum_evolution": False,  # Updated parameter name
             "classifier_regularization": 0.0005,
             "nepochs": 100,
             "batchsize": 1000,

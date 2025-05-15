@@ -6,6 +6,7 @@ import sys
 AVAILABLE_GEOMETRIES = ["chain"] 
 AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
 AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder", "guided_autoencoder"]
+AVAILABLE_BACKENDS = ["bloqade", "qutip"]  # Add the backends option
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
@@ -50,7 +51,8 @@ def parse_args() -> argparse.Namespace:
                        help="Hidden dimensions for autoencoder (e.g. --autoencoder-hidden-dims 256 128)")
     parser.add_argument("--autoencoder-regularization", type=float, default=1e-5,
                        help="Regularization strength for autoencoder training (weight decay)")
-    parser.add_argument("--gpu", action="store_true", help="Use GPU for autoencoder training if available")
+    parser.add_argument("--gpu-autoencoder", action="store_true", 
+                       help="Use GPU for autoencoder training if available")
     
     # Quantum parameters
     parser.add_argument("--geometry", type=str, choices=AVAILABLE_GEOMETRIES, default="chain",
@@ -71,6 +73,10 @@ def parse_args() -> argparse.Namespace:
                        help="Maximum detuning value")
     parser.add_argument("--encoding-scale", type=float, default=9.0,
                        help="Scale for encoding features as detunings")
+    parser.add_argument("--backend", type=str, choices=AVAILABLE_BACKENDS, default="bloqade",
+                       help="Quantum simulation backend to use (bloqade or qutip)")
+    parser.add_argument("--gpu-quantum-evolution", action="store_true", default=False,
+                       help="Use GPU acceleration with QuTiP (requires qutip-gpu)")
     
     # Training parameters
     parser.add_argument("--classifier-regularization", type=float, default=0.0005,
@@ -105,7 +111,7 @@ def get_args() -> argparse.Namespace:
     # Check if any arguments were provided (beyond script name)
     if len(sys.argv) == 1:
         # No command line args, use config file
-        from config_manager import get_config_args
+        from utils.config_manager import get_config_args  # Fix import
         return get_config_args()
     else:
         # Command line args provided, use them
