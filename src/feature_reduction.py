@@ -409,7 +409,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         verbose=verbose,
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
-        autoencoder_regularization=autoencoder_regularization
+        autoencoder_regularization=autoencoder_regularization,
     )
     
     # Encode data

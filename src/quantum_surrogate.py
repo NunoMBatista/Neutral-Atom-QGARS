@@ -5,6 +5,65 @@ import numpy as np
 from tqdm import tqdm
 from typing import Dict, Any, Optional, Tuple, List
 
+def get_proportional_hidden_dims(input_dim: int, output_dim: int, 
+                               scaling_factor: float = 1.0, 
+                               min_width: int = 256, 
+                               max_width: int = 8192) -> List[int]:
+    """
+    Calculate hidden dimensions proportional to input and output dimensions.
+    
+    Parameters
+    ----------
+    input_dim : int
+        Dimension of input features
+    output_dim : int
+        Dimension of quantum embeddings
+    scaling_factor : float, optional
+        Scale the network width, by default 1.0
+    min_width : int, optional
+        Minimum width for any layer, by default 256
+    max_width : int, optional
+        Maximum width for any layer, by default 8192
+        
+    Returns
+    -------
+    List[int]
+        List of hidden layer dimensions
+    """
+    # Base the network size on geometric mean of input and output dimensions
+    geo_mean = int(np.sqrt(input_dim * output_dim) * scaling_factor)
+    
+    # Determine network width based on dimensions
+    max_dim = max(input_dim, output_dim)
+    
+    # Scale network depth based on dimensionality
+    num_layers = max(3, min(6, int(np.log2(max_dim / 128))))
+    
+    # Determine maximum hidden layer width
+    max_hidden = min(max(geo_mean, min_width), max_width)
+    
+    # Create pyramid architecture that expands then contracts
+    hidden_dims = []
+    
+    # First expanding half
+    for i in range(num_layers // 2):
+        layer_width = min_width + int((max_hidden - min_width) * 
+                                     ((i + 1) / (num_layers // 2 + 1)))
+        hidden_dims.append(layer_width)
+    
+    # Middle layer(s) at maximum width
+    hidden_dims.append(max_hidden)
+    if num_layers % 2 == 0:
+        hidden_dims.append(max_hidden)
+    
+    # Contracting half
+    for i in range(num_layers // 2):
+        layer_width = max_hidden - int((max_hidden - min_width) * 
+                                     ((i + 1) / (num_layers // 2 + 1)))
+        hidden_dims.append(layer_width)
+    
+    return hidden_dims
+
 class QuantumSurrogate(nn.Module):
     """
     Neural network surrogate model that mimics the quantum layer.
@@ -27,17 +86,31 @@ class QuantumSurrogate(nn.Module):
     def __init__(self, 
                  input_dim: int, 
                  output_dim: int,
-                 hidden_dims: Optional[List[int]] = None,
                  activation: str = 'relu',
                  dropout: float = 0.1,
                  use_batch_norm: bool = True):
         super(QuantumSurrogate, self).__init__()
         
         # TODO: MAKE THIS A FUNCTION OF THE QUANTUM EMBEDDINGS SIZE
-        if hidden_dims is None:
+        #if hidden_dims is None:
             # Default architecture
-            hidden_dims = [256, 512, 256]
+            #hidden_dims = [256, 512, 256]
+            # For high-dimensional quantum embeddings
+        if output_dim > 1000:
+            scaling_factor = 1.2
+        else:
+            scaling_factor = 1.0
+            
+        hidden_dims = get_proportional_hidden_dims(
+            input_dim=input_dim,
+            output_dim=output_dim,
+            scaling_factor=scaling_factor,
+            min_width=256,
+            max_width=8192
+        )
         
+        print(f"Auto-configured surrogate hidden dimensions: {hidden_dims}")
+    
         # Select activation function
         if activation == 'relu':
             act_fn = nn.ReLU()
@@ -80,6 +153,7 @@ class QuantumSurrogate(nn.Module):
         
         
         return self.network(x)
+
 
 
 def train_surrogate(surrogate_model: QuantumSurrogate,
@@ -145,7 +219,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
             
         # Get quantum embeddings from the quantum layer
         if verbose:
-            print("Computing quantum embeddings for surrogate training...")
+            tqdm.write("Computing quantum embeddings for surrogate training...")
         quantum_embs = quantum_layer.apply_layer(
             x=input_numpy,
             n_shots=n_shots,
@@ -210,20 +284,14 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
                 outputs.requires_grad_(True)
             
             # Compute loss
-            #loss = criterion(outputs, targets)
-             
-            # diff = outputs - targets
-            # loss = (diff * diff).mean()
-             
-            # Create a differentiable proxy
-            # AS THE TARGETS ARE NOT DIFFERENTIABLE
-            # PYTORCH DOESN'T MAKE THE LOSS CRITERION DIFFERENTIABLE
-            # SO WE NEED A PROXY LOSS BRUUUUUUUUUUH
-            proxy_loss = outputs.sum() * 0.0
-            loss = criterion(outputs, targets) + proxy_loss
-
+            # The targets don't have gradients, so PyTorch won't make the loss require gradients
+            # To fix this, we add a zero term that maintains the gradient path
+            gradient_path = outputs.sum() * 0.0  # Creates path for gradients without affecting loss value
+            loss = criterion(outputs, targets) + gradient_path
+            
+            # Explicitly set requires_grad=True on the loss tensor
             loss.requires_grad_(True)
-                    
+            
             # Backward pass and optimize
             assert loss.requires_grad, "Loss must require grad to backprop!"
             loss.backward()
@@ -329,7 +397,6 @@ def create_and_train_surrogate(quantum_layer: Any,
     surrogate = QuantumSurrogate(
         input_dim=input_dim,
         output_dim=output_dim,
-        hidden_dims=[256, 512, 256],
         dropout=0.1,
         use_batch_norm=True
     )
@@ -349,4 +416,4 @@ def create_and_train_surrogate(quantum_layer: Any,
     )
     
     return trained_surrogate
-    
+

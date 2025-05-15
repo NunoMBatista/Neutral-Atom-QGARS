@@ -1,0 +1,61 @@
+@startuml pipeline
+skinparam backgroundColor transparent
+skinparam defaultTextAlignment center
+skinparam ArrowColor #333333
+skinparam ArrowThickness 2
+
+rectangle "INPUT DATA" as input #E8F5E9
+rectangle "AUTOENCODER ENCODER" as encoder #BBDEFB
+rectangle "ENCODING" as encoding #BBDEFB
+rectangle "AUTOENCODER DECODER" as decoder #BBDEFB
+rectangle "RECONSTRUCTION" as reconstruction #BBDEFB
+rectangle "QUANTUM LAYER" as quantum_layer #FFE0B2
+rectangle "QUANTUM EMBEDDINGS" as quantum_embeddings #FFE0B2
+rectangle "CACHE" as cache #FFE0B2
+rectangle "SURROGATE TRAINING" as surrogate_training #FFCCBC
+rectangle "SURROGATE MODEL" as surrogate_model #FFCCBC
+rectangle "SIMULATED QUANTUM EMBEDDINGS" as simulated_embeddings #FFCCBC
+rectangle "CLASSIFIER" as classifier #D1C4E9
+rectangle "CLASS PREDICTIONS" as predictions #D1C4E9
+rectangle "RECONSTRUCTION LOSS" as recon_loss #FFCDD2
+rectangle "CLASSIFICATION LOSS" as class_loss #FFCDD2
+rectangle "TOTAL LOSS" as total_loss #FFCDD2
+rectangle "BACKPROPAGATION" as backprop #E1BEE7
+rectangle "PARAMETER UPDATES" as param_updates #E1BEE7
+rectangle "TRUE LABELS" as true_labels #E1BEE7
+
+input --> encoder
+encoder --> encoding
+encoding --> decoder
+decoder --> reconstruction
+encoding --> quantum_layer
+quantum_layer --> quantum_embeddings
+quantum_embeddings --> cache
+quantum_embeddings --> surrogate_training
+cache --> surrogate_training
+surrogate_training --> surrogate_model
+surrogate_model --> simulated_embeddings
+simulated_embeddings --> classifier
+classifier --> predictions
+reconstruction --> recon_loss
+predictions --> class_loss
+true_labels --> class_loss
+recon_loss --> total_loss
+class_loss --> total_loss
+total_loss --> backprop
+backprop --> param_updates
+
+note right of surrogate_model
+  Differentiable path for gradients
+end note
+
+note right of quantum_layer
+  Non-differentiable
+  quantum operations
+end note
+
+note right of total_loss
+  (1-λ) * Reconstruction_Loss + λ * Classification_Loss
+end note
+
+@enduml

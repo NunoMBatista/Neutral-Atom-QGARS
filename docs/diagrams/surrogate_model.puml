@@ -1,0 +1,39 @@
+@startuml surrogate_model
+skinparam backgroundColor transparent
+skinparam defaultTextAlignment center
+skinparam componentStyle rectangle
+
+package "Classical Network" as ClassicalNetwork1 {
+  [INPUT] as Input
+  [AUTOENCODER] as Autoencoder
+  [SURROGATE] as Surrogate
+}
+
+package "Quantum System" as QuantumSystem {
+  [QUANTUM LAYER] as QuantumLayer
+}
+
+package "Classical Network" as ClassicalNetwork2 {
+  [CLASSIFIER] as Classifier
+  [OUTPUT] as Output
+}
+
+Input -> Autoencoder
+Autoencoder -> QuantumLayer : "non-differentiable"
+Input -> Surrogate : differentiable
+QuantumLayer -> Classifier
+Surrogate -> Classifier : differentiable
+
+Classifier -> Output
+
+note bottom of Surrogate
+  Creates differentiable path
+  for backpropagation
+end note
+
+note bottom of QuantumLayer
+  Non-differentiable
+  quantum operations
+end note
+
+@enduml
