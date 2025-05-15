@@ -97,7 +97,7 @@ class QuantumSurrogate(nn.Module):
             #hidden_dims = [256, 512, 256]
             # For high-dimensional quantum embeddings
         if output_dim > 1000:
-            scaling_factor = 1.2
+            scaling_factor = 2
         else:
             scaling_factor = 1.0
             
@@ -262,7 +262,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     
     # For early stopping
     best_loss = float('inf')
-    patience = 10
+    patience = 20
     patience_counter = 0
     best_model_state = None
     
@@ -409,7 +409,7 @@ def create_and_train_surrogate(quantum_layer: Any,
         quantum_embeddings=quantum_embeddings,
         epochs=50,
         batch_size=32,
-        learning_rate=0.001,
+        learning_rate=0.003,
         device=device,
         verbose=verbose,
         n_shots=n_shots
