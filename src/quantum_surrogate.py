@@ -165,7 +165,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
                    learning_rate: float = 0.001,
                    device: str = 'cpu',
                    verbose: bool = True,
-                   n_shots: int = 1000) -> Tuple[QuantumSurrogate, List[float]]:
+                   n_shots: int = 1000) -> QuantumSurrogate:
     """
     Train the surrogate model to mimic the quantum layer.
     
@@ -194,8 +194,8 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
         
     Returns
     -------
-    Tuple[QuantumSurrogate, List[float]]
-        Trained surrogate model and loss history
+    QuantumSurrogate
+        Trained surrogate model
     """
     # Ensure model is on the correct device and in training mode
     surrogate_model = surrogate_model.to(device)
@@ -204,9 +204,6 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     # Set up optimizer and loss function
     optimizer = optim.Adam(surrogate_model.parameters(), lr=learning_rate)
     criterion = nn.MSELoss()
-    
-    # Track loss history
-    loss_history = []
     
     # Convert input data to numpy for quantum layer if needed
     input_numpy = None
@@ -233,6 +230,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
         quantum_embeddings = torch.tensor(quantum_embs.T, dtype=torch.float32)
     
     # Make sure quantum embeddings are on the correct device
+    # quantum_embeddings = torch.tensor(quantum_embeddings, dtype=torch.float32).to(device)
     if isinstance(quantum_embeddings, torch.Tensor):
         quantum_embeddings = quantum_embeddings.clone().detach().to(device).requires_grad_(True)
     else:
@@ -242,7 +240,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     if isinstance(input_data, np.ndarray):
         input_tensor = torch.tensor(input_data.T, dtype=torch.float32).to(device)
     else:
-        input_tensor = input_data.detach().cpu()  # Detach to ensure we don't track unnecessary gradients
+        input_tensor = input_data.detach().cpu()#.to(device)  # Detach to ensure we don't track unnecessary gradients
         
     quantum_embeddings_cpu = quantum_embeddings.cpu() if hasattr(quantum_embeddings, 'is_cuda') else quantum_embeddings
     # Determine batch size based on dataset size
@@ -304,7 +302,6 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
         
         # Compute average loss
         epoch_loss = running_loss / len(dataset)
-        loss_history.append(epoch_loss)
         
         if verbose:
             tqdm.write(f"Epoch {epoch+1}/{epochs}, Loss: {epoch_loss:.6f}")
@@ -324,7 +321,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     
     # Ensure model is in evaluation mode before returning
     surrogate_model.eval()
-    return surrogate_model, loss_history
+    return surrogate_model
 
 
 def create_and_train_surrogate(quantum_layer: Any,
@@ -332,7 +329,7 @@ def create_and_train_surrogate(quantum_layer: Any,
                               quantum_embeddings: Optional[torch.Tensor] = None,
                               device: str = 'cpu',
                               verbose: bool = True,
-                              n_shots: int = 1000) -> Tuple[QuantumSurrogate, List[float]]:
+                              n_shots: int = 1000) -> QuantumSurrogate:
     """
     Create and train a surrogate model for the quantum layer.
     
@@ -353,8 +350,8 @@ def create_and_train_surrogate(quantum_layer: Any,
         
     Returns
     -------
-    Tuple[QuantumSurrogate, List[float]]
-        Trained surrogate model and loss history
+    QuantumSurrogate
+        Trained surrogate model
     """
     # Determine the output dimension for the surrogate model
     output_dim = None
@@ -406,7 +403,7 @@ def create_and_train_surrogate(quantum_layer: Any,
     )
     
     # Train the surrogate model
-    trained_surrogate, loss_history = train_surrogate(
+    trained_surrogate = train_surrogate(
         surrogate_model=surrogate,
         quantum_layer=quantum_layer,
         input_data=encodings,
@@ -419,5 +416,5 @@ def create_and_train_surrogate(quantum_layer: Any,
         n_shots=n_shots
     )
     
-    return trained_surrogate, loss_history
+    return trained_surrogate
 

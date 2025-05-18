@@ -113,9 +113,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     # Determine reduction dimension
     dim_reduction = args.dim_reduction
     
-    # Prepare a container for guided autoencoder losses
-    guided_autoencoder_losses = None
-    
     # Perform feature reduction based on selected method
     method_name = args.reduction_method.lower()
     reduction_name = method_name.upper()  # For display in result labels
@@ -202,7 +199,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
         )
         
         # Apply guided autoencoder reduction with improved parameters
-        xs_raw, reduction_model, spectral, guided_autoencoder_losses = apply_guided_autoencoder(
+        xs_raw, reduction_model, spectral = apply_guided_autoencoder(
             data_train,
             quantum_layer=quantum_layer,
             encoding_dim=dim_reduction,
@@ -388,12 +385,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     print_results(results)
     if not args.no_plot:
         plot_training_results(results)
-    
-    # Save statistics if running as main script (not as part of parameter sweep)
-    if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
-        from statistics_tracking import save_all_statistics
-        output_dir = save_all_statistics(results, guided_autoencoder_losses)
-        print(f"Saved run statistics to {output_dir}")
     
     return results
 
