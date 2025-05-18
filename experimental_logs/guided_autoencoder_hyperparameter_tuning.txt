@@ -5,9 +5,7 @@ FIX CLASS_LOSS NEVER UPDATING
 
 ===============================
 FINDING BEST LAMBDA FOR LOSS 
-FUNCTION AND ANALYSING THE 
-EFFECTS OF QUANTUM QUERY 
-FREQUENCY ON THE ACCURACY 
+FUNCTION
 ===============================
 
 PROFILE USED:
@@ -25,6 +23,14 @@ PROFILE USED:
 best_guided_lambda = ??
 
 -> Fix the best_guided_lambda for the rest of the experiments
+
+===============================
+ANALYSING THE 
+EFFECTS OF QUANTUM QUERY 
+FREQUENCY ON THE ACCURACY 
+===============================
+
+
 
 
 ===============================

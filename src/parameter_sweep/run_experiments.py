@@ -71,7 +71,7 @@ EXPERIMENT_PROFILES = {
         "description": "Sweep over guided autoencoder update frequency",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [0.5], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
+            "guided_lambda": [0.7], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
             "quantum_update_frequency": [1, 3, 5, 10],
             "dim_reduction": [12]
         }

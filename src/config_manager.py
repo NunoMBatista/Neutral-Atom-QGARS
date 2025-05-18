@@ -104,9 +104,9 @@ class ConfigManager:
             Default configuration dictionary
         """
         return {
-            "dataset_type": "cvc_clinic_db_patches",
+            "dataset_type": "cvc_clinic_db_patches",  # Updated to have mnist as default, but cifar10 is now available
             "data_dir": None,
-            "target_size": [128, 128],
+            "target_size": [28, 28],
             "split_ratio": 0.8,
             "reduction_method": "autoencoder",
             "dim_reduction": 12,

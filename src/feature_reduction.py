@@ -477,3 +477,155 @@ def apply_guided_autoencoder_to_test_data(data: Dict[str, Any],
     )
     
     return encoded_features
+
+
+def apply_feature_reduction(method_name: str, data: Dict[str, Any], **kwargs) -> Tuple[np.ndarray, Any, float, Optional[Dict[str, List[float]]]]:
+    """
+    Apply feature reduction using the specified method.
+    
+    Parameters
+    ----------
+    method_name : str
+        Name of the feature reduction method ('pca', 'autoencoder', 'guided_autoencoder')
+    data : Dict[str, Any]
+        Dataset containing 'features' and 'targets'
+    **kwargs
+        Additional arguments for the feature reduction method
+        
+    Returns
+    -------
+    Tuple[np.ndarray, Any, float, Optional[Dict[str, List[float]]]]
+        - xs_raw: Reduced features
+        - reduction_model: The trained reduction model (PCA or autoencoder)
+        - spectral: Max absolute value for scaling
+        - loss_history: Dictionary of loss histories (only for guided_autoencoder)
+    """
+    method_name = method_name.lower()
+    
+    # Clean memory between runs to avoid cache issues
+    import gc
+    gc.collect()
+    
+    guided_autoencoder_losses = None
+    
+    if method_name == "pca":
+        # Apply PCA reduction
+        print("Using PCA for feature reduction...")
+        xs_raw, reduction_model, spectral = apply_pca(
+            data=data, 
+            dim_pca=kwargs.get('dim_reduction', 8), 
+            selected_features=kwargs.get('selected_features')
+        )
+        
+    elif method_name == "autoencoder":
+        # Apply autoencoder reduction
+        device = kwargs.get('device', 'cpu')
+        print(f"Using autoencoder for feature reduction (device: {device})...")
+        
+        xs_raw, reduction_model, spectral = apply_autoencoder(
+            data=data,
+            encoding_dim=kwargs.get('dim_reduction', 8),
+            hidden_dims=kwargs.get('autoencoder_hidden_dims'),
+            batch_size=kwargs.get('autoencoder_batch_size', 64),
+            epochs=kwargs.get('autoencoder_epochs', 50),
+            learning_rate=kwargs.get('autoencoder_learning_rate', 0.001),
+            device=device,
+            verbose=kwargs.get('verbose', True),
+            use_batch_norm=kwargs.get('use_batch_norm', True),
+            dropout=kwargs.get('dropout', 0.1),
+            autoencoder_regularization=kwargs.get('autoencoder_regularization', 1e-5),
+            selected_features=kwargs.get('selected_features')
+        )
+        
+    elif method_name == "guided_autoencoder":
+        # Apply guided autoencoder reduction
+        device = kwargs.get('device', 'cpu')
+        print(f"Using quantum guided autoencoder for feature reduction (device: {device})...")
+        
+        quantum_layer = kwargs.get('quantum_layer')
+        if quantum_layer is None:
+            raise ValueError("quantum_layer must be provided for guided_autoencoder method")
+        
+        xs_raw, reduction_model, spectral, guided_autoencoder_losses = apply_guided_autoencoder(
+            data=data,
+            quantum_layer=quantum_layer,
+            encoding_dim=kwargs.get('dim_reduction', 8),
+            hidden_dims=kwargs.get('autoencoder_hidden_dims'),
+            guided_lambda=kwargs.get('guided_lambda', 0.3),
+            batch_size=kwargs.get('guided_batch_size', 32),
+            epochs=kwargs.get('autoencoder_epochs', 50),
+            learning_rate=kwargs.get('autoencoder_learning_rate', 0.001),
+            quantum_update_frequency=kwargs.get('quantum_update_frequency', 1),
+            n_shots=kwargs.get('n_shots', 1000),
+            device=device,
+            verbose=kwargs.get('verbose', True),
+            use_batch_norm=kwargs.get('use_batch_norm', True),
+            dropout=kwargs.get('dropout', 0.1),
+            autoencoder_regularization=kwargs.get('autoencoder_regularization', 1e-5),
+            selected_features=kwargs.get('selected_features'),
+            selected_targets=kwargs.get('selected_targets')
+        )
+        
+    else:
+        raise ValueError(f"Unknown reduction method: {method_name}")
+    
+    return xs_raw, reduction_model, spectral, guided_autoencoder_losses
+
+def apply_feature_reduction_to_test_data(method_name: str, data: Dict[str, Any], reduction_model: Any, **kwargs) -> np.ndarray:
+    """
+    Apply feature reduction to test data using a trained model.
+    
+    Parameters
+    ----------
+    method_name : str
+        Name of the feature reduction method ('pca', 'autoencoder', 'guided_autoencoder')
+    data : Dict[str, Any]
+        Test dataset containing 'features'
+    reduction_model : Any
+        Trained reduction model (PCA or autoencoder)
+    **kwargs
+        Additional arguments for the feature reduction method
+        
+    Returns
+    -------
+    np.ndarray
+        Reduced test features
+    """
+    method_name = method_name.lower()
+    
+    if method_name == "pca":
+        # Apply PCA to test data
+        print("Applying PCA to test data...")
+        test_features_raw = apply_pca_to_test_data(
+            data=data,
+            pca_model=reduction_model,
+            dim_pca=kwargs.get('dim_reduction', 8),
+            selected_features=kwargs.get('selected_features')
+        )
+        
+    elif method_name == "autoencoder":
+        # Apply autoencoder to test data
+        print("Applying autoencoder to test data...")
+        test_features_raw = apply_autoencoder_to_test_data(
+            data=data,
+            autoencoder_model=reduction_model,
+            device=kwargs.get('device', 'cpu'),
+            verbose=kwargs.get('verbose', True),
+            selected_features=kwargs.get('selected_features')
+        )
+    
+    elif method_name == "guided_autoencoder":
+        # Apply guided autoencoder to test data
+        print("Applying guided autoencoder to test data...")
+        test_features_raw = apply_guided_autoencoder_to_test_data(
+            data=data,
+            guided_autoencoder_model=reduction_model,
+            device=kwargs.get('device', 'cpu'),
+            verbose=kwargs.get('verbose', True),
+            selected_features=kwargs.get('selected_features')
+        )
+        
+    else:
+        raise ValueError(f"Unknown reduction method: {method_name}")
+    
+    return test_features_raw

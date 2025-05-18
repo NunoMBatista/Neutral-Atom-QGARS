@@ -218,6 +218,8 @@ class DatasetLoader:
 
     def load_mnist_dataset(self, data_dir: str = './data',
                           target_size: Tuple[int, int] = (28, 28),
+                          num_examples: Optional[int] = None,
+                          num_test_examples: Optional[int] = None,
                           **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Load and preprocess the MNIST dataset.
@@ -228,6 +230,10 @@ class DatasetLoader:
             Directory to store the MNIST dataset, by default './data'
         target_size : Tuple[int, int], optional
             Size to resize images to, by default (28, 28)
+        num_examples : Optional[int], optional
+            Maximum number of training examples to load, by default None (load all)
+        num_test_examples : Optional[int], optional
+            Maximum number of test examples to load, by default None (load all)
         
         Returns
         -------
@@ -263,22 +269,48 @@ class DatasetLoader:
             transform=transform
         )
         
-        # Convert to numpy arrays
-        train_features = np.zeros((target_size[0], target_size[1], len(train_data)), dtype=np.float32)
-        train_targets = np.zeros(len(train_data), dtype=np.int64)
+        # Determine how many samples to use
+        train_total = len(train_data)
+        test_total = len(test_data)
+        
+        # If num_examples is specified, use only that many samples
+        if num_examples is not None and num_examples < train_total:
+            train_indices = np.random.choice(train_total, size=num_examples, replace=False)
+            train_samples = num_examples
+            print(f"Using {num_examples} training examples out of {train_total} available")
+        else:
+            train_indices = range(train_total)
+            train_samples = train_total
+        
+        # If num_test_examples is specified, use only that many samples
+        if num_test_examples is not None and num_test_examples < test_total:
+            test_indices = np.random.choice(test_total, size=num_test_examples, replace=False)
+            test_samples = num_test_examples
+            print(f"Using {num_test_examples} test examples out of {test_total} available")
+        else:
+            test_indices = range(test_total)
+            test_samples = test_total
+        
+        # Initialize arrays with the exact sizes needed
+        train_features = np.zeros((target_size[0], target_size[1], train_samples), dtype=np.float32)
+        train_targets = np.zeros(train_samples, dtype=np.int64)
         
         print("Processing training images...")
-        for i, (img, target) in enumerate(tqdm(train_data) if SHOW_PROGRESS_BAR else train_data):
+        for i, idx in enumerate(tqdm(train_indices) if SHOW_PROGRESS_BAR else train_indices):
+            # Get the image and target at the selected index
+            img, target = train_data[idx]
             # Convert img from tensor (1, H, W) to numpy array (H, W)
             img_np = img.squeeze().numpy()
             train_features[:, :, i] = img_np
             train_targets[i] = target
         
-        test_features = np.zeros((target_size[0], target_size[1], len(test_data)), dtype=np.float32)
-        test_targets = np.zeros(len(test_data), dtype=np.int64)
+        test_features = np.zeros((target_size[0], target_size[1], test_samples), dtype=np.float32)
+        test_targets = np.zeros(test_samples, dtype=np.int64)
         
         print("Processing test images...")
-        for i, (img, target) in enumerate(tqdm(test_data) if SHOW_PROGRESS_BAR else test_data):
+        for i, idx in enumerate(tqdm(test_indices) if SHOW_PROGRESS_BAR else test_indices):
+            # Get the image and target at the selected index
+            img, target = test_data[idx]
             img_np = img.squeeze().numpy()
             test_features[:, :, i] = img_np
             test_targets[i] = target
@@ -296,6 +328,125 @@ class DatasetLoader:
         
         return train_dataset, test_dataset
 
+    def load_cifar10_dataset(self, data_dir: str = './data',
+                          target_size: Tuple[int, int] = (32, 32),
+                          num_examples: Optional[int] = None,
+                          num_test_examples: Optional[int] = None,
+                          **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Load and preprocess the CIFAR-10 dataset.
+        
+        Parameters
+        ----------
+        data_dir : str, optional
+            Directory to store the CIFAR-10 dataset, by default './data'
+        target_size : Tuple[int, int], optional
+            Size to resize images to, by default (32, 32)
+        num_examples : Optional[int], optional
+            Maximum number of training examples to load, by default None (load all)
+        num_test_examples : Optional[int], optional
+            Maximum number of test examples to load, by default None (load all)
+        
+        Returns
+        -------
+        Tuple[Dict[str, Any], Dict[str, Any]]
+            train_dataset, test_dataset containing features and targets
+        """
+        try:
+            # Import torchvision here to keep it as an optional dependency
+            import torchvision
+            import torchvision.transforms as transforms
+        except ImportError:
+            raise ImportError("torchvision is required to load CIFAR-10 dataset. "
+                             "Install it with 'pip install torchvision'.")
+        
+        # Define transformations
+        transform = transforms.Compose([
+            transforms.Resize(target_size),
+            transforms.ToTensor(),
+        ])
+        
+        # Load CIFAR-10 dataset
+        train_data = torchvision.datasets.CIFAR10(
+            root=data_dir,
+            train=True,
+            download=True,
+            transform=transform
+        )
+        
+        test_data = torchvision.datasets.CIFAR10(
+            root=data_dir,
+            train=False,
+            download=True,
+            transform=transform
+        )
+        
+        # Determine how many samples to use
+        train_total = len(train_data)
+        test_total = len(test_data)
+        
+        # If num_examples is specified, use only that many samples
+        if num_examples is not None and num_examples < train_total:
+            train_indices = np.random.choice(train_total, size=num_examples, replace=False)
+            train_samples = num_examples
+            print(f"Using {num_examples} training examples out of {train_total} available")
+        else:
+            train_indices = range(train_total)
+            train_samples = train_total
+        
+        # If num_test_examples is specified, use only that many samples
+        if num_test_examples is not None and num_test_examples < test_total:
+            test_indices = np.random.choice(test_total, size=num_test_examples, replace=False)
+            test_samples = num_test_examples
+            print(f"Using {num_test_examples} test examples out of {test_total} available")
+        else:
+            test_indices = range(test_total)
+            test_samples = test_total
+        
+        # Initialize arrays with the exact sizes needed
+        train_features = np.zeros((target_size[0], target_size[1], train_samples), dtype=np.float32)
+        train_targets = np.zeros(train_samples, dtype=np.int64)
+        
+        print("Processing training images...")
+        for i, idx in enumerate(tqdm(train_indices) if SHOW_PROGRESS_BAR else train_indices):
+            # Get the image and target at the selected index
+            img, target = train_data[idx]
+            # Convert img from tensor (3, H, W) to numpy array (H, W) - convert to grayscale
+            img_np = img.mean(dim=0).numpy()  # Average the color channels for grayscale
+            train_features[:, :, i] = img_np
+            train_targets[i] = target
+        
+        test_features = np.zeros((target_size[0], target_size[1], test_samples), dtype=np.float32)
+        test_targets = np.zeros(test_samples, dtype=np.int64)
+        
+        print("Processing test images...")
+        for i, idx in enumerate(tqdm(test_indices) if SHOW_PROGRESS_BAR else test_indices):
+            # Get the image and target at the selected index
+            img, target = test_data[idx]
+            # Convert to grayscale
+            img_np = img.mean(dim=0).numpy()
+            test_features[:, :, i] = img_np
+            test_targets[i] = target
+        
+        # CIFAR-10 class names
+        class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 
+                       'dog', 'frog', 'horse', 'ship', 'truck']
+        
+        # Create dataset dictionaries with appropriate metadata
+        train_dataset = self.create_dataset_dict(
+            train_features, train_targets, 
+            n_classes=10, split="train",
+            class_names=class_names
+        )
+        
+        test_dataset = self.create_dataset_dict(
+            test_features, test_targets, 
+            n_classes=10, split="test",
+            class_names=class_names
+        )
+        
+        return train_dataset, test_dataset
+
 # Create a single loader instance
 _dataset_loader = DatasetLoader()
 
@@ -306,7 +457,8 @@ def load_dataset(name: str = 'image_folder', **kwargs) -> Tuple[Dict[str, Any], 
     Parameters
     ----------
     name : str, optional
-        Name of the dataset to load, by default 'image_folder'
+        Name of the dataset to load, supports 'image_folder', 'mnist', 'cifar10',
+        by default 'image_folder'
     **kwargs
         Additional arguments to pass to the dataset loader
         
@@ -315,12 +467,20 @@ def load_dataset(name: str = 'image_folder', **kwargs) -> Tuple[Dict[str, Any], 
     Tuple[Dict[str, Any], Dict[str, Any]]
         train_dataset, test_dataset
     """
-    if name == 'mnist':
+    # Handle torchvision datasets
+    if name.lower() == 'mnist':
         return _dataset_loader.load_mnist_dataset(**kwargs)
-    elif name == 'image_folder':
-        return _dataset_loader.load_image_folder_dataset(**kwargs)
+    elif name.lower() == 'cifar10':
+        return _dataset_loader.load_cifar10_dataset(**kwargs)
+    # Handle custom image folder datasets - if name doesn't match predefined datasets
+    elif name.lower() == 'image_folder' or os.path.isdir(name):
+        # If the name is a directory path, use it directly
+        data_dir = name if os.path.isdir(name) else kwargs.get('data_dir')
+        if not data_dir:
+            raise ValueError(f"When using image_folder, data_dir must be provided")
+        return _dataset_loader.load_image_folder_dataset(data_dir=data_dir, **kwargs)
     else:
-        raise ValueError(f"Unknown dataset type: {name}. Available types: 'image_folder', 'mnist'")
+        raise ValueError(f"Unknown dataset type: {name}. Available types: 'image_folder', 'mnist', 'cifar10'")
 
 # Utility functions
 def flatten_images(data: np.ndarray, desc: str = "Flattening images") -> np.ndarray:
