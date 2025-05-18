@@ -142,7 +142,7 @@ def prepare_guided_autoencoder_data(data: np.ndarray, labels: np.ndarray,
     y_one_hot = np.zeros((n_samples, output_dim))
     y_one_hot[np.arange(n_samples), labels] = 1
     y = torch.tensor(y_one_hot, dtype=torch.float32).to(device)
-
+    
     # Create dataset and dataloader
     dataset = TensorDataset(X, y)
     dataloader = DataLoader(
@@ -150,7 +150,7 @@ def prepare_guided_autoencoder_data(data: np.ndarray, labels: np.ndarray,
             batch_size=adjusted_batch_size, 
             shuffle=True
         )
-
+        
     return X, y, dataloader
 
 def initialize_guided_autoencoder(input_dim: int, encoding_dim: int, output_dim: int,

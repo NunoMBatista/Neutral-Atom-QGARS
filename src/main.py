@@ -7,75 +7,27 @@ import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional
 import time
 
+# Fix the import path for the qrc_polyp_python module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
 from autoencoder import Autoencoder
 from guided_autoencoder import GuidedAutoencoder
 
-from statistics_tracking import save_all_statistics
 from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
 from feature_reduction import (
-    apply_feature_reduction, apply_feature_reduction_to_test_data,
+    apply_pca, apply_pca_to_test_data, 
+    apply_autoencoder, apply_autoencoder_to_test_data,
+    apply_guided_autoencoder, apply_guided_autoencoder_to_test_data,
     scale_to_detuning_range
 )
 from qrc_layer import DetuningLayer
 from training import train
 from visualization import plot_training_results, print_results
 
+# Update import to use the new function
 from cli_utils import get_args
 import argparse
-
-def get_dataset_path(args: argparse.Namespace) -> str:
-    """
-    Get dataset path based on configuration.
-    
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Command line arguments
-        
-    Returns
-    -------
-    str
-        Path to dataset
-    """
-    # Use specified data directory or the default data directory
-    return args.data_dir if args.data_dir else os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets"
-    )
-
-def setup_quantum_layer(args: argparse.Namespace, dim_reduction: int, is_new: bool = True) -> DetuningLayer:
-    """
-    Set up quantum layer with given parameters.
-    
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Command line arguments
-    dim_reduction : int
-        Dimension of the reduced features
-    is_new : bool, optional
-        Whether this is a new layer or reusing one, by default True
-        
-    Returns
-    -------
-    DetuningLayer
-        Configured quantum layer
-    """
-    print_status = is_new  # Only print parameters for new layers
-    
-    return DetuningLayer(
-        geometry=args.geometry,
-        n_atoms=dim_reduction,
-        lattice_spacing=args.lattice_spacing,
-        rabi_freq=args.rabi_freq,
-        t_end=args.evolution_time,
-        n_steps=args.time_steps,
-        readout_type=args.readout_type,
-        encoding_scale=args.encoding_scale,
-        print_params=print_status
-    )
 
 def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]:
     """
@@ -111,27 +63,26 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
           
           """)
     
-    # Get dataset path and load data
-    data_dir = get_dataset_path(args)
-    
-    # For predefined datasets like mnist or cifar10, load directly
-    if args.dataset_type.lower() in ['mnist', 'cifar10']:
+
+    DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
+
+    # Load dataset based on the specified dataset type
+    if args.dataset_type == 'mnist':
+        # Define the path to MNIST dataset
         data_train, data_test = load_dataset(
-            args.dataset_type,
-            data_dir=data_dir,
-            target_size=tuple(args.target_size),
-            num_examples=args.num_examples,
-            num_test_examples=args.num_test_examples
+            'mnist',
+            data_dir=DATA_DIR,
+            target_size=tuple(args.target_size)
         )
-    else:
-        # For custom image folder datasets, construct the path
-        dataset_dir = os.path.join(data_dir, args.dataset_type)
-        if not os.path.exists(dataset_dir):
-            raise ValueError(f"Dataset directory does not exist: {dataset_dir}")
+        
+    else:            
+        DATASET_DIR = os.path.join(DATA_DIR, args.dataset_type)
+        if not os.path.exists(DATASET_DIR):
+            raise ValueError(f"Dataset directory does not exist: {DATASET_DIR}")
         
         data_train, data_test = load_dataset(
             'image_folder',
-            data_dir=dataset_dir,
+            data_dir=DATASET_DIR,
             target_size=tuple(args.target_size),
             split_ratio=args.split_ratio,
             num_examples=args.num_examples,
@@ -162,57 +113,138 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     # Determine reduction dimension
     dim_reduction = args.dim_reduction
     
-    # Set up device for GPU-accelerated models if available
-    device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
-    if args.gpu and not torch.cuda.is_available():
-        print("Warning: GPU requested but not available. Using CPU instead.")
+    # Prepare a container for guided autoencoder losses
+    guided_autoencoder_losses = None
     
-    # Create quantum layer for guided autoencoder if needed
-    quantum_layer = None
-    if args.reduction_method.lower() == "guided_autoencoder":
+    # Perform feature reduction based on selected method
+    method_name = args.reduction_method.lower()
+    reduction_name = method_name.upper()  # For display in result labels
+    
+    # Clean memory between runs to avoid cache issues
+    import gc
+    gc.collect()
+    
+    if method_name == "pca":
+        # Apply PCA reduction
+        print("Using PCA for feature reduction...")
+        xs_raw, reduction_model, spectral = apply_pca(
+            data=data_train, 
+            dim_pca=dim_reduction, 
+            selected_features=train_features
+        )
+        
+        # Apply PCA to test data
+        print("Applying PCA to test data...")
+        test_features_raw = apply_pca_to_test_data(
+            data=data_test,
+            pca_model=reduction_model,
+            dim_pca=dim_reduction,
+            selected_features=test_features
+        )
+        
+    elif method_name == "autoencoder":
+        # Use GPU if available and requested
+        device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
+        if args.gpu and not torch.cuda.is_available():
+            print("Warning: GPU requested but not available. Using CPU instead.")
+        
+        print(f"Using autoencoder for feature reduction (device: {device})...")
+        
+        # Apply autoencoder reduction with improved parameters
+        xs_raw, reduction_model, spectral = apply_autoencoder(
+            data=data_train,
+            encoding_dim=dim_reduction,
+            hidden_dims=args.autoencoder_hidden_dims,
+            batch_size=args.autoencoder_batch_size,
+            epochs=args.autoencoder_epochs,
+            learning_rate=args.autoencoder_learning_rate,
+            device=device,
+            verbose=not args.no_progress,
+            use_batch_norm=True,
+            dropout=0.1,
+            autoencoder_regularization=args.autoencoder_regularization,
+            selected_features=train_features
+        )
+        
+        # Log the spectral range to help diagnose scaling issues
+        print(f"Encoded data spectral range: {spectral}")
+        
+        # Apply autoencoder to test data
+        print("Applying autoencoder to test data...")
+        test_features_raw = apply_autoencoder_to_test_data(
+            data_test,
+            reduction_model,
+            device=device,
+            verbose=not args.no_progress,
+            selected_features=test_features
+        )
+    
+    elif method_name == "guided_autoencoder":
+        # Use GPU if available and requested
+        device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
+        if args.gpu and not torch.cuda.is_available():
+            print("Warning: GPU requested but not available. Using CPU instead.")
+        
+        print(f"Using quantum guided autoencoder for feature reduction (device: {device})...")
+        
+        # First create quantum layer for guided training
         print("Creating quantum layer for guided autoencoder training...")
-        quantum_layer = setup_quantum_layer(args, dim_reduction, is_new=True)
-    
-    # Apply feature reduction with the selected method
-    feature_reduction_params = {
-        'dim_reduction': dim_reduction,
-        'autoencoder_hidden_dims': args.autoencoder_hidden_dims,
-        'autoencoder_batch_size': args.autoencoder_batch_size,
-        'autoencoder_epochs': args.autoencoder_epochs,
-        'autoencoder_learning_rate': args.autoencoder_learning_rate,
-        'autoencoder_regularization': args.autoencoder_regularization,
-        'guided_lambda': args.guided_lambda,
-        'guided_batch_size': args.guided_batch_size,
-        'quantum_update_frequency': args.quantum_update_frequency,
-        'n_shots': args.n_shots,
-        'device': device,
-        'verbose': not args.no_progress,
-        'selected_features': train_features,
-        'selected_targets': train_targets,
-        'quantum_layer': quantum_layer
-    }
-    
-    # Apply feature reduction using the router function
-    xs_raw, reduction_model, spectral, guided_autoencoder_losses = apply_feature_reduction(
-        method_name=args.reduction_method,
-        data=data_train,
-        **feature_reduction_params
-    )
-    
-    # Log the spectral range to help diagnose scaling issues
-    print(f"Encoded data spectral range: {spectral}")
-    
-    # Apply feature reduction to test data
-    test_features_raw = apply_feature_reduction_to_test_data(
-        method_name=args.reduction_method,
-        data=data_test,
-        reduction_model=reduction_model,
-        **feature_reduction_params
-    )
+        quantum_layer = DetuningLayer(
+            geometry=args.geometry,
+            n_atoms=dim_reduction,
+            lattice_spacing=args.lattice_spacing,
+            rabi_freq=args.rabi_freq,
+            t_end=args.evolution_time,
+            n_steps=args.time_steps,
+            readout_type=args.readout_type,
+            encoding_scale=args.encoding_scale,
+            print_params=False  # No need to print params twice
+        )
+        
+        # Apply guided autoencoder reduction with improved parameters
+        xs_raw, reduction_model, spectral, guided_autoencoder_losses = apply_guided_autoencoder(
+            data_train,
+            quantum_layer=quantum_layer,
+            encoding_dim=dim_reduction,
+            hidden_dims=args.autoencoder_hidden_dims,
+            guided_lambda=args.guided_lambda,
+            batch_size=args.guided_batch_size,
+            epochs=args.autoencoder_epochs,
+            learning_rate=args.autoencoder_learning_rate,
+            quantum_update_frequency=args.quantum_update_frequency,
+            n_shots=args.n_shots,
+            device=device,
+            verbose=not args.no_progress,
+            use_batch_norm=True,  # Enable batch normalization
+            dropout=0.1,  # Add dropout for regularization
+            autoencoder_regularization=args.autoencoder_regularization,  # Use autoencoder regularization
+            selected_features=train_features,
+            selected_targets=train_targets
+        )
+        
+        # Explicitly clear cache after training
+        reduction_model.clear_cache()
+        
+        # Log the spectral range to help diagnose scaling issues
+        print(f"Encoded data spectral range: {spectral}")
+        
+        # Apply guided autoencoder to test data
+        print("Applying guided autoencoder to test data...")
+        test_features_raw = apply_guided_autoencoder_to_test_data(
+            data_test,
+            reduction_model,
+            device=device,
+            verbose=not args.no_progress,
+            selected_features=test_features
+        )
+        
+    else:
+        raise ValueError(f"Unknown reduction method: {method_name}")
     
     # We already have our targets from the random selection
     ys_encoded, encoder = one_hot_encode(train_targets, data_train["metadata"]["n_classes"])
     ys = ys_encoded.T  # Transpose to match expected format
+
 
     print("""
           
@@ -232,11 +264,20 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     test_features = scale_to_detuning_range(test_features_raw, spectral, args.detuning_max)
     print(f"Scaled test feature range: {test_features.min()} to {test_features.max()}")
 
-    # Create or reuse quantum layer
-    if args.reduction_method.lower() == "guided_autoencoder" and quantum_layer is not None:
+    # Create quantum layer (reuse if we already created one for guided autoencoder)
+    if method_name == "guided_autoencoder" and 'quantum_layer' in locals():
         print("Reusing quantum layer from guided autoencoder...")
     else:
-        quantum_layer = setup_quantum_layer(args, dim_reduction)
+        quantum_layer = DetuningLayer(
+            geometry=args.geometry,
+            n_atoms=dim_reduction,
+            lattice_spacing=args.lattice_spacing,
+            rabi_freq=args.rabi_freq,
+            t_end=args.evolution_time,
+            n_steps=args.time_steps,
+            readout_type=args.readout_type,
+            encoding_scale=args.encoding_scale 
+        )
    
     print("""
           
@@ -330,7 +371,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     print(f"""
         ==========================================
             Dataset: {args.dataset_type}
-            Reduction Method: {args.reduction_method.upper()}
+            Reduction Method: {reduction_name}
             Number of training samples: {data_train['metadata']['n_samples']}
             Number of test samples: {data_test['metadata']['n_samples']}
             Number of classes: {data_train['metadata']['n_classes']}
@@ -348,16 +389,10 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     if not args.no_plot:
         plot_training_results(results)
     
-    # Always make guided_autoencoder_losses accessible to parameter_sweep
-    import __main__
-    __main__.guided_autoencoder_losses = guided_autoencoder_losses
-    
-    # Always save statistics regardless of whether it's a parameter sweep or not
-    # Convert args to dictionary for saving
-    config_dict = vars(args)
-    # Don't save again if we're in a parameter sweep - parameter_sweep will handle it
+    # Save statistics if running as main script (not as part of parameter sweep)
     if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
-        output_dir = save_all_statistics(results, guided_autoencoder_losses, config=config_dict)
+        from statistics_tracking import save_all_statistics
+        output_dir = save_all_statistics(results, guided_autoencoder_losses)
         print(f"Saved run statistics to {output_dir}")
     
     return results

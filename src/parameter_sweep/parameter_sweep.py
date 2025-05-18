@@ -180,52 +180,19 @@ class ParameterSweep:
             # Run main function with args
             results = main(args)
             
-            # More robust approach to capture guided losses from multiple possible sources
+            # Save statistics in the experiment directory
             guided_losses = None
             
+            # Check if guided autoencoder data is available in the global scope
             import __main__
-            # Try to get from the main module first
             if hasattr(__main__, 'guided_autoencoder_losses') and __main__.guided_autoencoder_losses is not None:
                 guided_losses = __main__.guided_autoencoder_losses
             
-            # Check if guided_autoencoder_losses is in sys.modules['__main__'].__dict__
-            elif 'guided_autoencoder_losses' in sys.modules['__main__'].__dict__:
-                guided_losses = sys.modules['__main__'].__dict__['guided_autoencoder_losses']
-            
-            # Also check if it's in the globals of the main module
-            elif hasattr(sys.modules['__main__'], '__dict__') and 'guided_autoencoder_losses' in sys.modules['__main__'].__dict__:
-                guided_losses = sys.modules['__main__'].__dict__['guided_autoencoder_losses']
-            
             # Save statistics
-            save_all_statistics(results, guided_losses, exp_dir, config=config)
+            save_all_statistics(results, guided_losses, exp_dir)
             
             # Extract metrics
             metrics = self._extract_metrics(results)
-            
-            # Add surrogate loss metrics if available
-            if guided_losses is not None and 'surrogate_loss' in guided_losses:
-                valid_losses = [x for x in guided_losses['surrogate_loss'] if x is not None]
-                if valid_losses:
-                    metrics["surrogate_final_loss"] = float(valid_losses[-1])
-                    metrics["surrogate_min_loss"] = float(min(valid_losses))
-                    
-                    # Add average of last few losses as a stability metric
-                    if len(valid_losses) >= 5:
-                        metrics["surrogate_last_5_avg"] = float(sum(valid_losses[-5:]) / 5)
-            
-            # Add reconstruction, classification and total loss metrics if available
-            if guided_losses is not None:
-                if 'reconstruction' in guided_losses and guided_losses['reconstruction']:
-                    metrics["reconstruction_final_loss"] = float(guided_losses['reconstruction'][-1])
-                    metrics["reconstruction_min_loss"] = float(min(guided_losses['reconstruction']))
-                
-                if 'classification' in guided_losses and guided_losses['classification']:
-                    metrics["classification_final_loss"] = float(guided_losses['classification'][-1])
-                    metrics["classification_min_loss"] = float(min(guided_losses['classification']))
-                
-                if 'total' in guided_losses and guided_losses['total']:
-                    metrics["total_final_loss"] = float(guided_losses['total'][-1])
-                    metrics["total_min_loss"] = float(min(guided_losses['total']))
             
             # Add configuration parameters to metrics
             for key, value in config.items():

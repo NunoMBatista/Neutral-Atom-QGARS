@@ -1,5 +1,5 @@
 {
-    "dataset_type": "mnist",
+    "dataset_type": "generated_polyp_dataset",
     "data_dir": null,
     "num_examples": 1000,
     "num_test_examples": 200,

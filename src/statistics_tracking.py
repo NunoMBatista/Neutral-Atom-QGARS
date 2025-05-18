@@ -266,37 +266,11 @@ def save_metrics_json(metrics: Dict[str, Any], output_dir: str) -> None:
     
     logging.info(f"Saved metrics to {metrics_path}")
 
-def save_config_json(config: Dict[str, Any], output_dir: str) -> None:
-    """
-    Save configuration parameters to a JSON file.
-    
-    Parameters
-    ----------
-    config : Dict[str, Any]
-        Configuration parameters
-    output_dir : str
-        Directory to save the configuration
-    """
-    # Make a copy of the config to avoid modifying the original
-    config_to_save = config.copy()
-    
-    # Convert any non-serializable types (like numpy arrays)
-    for key, value in config_to_save.items():
-        if isinstance(value, np.ndarray):
-            config_to_save[key] = value.tolist()
-    
-    config_path = os.path.join(output_dir, "config.json")
-    with open(config_path, 'w') as f:
-        json.dump(config_to_save, f, indent=4)
-    
-    logging.info(f"Saved configuration to {config_path}")
-
 def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
                        guided_losses: Optional[Dict[str, List[float]]] = None,
-                       output_dir: Optional[str] = None,
-                       config: Optional[Dict[str, Any]] = None) -> str:
+                       output_dir: Optional[str] = None) -> str:
     """
-    Save all statistics including plots, logs, and configuration.
+    Save all statistics including plots and logs.
     
     Parameters
     ----------
@@ -306,8 +280,6 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
         Dictionary with guided autoencoder loss histories, by default None
     output_dir : Optional[str], optional
         Directory to save statistics, by default None (creates one)
-    config : Optional[Dict[str, Any]], optional
-        Configuration parameters used for the run, by default None
         
     Returns
     -------
@@ -348,9 +320,5 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
                 metrics["surrogate_min_loss"] = float(min(valid_surrogate_losses))
     
     save_metrics_json(metrics, output_dir)
-    
-    # Save configuration if provided
-    if config is not None:
-        save_config_json(config, output_dir)
     
     return output_dir
