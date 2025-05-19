@@ -1,9 +1,11 @@
 import os
 import argparse
 from datetime import datetime
+from tkinter.tix import AUTO
 from typing import Dict, Any, List, Optional
 import pandas as pd
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from parameter_sweep import ParameterSweep
@@ -11,23 +13,52 @@ from config_manager import ConfigManager
 
 # Define experiment profiles with parameter ranges
 EXPERIMENT_PROFILES = {
-    # NOT DONE
+    # DONE, 1e-5 and 1-e3 yielded the best results
+    "autoencoder_regularization": {
+        "description": "Sweep over autoencoder regularization parameters",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
+            "quantum_update_frequency": [5],
+            "dim_reduction": [12]
+        }
+    },
+    
+    # RUNNING THIS ONE NOW
+    "guided_autoencoder_lambda": {
+        "description": "Sweep over guided autoencoder lambda parameter",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0],
+            "quantum_update_frequency": [1],
+            "dim_reduction": [12]
+        }
+    },
+    
+    # RUNNING ON CRAY 4
     # SHOULD SHOW THAT USING MORE QUBITS IS BETTER
     "encoding_dimensions": {
         "description": "Sweep over encoding dimensions and methods",
         "param_grid": {
             "dim_reduction": [4, 6, 8, 10, 12],
             "reduction_method": ["pca", "autoencoder", "guided_autoencoder"],
-            "n_shots": [500]
+            "n_shots": [1000],
+            "autoencoder_regularization": [1e-5], # FIXED FROM THE PREVIOUS STEPS
+            "guided_lambda": [0.7], # FIXED FROM THE PREVIOUS STEPS
+            "quantum_update_frequency": [1] # SHOWS QUANTUM GUIDED AUTOENCODER PEAK PERFORMANCE
         }
     },
     
-    "autoencoder_regularization": {
-        "description": "Sweep over autoencoder regularization parameters",
+    # WILL RUN ON RTX3095
+    # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
+    "guided_autoencoder_update_frequency": {
+        "description": "Sweep over guided autoencoder update frequency",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
-            "dim_reduction": [12]
+            "guided_lambda": [0.7], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
+            "quantum_update_frequency": [1, 3, 5, 10, 25, 50],
+            "dim_reduction": [12], # PEAK PERFORMANCE
+            "autoencoder_regularization": [1e-5] # FIXED FROM THE PREVIOUS STEPS
         }
     },
     
@@ -37,6 +68,17 @@ EXPERIMENT_PROFILES = {
         "param_grid": {
             "readout_type": ["Z", "ZZ", "all"],
             "time_steps": [4, 8, 12, 16],
+            "reduction_method": ["guided_autoencoder"],
+            "dim_reduction": [12]
+        }
+    },
+    
+    # NOT DONE
+    "encoding_scale": {
+        "description": "Sweep over encoding scale parameter",
+        "param_grid": {
+            "encoding_scale": [3.0, 6.0, 9.0, 12.0],
+            "detuning_max": [3.0, 6.0, 9.0],
             "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12]
         }
@@ -54,28 +96,8 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # RUNNING THIS ONE NOW
-    "guided_autoencoder_lambda": {
-        "description": "Sweep over guided autoencoder lambda parameter",
-        "param_grid": {
-            "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0],
-            "quantum_update_frequency": [1],
-            "dim_reduction": [12]
-        }
-    },
     
-    # NOT DONE
-    # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
-    "guided_autoencoder_update_frequency": {
-        "description": "Sweep over guided autoencoder update frequency",
-        "param_grid": {
-            "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [0.5], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
-            "quantum_update_frequency": [1, 3, 5, 10],
-            "dim_reduction": [12]
-        }
-    },
+
     
     # NOT DONE
     "evolution_time": {
@@ -88,16 +110,6 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # NOT DONE
-    "encoding_scale": {
-        "description": "Sweep over encoding scale parameter",
-        "param_grid": {
-            "encoding_scale": [3.0, 6.0, 9.0, 12.0],
-            "detuning_max": [3.0, 6.0, 9.0],
-            "reduction_method": ["guided_autoencoder"],
-            "dim_reduction": [12]
-        }
-    },
     
     # NOT DONE
     "full_dataset": {
@@ -119,7 +131,7 @@ EXPERIMENT_PROFILES = {
             "learning_rate": [0.001, 0.01, 0.05],
             "regularization": [0.0, 0.0001, 0.001, 0.01],
             "reduction_method": ["guided_autoencoder"],
-            "dim_reduction": [12]
+            "dim_reduction": [12],
         }
     }
 }

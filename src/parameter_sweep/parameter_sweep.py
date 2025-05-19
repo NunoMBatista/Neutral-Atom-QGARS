@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from main import main
 from config_manager import ConfigManager
+from statistics_tracking import save_all_statistics  # Add this import
 
 class ParameterSweep:
     """
@@ -161,13 +162,23 @@ class ParameterSweep:
         # Convert config to argparse Namespace
         args = ConfigManager.config_to_args(config)
         
+        # Mark this as a parameter sweep run to prevent duplicate saving
+        setattr(args, '_parameter_sweep', True)
+        
         # Run the experiment
         try:
             self.experiment_counter += 1
             print(f"\nExperiment {self.experiment_counter}: Running with {exp_id}\n")
             
-            # Run main function with args
-            results = main(args)
+            # Create experiment directory
+            exp_dir = os.path.join(sweep_dir, exp_id)
+            os.makedirs(exp_dir, exist_ok=True)
+            
+            # Run main function with args - now unpacking both return values
+            results, guided_losses = main(args)
+            
+            # Save statistics in the experiment directory - no need to check __main__
+            save_all_statistics(results, guided_losses, exp_dir)
             
             # Extract metrics
             metrics = self._extract_metrics(results)
@@ -178,10 +189,6 @@ class ParameterSweep:
                 if key not in ['autoencoder_hidden_dims', 'target_size']:
                     metrics[key] = value
                     
-            # Save individual experiment results
-            exp_dir = os.path.join(sweep_dir, exp_id)
-            os.makedirs(exp_dir, exist_ok=True)
-            
             # Save configuration
             with open(os.path.join(exp_dir, "config.json"), "w") as f:
                 config_serializable = {k: str(v) if isinstance(v, np.ndarray) else v 

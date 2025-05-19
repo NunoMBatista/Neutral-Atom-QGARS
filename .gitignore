@@ -17,6 +17,7 @@
 data/datasets/**
 
 src/parameter_sweep/results/**
+<<<<<<< HEAD
 
 paper/*.aux
 paper/*.fdb_latexmk
@@ -25,3 +26,6 @@ paper/*.log
 paper/*.synctex.gz
 paper/*.toc
 paper/*.out
+=======
+src/run_stats/**
+>>>>>>> 1d8e7ab36e622d73f0d49743677ad44f5f5e1747

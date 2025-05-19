@@ -97,7 +97,7 @@ class QuantumSurrogate(nn.Module):
             #hidden_dims = [256, 512, 256]
             # For high-dimensional quantum embeddings
         if output_dim > 1000:
-            scaling_factor = 1.2
+            scaling_factor = 2
         else:
             scaling_factor = 1.0
             
@@ -240,14 +240,15 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     if isinstance(input_data, np.ndarray):
         input_tensor = torch.tensor(input_data.T, dtype=torch.float32).to(device)
     else:
-        input_tensor = input_data.detach().to(device)  # Detach to ensure we don't track unnecessary gradients
-    
+        input_tensor = input_data.detach().cpu()#.to(device)  # Detach to ensure we don't track unnecessary gradients
+        
+    quantum_embeddings_cpu = quantum_embeddings.cpu() if hasattr(quantum_embeddings, 'is_cuda') else quantum_embeddings
     # Determine batch size based on dataset size
     num_samples = input_tensor.shape[0]
     actual_batch_size = min(batch_size, num_samples)
     
     # Create simple dataset and dataloader with pinned memory for faster data transfer
-    dataset = torch.utils.data.TensorDataset(input_tensor, quantum_embeddings)
+    dataset = torch.utils.data.TensorDataset(input_tensor, quantum_embeddings_cpu)
     dataloader = torch.utils.data.DataLoader(
         dataset, 
         batch_size=actual_batch_size, 
@@ -262,7 +263,7 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
     
     # For early stopping
     best_loss = float('inf')
-    patience = 10
+    patience = 20
     patience_counter = 0
     best_model_state = None
     
@@ -409,7 +410,7 @@ def create_and_train_surrogate(quantum_layer: Any,
         quantum_embeddings=quantum_embeddings,
         epochs=50,
         batch_size=32,
-        learning_rate=0.001,
+        learning_rate=0.003,
         device=device,
         verbose=verbose,
         n_shots=n_shots

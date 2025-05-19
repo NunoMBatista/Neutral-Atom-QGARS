@@ -323,7 +323,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             autoencoder_regularization: Optional[float] = None,
                             selected_indices: Optional[np.ndarray] = None,
                             selected_features: Optional[np.ndarray] = None,
-                            selected_targets: Optional[np.ndarray] = None) -> Tuple[np.ndarray, GuidedAutoencoder, float]:
+                            selected_targets: Optional[np.ndarray] = None) -> Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Apply guided autoencoder to reduce image dimensions with quantum guidance.
     
@@ -371,10 +371,11 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         
     Returns
     -------
-    Tuple[np.ndarray, GuidedAutoencoder, float]
+    Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]
         - xs: Encoded features for the selected examples
         - model: Trained guided autoencoder model
         - spectral: Max absolute value of the encoded features (for scaling)
+        - loss_history: Dictionary of loss histories
     """
     
     # Use provided features if available, otherwise use all data
@@ -393,7 +394,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
     
     # Train guided autoencoder
     print("Training guided autoencoder with quantum feedback...")
-    model, spectral = train_guided_autoencoder(
+    model, spectral, loss_history = train_guided_autoencoder(
         data=data_flat, 
         labels=targets, 
         quantum_layer=quantum_layer, 
@@ -425,7 +426,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
     # No need to select a subset now, as we already have the selected samples
     xs = encoded_data
     
-    return xs, model, spectral
+    return xs, model, spectral, loss_history
 
 
 def apply_guided_autoencoder_to_test_data(data: Dict[str, Any], 

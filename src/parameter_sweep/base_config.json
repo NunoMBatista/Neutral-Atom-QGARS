@@ -6,10 +6,13 @@
     "target_size": [28, 28],
     "split_ratio": 0.8,
     
+    
     "reduction_method": "autoencoder",
     "dim_reduction": 12,
-    "guided_lambda": 0.5,
-    "quantum_update_frequency": 1,
+    "guided_lambda": 0.7,
+    "quantum_update_frequency": 5,
+    "autoencoder_learning_rate": 0.001,
+    "autoencoder_regularization": 1e-5,
     
     "n_shots": 1000,
     "readout_type": "all",
@@ -20,8 +23,6 @@
     "autoencoder_hidden_dims": null,
     "autoencoder_epochs": 50,
     "autoencoder_batch_size": 64,
-    "autoencoder_learning_rate": 0.001,
-    "autoencoder_regularization": 1e-5,
 
     "guided_batch_size": 64,
 
