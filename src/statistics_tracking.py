@@ -116,16 +116,17 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
     Parameters
     ----------
     losses : Dict[str, List[float]]
-        Dictionary with keys 'total', 'reconstruction', 'classification' mapping to loss histories
+        Dictionary with keys 'total_loss', 'recon_loss', 'class_loss' mapping to loss histories
     output_dir : str
         Directory to save the plot
     """
     # Plot main losses (reconstruction, classification, total)
     plt.figure(figsize=(10, 6))
     
-    plt.plot(losses['total'], label='Total Loss', color='blue', linewidth=2)
-    plt.plot(losses['reconstruction'], label='Reconstruction Loss', color='green', linewidth=1.5, linestyle='--')
-    plt.plot(losses['classification'], label='Classification Loss', color='red', linewidth=1.5, linestyle=':')
+    # Use the correct key names from the loss_history dictionary
+    plt.plot(losses['total_loss'], label='Total Loss', color='blue', linewidth=2)
+    plt.plot(losses['recon_loss'], label='Reconstruction Loss', color='green', linewidth=1.5, linestyle='--')
+    plt.plot(losses['class_loss'], label='Classification Loss', color='red', linewidth=1.5, linestyle=':')
     
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
@@ -266,9 +267,45 @@ def save_metrics_json(metrics: Dict[str, Any], output_dir: str) -> None:
     
     logging.info(f"Saved metrics to {metrics_path}")
 
+def save_config_file(args: Any, output_dir: str) -> None:
+    """
+    Save the configuration as a JSON file.
+    
+    Parameters
+    ----------
+    args : Any
+        Command line arguments or configuration object
+    output_dir : str
+        Directory to save the configuration
+    """
+    # Convert args to dictionary if it's not already
+    if hasattr(args, '__dict__'):
+        config = vars(args)
+    else:
+        config = args
+    
+    # Convert numpy arrays and other non-serializable types
+    config_serializable = {}
+    for k, v in config.items():
+        if isinstance(v, np.ndarray):
+            config_serializable[k] = v.tolist()
+        elif isinstance(v, (int, float, str, bool, list, dict, tuple)) or v is None:
+            config_serializable[k] = v
+        else:
+            # Convert other types to string representation
+            config_serializable[k] = str(v)
+    
+    # Save as JSON
+    config_path = os.path.join(output_dir, "config.json")
+    with open(config_path, 'w') as f:
+        json.dump(config_serializable, f, indent=4)
+    
+    logging.info(f"Saved configuration to {config_path}")
+
 def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
                        guided_losses: Optional[Dict[str, List[float]]] = None,
-                       output_dir: Optional[str] = None) -> str:
+                       output_dir: Optional[str] = None,
+                       args: Optional[Any] = None) -> str:
     """
     Save all statistics including plots and logs.
     
@@ -280,6 +317,8 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
         Dictionary with guided autoencoder loss histories, by default None
     output_dir : Optional[str], optional
         Directory to save statistics, by default None (creates one)
+    args : Optional[Any], optional
+        Command line arguments or configuration object, by default None
         
     Returns
     -------
@@ -291,6 +330,10 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
         output_dir = setup_stats_directory()
     else:
         ensure_directory_exists(output_dir)
+    
+    # Save configuration if provided
+    if args is not None:
+        save_config_file(args, output_dir)
     
     # Save classifier metrics
     save_classifier_loss_plot(results_dict, output_dir)
@@ -307,9 +350,9 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
     
     # Add guided autoencoder metrics if available
     if guided_losses is not None:
-        metrics["guided_autoencoder_final_total_loss"] = float(guided_losses["total"][-1])
-        metrics["guided_autoencoder_final_recon_loss"] = float(guided_losses["reconstruction"][-1])
-        metrics["guided_autoencoder_final_class_loss"] = float(guided_losses["classification"][-1])
+        metrics["guided_autoencoder_final_total_loss"] = float(guided_losses["total_loss"][-1])
+        metrics["guided_autoencoder_final_recon_loss"] = float(guided_losses["recon_loss"][-1])
+        metrics["guided_autoencoder_final_class_loss"] = float(guided_losses["class_loss"][-1])
         
         # Add surrogate metrics if available
         if 'surrogate_loss' in guided_losses and any(x is not None for x in guided_losses['surrogate_loss']):

@@ -22,7 +22,7 @@ PROFILE USED:
         }
     },
 
-best_guided_lambda = ??
+best_guided_lambda = 0.7
 
 -> Fix the best_guided_lambda for the rest of the experiments
 
@@ -39,17 +39,30 @@ PROFILE USED:
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
             "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
+            "quantum_update_frequency" : [5],
+            "guided_lambda" : [0.5]
             "dim_reduction": [12]
         }
     },
 
-best_autoencoder_regularization = ??
+best_autoencoder_regularization = 1e-5
 
 
 ===============================
 FINDING BEST GUIDED AUTOENCODER
 LEARNING RATE VALUES
 ===============================
+
+    "autoencoder_regularization": {
+        "description": "Sweep over autoencoder regularization parameters",
+        "param_grid": {
+            "reduction_method": ["guided_autoencoder"],
+            "autoencoder_regularization": [0.0, 0.00001, 0.0001, 0.001, 0.01],
+            "quantum_update_frequency" : [5],
+            "guided_lambda" : [0.5]
+            "dim_reduction": [12]
+        }
+    },
 
 
 ===============================

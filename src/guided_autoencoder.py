@@ -488,7 +488,7 @@ def train_guided_autoencoder(
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
     class_scale: float = 1.0
-) -> Tuple[GuidedAutoencoder, float]:
+) -> Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Train a guided autoencoder jointly with quantum embeddings.
     
@@ -536,8 +536,8 @@ def train_guided_autoencoder(
         
     Returns
     -------
-    Tuple[GuidedAutoencoder, float]
-        Trained guided autoencoder and maximum absolute value for scaling
+    Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]
+        Trained guided autoencoder, maximum absolute value for scaling, and loss history dictionary
     """
     
     # Prepare data
@@ -600,6 +600,13 @@ def train_guided_autoencoder(
     patience = 10
     best_model_state = None
     
+    # Track loss history
+    loss_history = {
+        "recon_loss": [],
+        "class_loss": [],
+        "total_loss": []
+    }
+    
     # Training loop
     iterator = range(epochs)
     if verbose:
@@ -637,6 +644,11 @@ def train_guided_autoencoder(
             recon_scale=recon_scale,
             class_scale=class_scale
         )
+        
+        # Store losses in history
+        loss_history["recon_loss"].append(avg_recon_loss)
+        loss_history["class_loss"].append(avg_class_loss)
+        loss_history["total_loss"].append(avg_total_loss)
         
         # Update learning rate scheduler
         prev_lr = current_lr
@@ -692,7 +704,7 @@ def train_guided_autoencoder(
     if spectral == 0:  # Avoid division by zero
         spectral = 1.0
     
-    return model, spectral
+    return model, spectral, loss_history
 
 
 def encode_data_guided(model: GuidedAutoencoder, data: np.ndarray, device: str = 'cpu', 

@@ -4,7 +4,7 @@ import numpy as np
 import random
 import torch
 import matplotlib.pyplot as plt
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
 import time
 
 # Fix the import path for the qrc_polyp_python module
@@ -29,7 +29,7 @@ from visualization import plot_training_results, print_results
 from cli_utils import get_args
 import argparse
 
-def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]:
+def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]:
     """
     Main function to run the quantum reservoir computing pipeline.
     
@@ -40,8 +40,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     
     Returns
     -------
-    Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]]
-        Dictionary of results for each model
+    Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]
+        Dictionary of results for each model and guided autoencoder losses if available
     """
     
     # Parse arguments if not provided
@@ -392,10 +392,14 @@ def main(args: Optional[argparse.Namespace] = None) -> Dict[str, Tuple[np.ndarra
     # Save statistics if running as main script (not as part of parameter sweep)
     if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
         from statistics_tracking import save_all_statistics
-        output_dir = save_all_statistics(results, guided_autoencoder_losses)
+        output_dir = save_all_statistics(
+            results_dict=results, 
+            guided_losses=guided_autoencoder_losses,
+            args=args  # Pass the configuration arguments
+        )
         print(f"Saved run statistics to {output_dir}")
     
-    return results
+    return results, guided_autoencoder_losses
 
 if __name__ == "__main__":
     args = get_args()
