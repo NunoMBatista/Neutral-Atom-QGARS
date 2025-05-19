@@ -24,4 +24,6 @@ paper/*.fls
 paper/*.log
 paper/*.synctex.gz
 paper/*.toc
+paper/*.out
+
 src/run_stats/**
