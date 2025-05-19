@@ -169,6 +169,17 @@ class ParameterSweep:
             # Run main function with args
             results = main(args)
             
+            # Save statistics in the experiment directory
+            guided_losses = None
+            
+            # Check if guided autoencoder data is available in the global scope
+            import __main__
+            if hasattr(__main__, 'guided_autoencoder_losses') and __main__.guided_autoencoder_losses is not None:
+                guided_losses = __main__.guided_autoencoder_losses
+            
+            # Save statistics
+            save_all_statistics(results, guided_losses, exp_dir)
+            
             # Extract metrics
             metrics = self._extract_metrics(results)
             
