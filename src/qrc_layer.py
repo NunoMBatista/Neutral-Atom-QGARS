@@ -100,7 +100,7 @@ class DetuningLayer:
             return get_embeddings_emulation(x.reshape(-1, 1), self.qrc_params, 1, n_shots)
         else:
             # Batch of samples
-            print(f"Processing {x.shape[1]} samples...")
+            #print(f"Processing {x.shape[1]} samples...")
             # outputs = []
             # iterator = tqdm(range(x.shape[1]), desc="Quantum simulation", unit="sample") if show_progress else range(x.shape[1])
             # for i in iterator:

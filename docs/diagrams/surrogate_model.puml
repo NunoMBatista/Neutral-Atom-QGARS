@@ -1,0 +1,25 @@
+@startuml
+skinparam monochrome true
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowThickness 2
+
+component "Classical Encoding" as encoding
+component "Neural Network Surrogate" as surrogate
+component "Quantum Layer" as quantum
+component "Quantum Embeddings" as q_embeddings
+component "Surrogate Embeddings" as s_embeddings
+
+note top of encoding : From autoencoder
+note top of quantum : Non-differentiable barrier
+note top of surrogate : Differentiable proxy
+
+encoding -[#black;#white]right-> quantum : Forward
+quantum -[#black;#white]down-> q_embeddings : Forward
+encoding -[#black;#white]down-> surrogate : Forward
+surrogate -[#black;#white]right-> s_embeddings : Forward
+
+q_embeddings ..[#black;#white]. s_embeddings : Train to match
+
+@enduml

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from typing import Any, List, Optional, Union, Tuple
+import tqdm 
 
 class LinearClassifier(nn.Module):
     """
@@ -19,7 +20,8 @@ class LinearClassifier(nn.Module):
     def __init__(self, input_dim: int, output_dim: int, bias: bool = True):
         super(LinearClassifier, self).__init__()
         self.linear = nn.Linear(input_dim, output_dim, bias=bias)
-        self.softmax = nn.Softmax(dim=1)
+        #self.softmax = nn.Softmax(dim=1)
+        # No need for softmax, as it's applies in the CrossEntropyLoss function
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -35,8 +37,9 @@ class LinearClassifier(nn.Module):
         torch.Tensor
             Output probabilities
         """
-        return self.softmax(self.linear(x))
-
+        #return self.softmax(self.linear(x))
+        return self.linear(x)  # Softmax is applied in the loss function
+        
 class NeuralNetwork(nn.Module):
     """
     Multi-layer neural network with configurable architecture.
@@ -95,9 +98,10 @@ class NeuralNetwork(nn.Module):
                 
             prev_dim = dim
         
-        # Output layer
+        # Output layer - no softmax since we're using CrossEntropyLoss
         layers.append(nn.Linear(prev_dim, output_dim))
-        layers.append(nn.Softmax(dim=1))
+        # Remove the softmax layer to work properly with CrossEntropyLoss
+        # layers.append(nn.Softmax(dim=1))
         
         self.layers = nn.Sequential(*layers)
     
@@ -159,10 +163,10 @@ class QRCModel:
         from training import train
         
         # Get quantum embeddings
-        print("Computing quantum embeddings for training data...")
+        tqdm.write("Computing quantum embeddings for training data...")
         train_embeddings = self.quantum_layer.apply_layer(x_train)
         
-        print("Computing quantum embeddings for test data...")
+        tqdm.write("Computing quantum embeddings for test data...")
         test_embeddings = self.quantum_layer.apply_layer(x_test)
         
         # Train classical model

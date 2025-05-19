@@ -130,7 +130,7 @@ def get_embeddings_emulation(xs: np.ndarray, qrc_params: Dict[str, Any],
     """    
     embeddings = []
     
-    iterator = tqdm(range(num_examples), desc="Quantum simulation", unit="sample") 
+    iterator = tqdm(range(num_examples), desc="Quantum simulation", unit="sample", position=2, leave=False) 
     
     # Process each example one at a time
     for i in iterator:   

@@ -17,10 +17,11 @@
 data/datasets/**
 
 src/parameter_sweep/results/**
-
 paper/*.aux
 paper/*.fdb_latexmk
 paper/*.fls
 paper/*.log
 paper/*.synctex.gz
 paper/*.toc
+
+src/run_stats/**
