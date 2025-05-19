@@ -11,6 +11,26 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 
+% Add TikZ package and necessary libraries
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,shapes.geometric}
+
+% Add circuitikz package for circuit diagrams
+\usepackage{circuitikz}
+
+% Add float control parameters to help with figure placement
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\topfraction}{0.8}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+
+% Force LaTeX to place figures earlier
+\renewcommand{\dblfloatpagefraction}{0.7}
+\renewcommand{\dbltopfraction}{0.8}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -51,12 +71,16 @@ Quantum Machine Learning, Hybrid Quantum-Classical Algorithms,
 Medical Image Classification
 \end{IEEEkeywords}
 
-
 %============================================
 % INTRODUCTION
 %============================================
 \section{Introduction}
+
+
 \subsection{Background and Motivation}
+
+In this paper, we introduce the Quantum Guided Autoencoder with Reservoir Surrogate (QGARS) architecture, illustrated in Fig.~\ref{fig:system_architecture}. This approach combines classical deep learning with quantum reservoir computing to enable efficient medical image classification.
+
 \subsection{Challenges in Quantum-Classical Hybrid Systems}
 \subsection{Contributions of This Work}
 
@@ -137,9 +161,13 @@ Medical Image Classification
 %============================================
 \section{Conclusion}
 
+
 %============================================
 % REFERENCES
 %============================================
 \section*{References}
+
+
+
 
 \end{document}
