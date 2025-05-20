@@ -24,7 +24,7 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # RUNNING THIS ONE NOW
+    # DONE, 0.7 yielded the best results
     "guided_autoencoder_lambda": {
         "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
@@ -49,14 +49,14 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # WILL RUN ON RTX3095
+    # RUNNING ON RTX3095
     # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
     "guided_autoencoder_update_frequency": {
         "description": "Sweep over guided autoencoder update frequency",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
             "guided_lambda": [0.7], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
-            "quantum_update_frequency": [1, 3, 5, 10, 25, 50],
+            "quantum_update_frequency": [1, 3, 5, 7, 10, 15, 25, 0],
             "dim_reduction": [12], # PEAK PERFORMANCE
             "autoencoder_regularization": [1e-5] # FIXED FROM THE PREVIOUS STEPS
         }
