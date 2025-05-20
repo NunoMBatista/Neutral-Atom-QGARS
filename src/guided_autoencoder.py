@@ -617,7 +617,7 @@ def train_guided_autoencoder(
     
     for epoch in iterator:
         # Update quantum embeddings and surrogate periodically
-        if (epoch % quantum_update_frequency == 0) and (epoch > 0):
+        if (epoch % quantum_update_frequency == 0):
             if verbose:
                 tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings and surrogate model...")
             

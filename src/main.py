@@ -120,6 +120,10 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
     method_name = args.reduction_method.lower()
     reduction_name = method_name.upper()  # For display in result labels
     
+    # If there is no lambda or queries to the reservoir, it's just an autoencoder
+    if args.reduction_method == "guided_autoencoder" and (args.guided_lambda == 0 or args.quantum_update_frequency == 0):
+        method_name = "autoencoder" 
+    
     # Clean memory between runs to avoid cache issues
     import gc
     gc.collect()
