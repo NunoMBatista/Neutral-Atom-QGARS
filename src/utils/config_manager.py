@@ -4,6 +4,8 @@ import argparse
 import numpy as np
 from typing import Dict, Any, Optional
 
+DEFAULT_RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "results")
+
 class ConfigManager:
     """
     Manages configuration settings for the QRC Polyp Python project.
@@ -136,7 +138,9 @@ class ConfigManager:
             "learning_rate": 0.01,
             "seed": 42,
             "no_progress": False,
-            "no_plot": False
+            "no_plot": False,
+            "autoencoder_type": "default",
+            "results_dir": DEFAULT_RESULTS_DIR,
         }
 
 

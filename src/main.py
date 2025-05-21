@@ -1,3 +1,5 @@
+from logging import config
+from multiprocessing import reduction
 import os
 import sys
 import numpy as np
@@ -10,24 +12,25 @@ import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
-from autoencoder import Autoencoder
-from guided_autoencoder import GuidedAutoencoder
+from src.feature_reduction.autoencoder.autoencoder import Autoencoder
+from src.feature_reduction.autoencoder.guided_autoencoder import GuidedAutoencoder
+from src.utils.statistics_tracking import save_all_statistics, setup_stats_directory
 
-from data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
-from feature_reduction import (
+from src.data_processing.data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
+from src.feature_reduction.feature_reduction import (
     apply_pca, apply_pca_to_test_data, 
     apply_autoencoder, apply_autoencoder_to_test_data,
     apply_guided_autoencoder, apply_guided_autoencoder_to_test_data,
     scale_to_detuning_range
 )
-from qrc_layer import DetuningLayer
-from training import train
-from visualization import plot_training_results, print_results
+from src.quantum_layer.qrc_layer import DetuningLayer
+from src.classification_models.training import train
+from src.utils.visualization import plot_training_results, print_results
 
-from cli_utils import get_args
+from utils.cli_utils import get_args
 import argparse
 
-def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]:
+def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]:
     """
     Main function to run the quantum reservoir computing pipeline.
     
@@ -45,7 +48,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
     # Parse arguments if not provided
     if args is None:
         args = get_args()
-    
+        
+
     # Set random seed for reproducibility
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -156,7 +160,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
         xs_raw, reduction_model, spectral = apply_autoencoder(
             data=data_train,
             encoding_dim=dim_reduction,
-            hidden_dims=args.autoencoder_hidden_dims,
             batch_size=args.autoencoder_batch_size,
             epochs=args.autoencoder_epochs,
             learning_rate=args.autoencoder_learning_rate,
@@ -181,6 +184,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
             selected_features=test_features
         )
     
+        print(reduction_model)
+    
     elif method_name == "guided_autoencoder":
         # Use GPU if available and requested
         device = 'cuda' if args.gpu and torch.cuda.is_available() else 'cpu'
@@ -200,7 +205,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
             n_steps=args.time_steps,
             readout_type=args.readout_type,
             encoding_scale=args.encoding_scale,
-            print_params=False  # No need to print params twice
         )
         
         # Apply guided autoencoder reduction with improved parameters
@@ -208,7 +212,6 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
             data_train,
             quantum_layer=quantum_layer,
             encoding_dim=dim_reduction,
-            hidden_dims=args.autoencoder_hidden_dims,
             guided_lambda=args.guided_lambda,
             batch_size=args.guided_batch_size,
             epochs=args.autoencoder_epochs,
@@ -223,6 +226,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
             selected_features=train_features,
             selected_targets=train_targets
         )
+        
+        print(reduction_model)
         
         # Explicitly clear cache after training
         reduction_model.clear_cache()
@@ -242,6 +247,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
         
     else:
         raise ValueError(f"Unknown reduction method: {method_name}")
+    
     
     # We already have our targets from the random selection
     ys_encoded, encoder = one_hot_encode(train_targets, data_train["metadata"]["n_classes"])
@@ -281,6 +287,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
             encoding_scale=args.encoding_scale 
         )
    
+    print(quantum_layer)
+    
     print("""
           
         =========================================
@@ -330,6 +338,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
     )
     results["linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
     
+    print(model_lin)
+    
     print("""
           
         =========================================
@@ -350,6 +360,7 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
     )
     results["QRC"] = (loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc)
     
+    print(model_qrc)
     
     print("""
           
@@ -370,6 +381,8 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
     )
     results["NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
     
+    print(model_nn)
+    
     print(f"""
         ==========================================
             Dataset: {args.dataset_type}
@@ -386,20 +399,36 @@ def main(args: Optional[argparse.Namespace] = None) -> Tuple[Dict[str, Tuple[np.
             Number of shots: {args.n_shots}
         ===========================================
           """)
+    
     # Print and visualize results
     print_results(results)
     if not args.no_plot:
         plot_training_results(results)
     
     # Save statistics if running as main script (not as part of parameter sweep)
-    if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
-        from statistics_tracking import save_all_statistics
-        output_dir = save_all_statistics(
-            results_dict=results, 
-            guided_losses=guided_autoencoder_losses,
-            args=args  # Pass the configuration arguments
-        )
-        print(f"Saved run statistics to {output_dir}")
+    #if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
+    
+    if results_dir is None: 
+        results_dir = args.results_dir
+        results_dir = setup_stats_directory(results_dir)
+    
+    output_dir = save_all_statistics(
+        results_dict=results, 
+        guided_losses=guided_autoencoder_losses,
+        args=args,
+        output_dir=results_dir
+    )
+    print(f"Saved run statistics to {output_dir}")
+    
+    # Save model specification strings 
+    with open(os.path.join(results_dir, "model_specifications.txt"), "w") as f:
+        f.write(quantum_layer.__str__(use_colors=False))
+        if reduction_name != "PCA":
+            f.write(reduction_model.__str__(use_colors=False))
+        f.write(model_lin.__str__(use_colors=False))
+        f.write(model_qrc.__str__(use_colors=False))
+        f.write(model_nn.__str__(use_colors=False))
+        
     
     return results, guided_autoencoder_losses
 

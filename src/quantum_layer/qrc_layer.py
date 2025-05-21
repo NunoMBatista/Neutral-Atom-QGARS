@@ -1,8 +1,10 @@
 import numpy as np
 from bloqade.analog.ir.location import Chain
 from tqdm import tqdm
-from typing import Dict, Any, Union, Optional, List, Callable
-from quantum_task import get_embeddings_emulation
+from typing import Dict, Any, Union, Optional, List, Callable, Any
+
+from src.quantum_layer.quantum_task import get_embeddings_emulation
+from src.utils.cli_printing import print_quantum_layer
 
 class DetuningLayer:
     """
@@ -35,8 +37,7 @@ class DetuningLayer:
                  t_end: float = 4.0, 
                  n_steps: int = 12,
                  readout_type: str = "all",
-                 encoding_scale: float = 9.0,
-                 print_params: bool = True):
+                 encoding_scale: float = 9.0):
         
         # Create chain geometry (only supported option)
         if geometry.lower() != 'chain':
@@ -59,23 +60,9 @@ class DetuningLayer:
             "readouts": readout_type,
         }
         
-        if print_params:
-            print(f"""
-                    *******************************************
-                    *          Quantum Reservoir Layer        *
-                    *******************************************
-                    *                                           
-                    *    Geometry: {geometry}                   
-                    *    Number of atoms: {n_atoms_int}           
-                    *    Lattice spacing: {lattice_spacing_float} μm
-                    *    Rabi frequency: {float(rabi_freq)} Hz
-                    *    Total evolution time: {float(t_end)} s
-                    *    Number of time steps: {int(n_steps)}
-                    *    Readout type: {readout_type}
-                    *    Encoding scale: {float(encoding_scale)}
-                    *    
-                    *******************************************
-                  """)
+       
+    def __str__(self, use_colors: bool = True) -> str:
+        return print_quantum_layer(self, use_colors=use_colors)
         
     def apply_layer(self, x: np.ndarray, n_shots: int = 1000, show_progress: bool = True) -> np.ndarray:
         """
@@ -99,20 +86,6 @@ class DetuningLayer:
             # Single sample
             return get_embeddings_emulation(x.reshape(-1, 1), self.qrc_params, 1, n_shots)
         else:
-            # Batch of samples
-            #print(f"Processing {x.shape[1]} samples...")
-            # outputs = []
-            # iterator = tqdm(range(x.shape[1]), desc="Quantum simulation", unit="sample") if show_progress else range(x.shape[1])
-            # for i in iterator:
-            #     outputs.append(get_embeddings_emulation(
-            #                         xs=x[:, i].reshape(-1, 1), 
-            #                         qrc_params=self.qrc_params, 
-            #                         num_examples=1, # Process one example at a time for progress bar purposes
-            #                         n_shots=n_shots)[0]
-            #                    )
-                
-            # return np.column_stack(outputs)
-
             outputs = get_embeddings_emulation(
                 xs=x, 
                 qrc_params=self.qrc_params, 

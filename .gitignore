@@ -17,7 +17,8 @@
 data/datasets/**
 
 src/parameter_sweep/results/**
-
+results/**
+ 
 paper/*.aux
 paper/*.fdb_latexmk
 paper/*.fls

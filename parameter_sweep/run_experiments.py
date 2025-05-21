@@ -6,10 +6,10 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from parameter_sweep import ParameterSweep
-from config_manager import ConfigManager
+from utils.config_manager import ConfigManager
 
 # Define experiment profiles with parameter ranges
 EXPERIMENT_PROFILES = {
@@ -174,7 +174,7 @@ def run_experiment_profile(profile_name: str,
     
     # Use default config if not provided
     if base_config is None:
-        from config_manager import get_config_args
+        from src.utils.config_manager import get_config_args
         base_args = get_config_args()
         base_config = vars(base_args)
     

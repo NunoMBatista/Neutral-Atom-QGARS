@@ -5,6 +5,8 @@ import numpy as np
 from tqdm import tqdm
 from typing import Dict, Any, Optional, Tuple, List
 
+from src.utils.cli_printing import print_sequential_model
+
 def get_proportional_hidden_dims(input_dim: int, output_dim: int, 
                                scaling_factor: float = 1.0, 
                                min_width: int = 256, 
@@ -142,6 +144,13 @@ class QuantumSurrogate(nn.Module):
         layers.append(nn.Linear(prev_dim, output_dim))
         
         self.network = nn.Sequential(*layers)
+        
+        print_sequential_model(self.network, model_name="Quantum Surrogate Model")
+        
+        
+    def __str__(self, use_colors: bool = True) -> str:
+        return print_sequential_model(self.network, model_name="Quantum Surrogate Model", use_colors=use_colors)
+        
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the surrogate model"""
