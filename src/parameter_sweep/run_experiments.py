@@ -35,7 +35,7 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # RUNNING ON CRAY 4
+    # DONE
     # SHOULD SHOW THAT USING MORE QUBITS IS BETTER
     "encoding_dimensions": {
         "description": "Sweep over encoding dimensions and methods",

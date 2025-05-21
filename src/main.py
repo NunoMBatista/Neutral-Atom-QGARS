@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional, List
 import time
 
-# Fix the import path for the qrc_polyp_python module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
@@ -25,7 +24,6 @@ from qrc_layer import DetuningLayer
 from training import train
 from visualization import plot_training_results, print_results
 
-# Update import to use the new function
 from cli_utils import get_args
 import argparse
 
