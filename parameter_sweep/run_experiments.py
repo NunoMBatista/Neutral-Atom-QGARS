@@ -99,8 +99,8 @@ EXPERIMENT_PROFILES = {
     
 
     
-    # NOT DONE
-    "evolution_time": {
+    # RUNNING ON CRAY-4
+    "time_steps_evolution_time": {
         "description": "Sweep over quantum evolution time and steps",
         "param_grid": {
             "evolution_time": [2.0, 4.0, 6.0],

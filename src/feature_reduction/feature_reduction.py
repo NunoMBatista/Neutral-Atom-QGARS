@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict, Tuple, Optional, Any, Union, List, TYPE_CHECKING
 from sklearn.decomposition import PCA
 from tqdm import tqdm
-from data_processing import flatten_images
+from src.data_processing.data_processing import flatten_images
 
 from src.feature_reduction.autoencoder.autoencoder import Autoencoder, train_autoencoder, encode_data
 from src.feature_reduction.autoencoder.guided_autoencoder import GuidedAutoencoder, train_guided_autoencoder, encode_data_guided

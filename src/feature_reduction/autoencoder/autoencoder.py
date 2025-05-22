@@ -134,43 +134,43 @@ def prepare_autoencoder_data(data: np.ndarray, batch_size: int, verbose: bool = 
     return X, dataloader
 
 
-def initialize_autoencoder(input_dim: int, 
-                           encoding_dim: int,
-                           use_batch_norm: bool = True, 
-                           dropout: float = 0.1, 
-                           device: str = 'cpu') -> Autoencoder:
-    """
-    Initialize the autoencoder model.
+# def initialize_autoencoder(input_dim: int, 
+#                            encoding_dim: int,
+#                            use_batch_norm: bool = True, 
+#                            dropout: float = 0.1, 
+#                            device: str = 'cpu') -> Autoencoder:
+#     """
+#     Initialize the autoencoder model.
     
-    Parameters
-    ----------
-    input_dim : int
-        Dimension of input features
-    encoding_dim : int
-        Dimension of the encoded representation
-    hidden_dims : Optional[List[int]], optional
-        Dimensions of hidden layers, by default None
-    use_batch_norm : bool, optional
-        Whether to use batch normalization, by default True
-    dropout : float, optional
-        Dropout probability, by default 0.1
-    device : str, optional
-        Device to use ('cpu' or 'cuda'), by default 'cpu'
+#     Parameters
+#     ----------
+#     input_dim : int
+#         Dimension of input features
+#     encoding_dim : int
+#         Dimension of the encoded representation
+#     hidden_dims : Optional[List[int]], optional
+#         Dimensions of hidden layers, by default None
+#     use_batch_norm : bool, optional
+#         Whether to use batch normalization, by default True
+#     dropout : float, optional
+#         Dropout probability, by default 0.1
+#     device : str, optional
+#         Device to use ('cpu' or 'cuda'), by default 'cpu'
         
-    Returns
-    -------
-    Autoencoder
-        Initialized autoencoder model
-    """
-    # Initialize model
-    model = Autoencoder(
-        input_dim=input_dim,
-        encoding_dim=encoding_dim,
-        use_batch_norm=use_batch_norm,
-        dropout=dropout
-    )
-    # Move model to specified device
-    return model.to(device)
+#     Returns
+#     -------
+#     Autoencoder
+#         Initialized autoencoder model
+#     """
+#     # Initialize model
+#     model = Autoencoder(
+#         input_dim=input_dim,
+#         encoding_dim=encoding_dim,
+#         use_batch_norm=use_batch_norm,
+#         dropout=dropout
+#     )
+#     # Move model to specified device
+#     return model.to(device)
 
 
 def setup_training(model: nn.Module, learning_rate: float, autoencoder_regularization: float = 1e-5) -> Tuple[nn.Module, optim.Optimizer, optim.lr_scheduler.ReduceLROnPlateau]:
@@ -347,13 +347,12 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     
     print(f"Input : {data.shape}")
     # Initialize model
-    model = initialize_autoencoder(
+    model = Autoencoder(
         input_dim=input_dim,
         encoding_dim=encoding_dim,
         use_batch_norm=use_batch_norm,
         dropout=dropout,
-        device=device
-    )
+    ).to(device)
     
     # Setup training components
     criterion, optimizer, scheduler = setup_training(
