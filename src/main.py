@@ -69,7 +69,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
 
     # Load dataset based on the specified dataset type
-    if args.dataset_type in ["mnist", "fashion_mnist"]:
+    if args.dataset_type in ["mnist", "fashion_mnist", "binary_mnist"]:
         # Define the path to MNIST dataset
         data_train, data_test = load_dataset(
             args.dataset_type,

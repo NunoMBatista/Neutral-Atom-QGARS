@@ -253,9 +253,17 @@ class DatasetLoader:
         ])
 
         dataset = None
+        is_binary = False
+        n_classes = 10
+        
         if mnist_type == 'mnist':
             print("Loading MNIST dataset...")
             dataset = torchvision.datasets.MNIST
+        elif mnist_type == 'binary_mnist':
+            print("Loading Binary MNIST dataset (only classes 0 and 1)...")
+            dataset = torchvision.datasets.MNIST
+            is_binary = True
+            n_classes = 2
         elif mnist_type == 'fashion_mnist':
             print("Loading Fashion MNIST dataset...")
             dataset = torchvision.datasets.FashionMNIST
@@ -276,6 +284,17 @@ class DatasetLoader:
             transform=transform
         )
         
+        # Filter for binary MNIST if needed
+        if is_binary:
+            # Get indices of classes 0 and 1
+            train_indices = [i for i, (_, label) in enumerate(full_train_data) if label in [0, 1]]
+            test_indices = [i for i, (_, label) in enumerate(full_test_data) if label in [0, 1]]
+            
+            # Create subsets with only classes 0 and 1
+            full_train_data = Subset(full_train_data, train_indices)
+            full_test_data = Subset(full_test_data, test_indices)
+            
+            print(f"Filtered to {len(full_train_data)} training examples and {len(full_test_data)} test examples with classes 0 and 1")
         
         # Only using a subset of the data if specified
         if num_examples is not None and num_examples < len(full_train_data):
@@ -316,12 +335,12 @@ class DatasetLoader:
         # Create dataset dictionaries with appropriate metadata
         train_dataset = self.create_dataset_dict(
             train_features, train_targets, 
-            n_classes=10, split="train"
+            n_classes=n_classes, split="train"
         )
         
         test_dataset = self.create_dataset_dict(
             test_features, test_targets, 
-            n_classes=10, split="test"
+            n_classes=n_classes, split="test"
         )
         
         return train_dataset, test_dataset
@@ -345,12 +364,12 @@ def load_dataset(name: str = 'image_folder', **kwargs) -> Tuple[Dict[str, Any], 
     Tuple[Dict[str, Any], Dict[str, Any]]
         train_dataset, test_dataset
     """
-    if name in ['mnist', 'fashion_mnist']:
+    if name in ['mnist', 'fashion_mnist', 'binary_mnist']:
         return _dataset_loader.load_mnist_dataset(mnist_type=name, **kwargs)
     elif name == 'image_folder':
         return _dataset_loader.load_image_folder_dataset(**kwargs)
     else:
-        raise ValueError(f"Unknown dataset type: {name}. Available types: 'image_folder', 'mnist'")
+        raise ValueError(f"Unknown dataset type: {name}. Available types: 'image_folder', 'mnist', 'binary_mnist', 'fashion_mnist'")
 
 # Utility functions
 def flatten_images(data: np.ndarray, desc: str = "Flattening images") -> np.ndarray:
