@@ -69,12 +69,14 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
 
     # Load dataset based on the specified dataset type
-    if args.dataset_type == 'mnist':
+    if args.dataset_type in ["mnist", "fashion_mnist"]:
         # Define the path to MNIST dataset
         data_train, data_test = load_dataset(
-            'mnist',
+            args.dataset_type,
             data_dir=DATA_DIR,
-            target_size=tuple(args.target_size)
+            target_size=tuple(args.target_size),
+            num_examples=args.num_examples,
+            num_test_examples=args.num_test_examples
         )
         
     else:            
@@ -101,7 +103,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     train_targets = data_train["targets"]
     test_features = data_test["features"]
     test_targets = data_test["targets"]
-    
+
     
     print("""
           

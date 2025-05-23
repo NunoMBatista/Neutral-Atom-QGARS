@@ -29,8 +29,9 @@ EXPERIMENT_PROFILES = {
         "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0],
-            "quantum_update_frequency": [1],
+           # "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0], # SWEEP IN LOG SCALE!
+            "guided_lambda": [0.0000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+            "quantum_update_frequency": [5],
             "dim_reduction": [12]
         }
     },

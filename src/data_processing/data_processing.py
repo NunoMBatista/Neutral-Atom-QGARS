@@ -6,6 +6,7 @@ import random
 import matplotlib.pyplot as plt
 from typing import Tuple, Dict, Any, List, Optional, Union, Callable
 from sklearn.preprocessing import OneHotEncoder
+from torch.utils.data import Subset
     
 # Global settings
 SHOW_PROGRESS_BAR = True
@@ -217,7 +218,10 @@ class DatasetLoader:
         return train_dataset, test_dataset
 
     def load_mnist_dataset(self, data_dir: str = './data',
+                          mnist_type: str = 'mnist',
                           target_size: Tuple[int, int] = (28, 28),
+                          num_examples: Optional[int] = None,
+                          num_test_examples: Optional[int] = None,
                           **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Load and preprocess the MNIST dataset.
@@ -232,7 +236,7 @@ class DatasetLoader:
         Returns
         -------
         Tuple[Dict[str, Any], Dict[str, Any]]
-            train_dataset, test_dataset containing features and targets
+            train_dataset, test_dataset containing features and 3targets
         """
         try:
             # Import torchvision here to keep it as an optional dependency
@@ -247,21 +251,47 @@ class DatasetLoader:
             transforms.Resize(target_size),
             transforms.ToTensor(),
         ])
+
+        dataset = None
+        if mnist_type == 'mnist':
+            print("Loading MNIST dataset...")
+            dataset = torchvision.datasets.MNIST
+        elif mnist_type == 'fashion_mnist':
+            print("Loading Fashion MNIST dataset...")
+            dataset = torchvision.datasets.FashionMNIST
+        
         
         # Load MNIST dataset
-        train_data = torchvision.datasets.MNIST(
+        full_train_data = dataset(
             root=data_dir,
             train=True,
             download=True,
             transform=transform
         )
         
-        test_data = torchvision.datasets.MNIST(
+        full_test_data = dataset(
             root=data_dir,
             train=False,
             download=True,
             transform=transform
         )
+        
+        
+        # Only using a subset of the data if specified
+        if num_examples is not None and num_examples < len(full_train_data):
+            train_indices = random.sample(range(len(full_train_data)), num_examples)
+            train_data = Subset(full_train_data, train_indices)
+            print(f"Using {num_examples} training examples out of {len(full_train_data)} available")
+        else:
+            train_data = full_train_data
+        
+        if num_test_examples is not None and num_test_examples < len(full_test_data):
+            test_indices = random.sample(range(len(full_test_data)), num_test_examples)
+            test_data = Subset(full_test_data, test_indices)
+            print(f"Using {num_test_examples} test examples out of {len(full_test_data)} available")
+        else:
+            test_data = full_test_data    
+    
         
         # Convert to numpy arrays
         train_features = np.zeros((target_size[0], target_size[1], len(train_data)), dtype=np.float32)
@@ -315,8 +345,8 @@ def load_dataset(name: str = 'image_folder', **kwargs) -> Tuple[Dict[str, Any], 
     Tuple[Dict[str, Any], Dict[str, Any]]
         train_dataset, test_dataset
     """
-    if name == 'mnist':
-        return _dataset_loader.load_mnist_dataset(**kwargs)
+    if name in ['mnist', 'fashion_mnist']:
+        return _dataset_loader.load_mnist_dataset(mnist_type=name, **kwargs)
     elif name == 'image_folder':
         return _dataset_loader.load_image_folder_dataset(**kwargs)
     else:

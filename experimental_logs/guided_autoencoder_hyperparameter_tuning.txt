@@ -1,7 +1,12 @@
 DATASET USED: GENERATED_POLYP_DATASET
 
 
-FIX CLASS_LOSS NEVER UPDATING
+UPDATE FREQUENCY FINISHED RUNNING ON RTX, PUT SOMETHING NEW
+CHECK IT'S RESULTS
+
+CHANGE AUTOENCODER ARCHITECTURE
+
+
 
 ===============================
 FINDING BEST LAMBDA FOR LOSS 
@@ -25,6 +30,19 @@ PROFILE USED:
 best_guided_lambda = 0.7
 
 -> Fix the best_guided_lambda for the rest of the experiments
+
+
+# REDO IN LOG SCALE WITH LESS UPDATE FREQUENCY FOR FASTER RUNTIME
+"guided_autoencoder_lambda": {
+    "description": "Sweep over guided autoencoder lambda parameter",
+    "param_grid": {
+        "reduction_method": ["guided_autoencoder"],
+        # "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0], # SWEEP IN LOG SCALE!
+        "guided_lambda": [0e-5, 0e-4, 0e-3, 0e-2, 0e-1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "quantum_update_frequency": [5],
+        "dim_reduction": [12]
+    }
+},
 
 
 ===============================
