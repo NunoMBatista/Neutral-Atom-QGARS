@@ -4,6 +4,8 @@
 %Template version as of 6/27/2024
 
 \usepackage{cite}
+
+
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
@@ -38,7 +40,6 @@
 \title{Quantum-Guided Autoencoding for Enhanced Neutral Atom Reservoir Computing in Medical Image Classification\\
 {\footnotesize \textsuperscript{*}Note: Sub-titles are not captured for https://ieeexplore.ieee.org  and
 should not be used}
-\thanks{Identify applicable funding agency here. If none, delete this.}
 }
 
 \author{
@@ -60,14 +61,39 @@ email address or ORCID}
 
 
 \begin{abstract}
+We introduce a quantum-classical hybrid 
+architecture for medical image classification 
+based on neutral atom quantum processors. 
+This approach is designed to address the challenges of 
+medical imaging, with a particular focus on tasks such 
+as polyp detection and classification.
+By integrating an autoencoder guided by a quantum 
+reservoir, the pipeline learns compact and discriminative 
+representations of image data that are also well-suited for quantum reservoir 
+computing. To overcome the non-differentiability of quantum 
+measurements, we circumvent this `gradient barrier' 
+by incorporating a differentiable surrogate model that simulates the 
+behaviour of the quantum layer, enabling end-to-end backpropagation. 
+The guided training process jointly optimizes for both image 
+reconstruction and classification accuracy, ensuring that the latent 
+representations are both meaningful and effective for quantum processing. 
+In our implementation, image data is encoded as atom detuning parameters 
+in a Rydberg Hamiltonian, and quantum embeddings are obtained through expectation 
+values. These embeddings are then passed to a linear classifier, 
+enabling faster training and inference compared to deep classical networks.
+Our experiments show that this method outperforms traditional 
+approaches using PCA or unguided autoencoders. We also conduct 
+ablation studies to evaluate the impact of quantum and training 
+parameters, demonstrating the robustness and flexibility of the 
+proposed pipeline for real-world medical imaging applications, 
+even in the NISQ era.
 \end{abstract}
-
 
 \begin{IEEEkeywords}
 Reservoir Computing, Quantum-Guided Autoencoding,
 Neutral Atoms, Autoencoder, Dimensionality Reduction, 
 Quantum Machine Learning, Hybrid Quantum-Classical Algorithms, 
-Medical Image Classification
+Medical Image Classification, Quantum Surrogate Models
 \end{IEEEkeywords}
 
 %============================================
@@ -75,23 +101,129 @@ Medical Image Classification
 %============================================
 \section{Introduction}
 
-
 \subsection{Background and Motivation}
+Advances in medical imaging have significantly improved 
+disease diagnosis and treatment planning. For conditions 
+like colorectal cancer, early detection of polyps through 
+colonoscopy image analysis is critical for reducing mortality \cite{estevaGuideDeepLearning2019a}. 
+Deep learning techniques, especially autoencoders, are widely 
+used to extract compressed, informative features from 
+high-dimensional images for classification and segmentation 
+tasks \cite{bengioLearningDeepArchitecturesa}. However, classical neural networks may struggle 
+to capture intricate correlations in complex medical data.
+
+Quantum computing offers novel opportunities 
+for machine learning, particularly through quantum reservoir 
+computing (QRC), where a physical quantum system processes 
+classical inputs into high-dimensional nonlinear embeddings 
+\cite{tanakaRecentAdvancesPhysical2019,fujiiHarnessingDisorderedQuantum2017}. Recent works show that analog quantum systems, 
+such as neutral-atom platforms, can serve as untrained 
+reservoirs with rich dynamics for temporal and pattern 
+recognition tasks \cite{domingoOptimalQuantumReservoir2022,kornjavcaLargescaleQuantumReservoir2024}. 
+In hybrid approaches, a classical encoder compresses 
+image data, and a quantum reservoir expands 
+the encoded features into a higher-dimensional space, 
+potentially boosting classification performance.
+
+A major challenge in such hybrid quantum-classical 
+models is the non-differentiability of quantum measurements, 
+which obstructs gradient-based optimization. Additionally, 
+tuning quantum parameters can suffer from barren plateaus, where 
+gradients vanish in high-dimensional Hilbert spaces \cite{mccleanBarrenPlateausQuantum2018}. 
+To address this, we introduce a classical neural surrogate 
+that emulates the quantum reservoir's input-output behavior. 
+This surrogate enables end-to-end training via backpropagation, 
+while the quantum system remains fixed and non-trainable.
 
 
-\subsection{Challenges in Quantum-Classical Hybrid Systems}
 \subsection{Contributions of This Work}
+We propose a quantum-guided autoencoder architecture that 
+integrates a classical image encoder with a neutral-atom
+quantum reservoir.
+
+A classical surrogate network of the reservoir itself enables 
+gradient flow through the whole model during training.
+
+The model is evaluated and compared to classical benchmarks on three 
+different datasets: 
+\begin{enumerate}
+    \item A synthetic dataset of polyp images, generated to simulate realistic medical imaging scenarios.
+    \item Real image patches extracted from the CVC-ClinicDB dataset, a well-known benchmark for polyp detection.
+    \item A reduced version of the MNIST dataset, containing only the digits 0 and 1, suitable for binary classification tasks.
+\end{enumerate}
+
+Our results illustrate the viability of QRC for real-world medical 
+tasks and offer a scalable path to hybrid quantum-classical learning,
+even in the noisy intermediate-scale quantum (NISQ) era.
+
 
 %============================================
 % BACKGROUND 
 %============================================
 \section{Background}
-\subsection{Quantum Computing with Neutral Atoms}
+
 \subsection{Principles of Reservoir Computing}
+Reservoir computing is a computational framework 
+derived from recurrent neural networks (RNNs). It 
+involves a fixed, high-dimensional dynamical system—the 
+reservoir—that projects input data into a rich feature 
+space. Only the output layer is trained, simplifying 
+the learning process and reducing computational 
+overhead. This approach is particularly effective 
+for time-series prediction and pattern recognition tasks.
+
+Mathematically, let \( u(t) \in \mathbb{R}^m \) be the input at time \( t \),
+\( x(t) \in \mathbb{R}^n \) the reservoir state, and
+\( y(t) \in \mathbb{R}^k \) the output. The reservoir dynamics
+and output are given by:
+\begin{equation}
+    x(t) = f(W_{in} u(t) + W_{res} x(t-1))
+\end{equation}
+\begin{equation}
+    y(t) = W_{out} x(t)
+\end{equation}
+
+%Where ff is a nonlinear activation function, WinWin​ and WW are fixed input and reservoir weight matrices, and WoutWout​ is the trained output weight matrix.
+
+Where \( f \) is a nonlinear activation function,
+\( W_{in} \) and \( W_{res} \) are fixed input and reservoir weight matrices, 
+and \( W_{out} \) is the trained output weight matrix.
+
+
+% import figure from reservoir_architecture.tex
+\input{reservoir_architecture.tex}
+
 \subsection{Quantum Reservoir Computing}
+Quantum Reservoir Computing (QRC) extends the reservoir 
+computing paradigm into the quantum domain. By leveraging quantum systems' 
+inherent properties, such as superposition and entanglement, QRC aims 
+to enhance computational capabilities. Implementations using quantum 
+oscillators have shown promise in solving complex learning tasks, 
+offering advantages over classical counterparts. Notably, large-scale 
+experiments utilizing neutral-atom analog quantum computers have demonstrated 
+the scalability and effectiveness of QRC in various machine learning applications 
+\cite{kornjavcaLargescaleQuantumReservoir2024}
+
+In QRC, classical input data \( u(t) \) is encoded into quantum states \( |\psi(t)\rangle \),
+which evolve under a fixed Hamiltonian \( H \):
+\begin{equation}
+    |\psi(t+1)\rangle = U |\psi(t)\rangle = e^{-iH\Delta t} |\psi(t)\rangle,
+\end{equation}
+where \( U \) is the unitary evolution operator. Measurements of observables \( \hat{O} \) yield outputs:
+\begin{equation}
+    y(t) = \langle \psi(t) | \hat{O} | \psi(t) \rangle.
+\end{equation}
+The output weights are trained classically, while the quantum reservoir remains fixed.
+
+\subsection{Quantum Computing with Neutral Atoms}
+
+% TALK ABOUT HAMILTONIAN
+
+
 \subsection{Dimensionality Reduction for Image Data}
 \subsubsection{Principal Component Analysis}
 \subsubsection{Autoencoder Architectures}
+\subsection{Quantum-Guided Autoencoding}
 
 %============================================
 % METHODOLOGY
@@ -159,13 +291,10 @@ Medical Image Classification
 %============================================
 \section{Conclusion}
 
-
 %============================================
 % REFERENCES
 %============================================
-\section*{References}
-
-
-
+\bibliographystyle{IEEEtran}
+\bibliography{references}
 
 \end{document}
