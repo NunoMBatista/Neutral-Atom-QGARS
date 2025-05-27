@@ -1,0 +1,61 @@
+\begin{figure}[!h]
+    \centering
+    \resizebox{\columnwidth}{!}{%
+        \begin{circuitikz}
+            \tikzstyle{every node}=[font=\normalsize]
+            \draw(6,-1.5) circle (0.25cm);
+            \draw(6,-2.25) circle (0.25cm);
+            \draw(6,-3) circle (0.25cm);
+            \draw(6,-0.75) circle (0.25cm);
+            \draw(7.5,-1) circle (0.25cm);
+            \draw(8,-1.5) circle (0.25cm);
+            \draw(8.25,-2.25) circle (0.25cm);
+            \draw(7.75,-2.75) circle (0.25cm);
+            \draw(8.5,-0.5) circle (0.25cm);
+            \draw(9.25,-2.25) circle (0.25cm);
+            \draw(9.75,-0.5) circle (0.25cm);
+            \draw(9.25,-1.25) circle (0.25cm);
+            \draw(9.75,-3) circle (0.25cm);
+            \draw(8.75,-3.25) circle (0.25cm);
+            \draw(10.5,-2.25) circle (0.25cm);
+            \draw(10.5,-1.25) circle (0.25cm);
+            \draw[->, >=Stealth] (8,-2.75) .. controls (8,-3.25) and (8.25,-3.25) .. (8.5,-3.25) ;
+            \draw[->, >=Stealth] (8,-2.75) .. controls (8.75,-3) and (8.5,-2.25) .. (9,-2.25) ;
+            \draw[->, >=Stealth] (9,-3.25) .. controls (9.25,-3.5) and (9.5,-3.25) .. (9.5,-3) ;
+            \draw[->, >=Stealth] (10,-3) .. controls (10.75,-3.5) and (10.5,-2.75) .. (10.5,-2.5) ;
+            \draw[->, >=Stealth] (9.5,-2.25) -- (10.25,-1.25);
+            \draw[->, >=Stealth] (10.25,-2.25) -- (9.5,-1.25);
+            \draw[->, >=Stealth] (8.5,-2.25) .. controls (9,-1.75) and (8.75,-1.75) .. (9,-1.25) ;
+            \draw[->, >=Stealth] (9.25,-1) .. controls (9,-1) and (9.25,-0.5) .. (8.75,-0.5) ;
+            \draw[->, >=Stealth] (7.75,-1) .. controls (7.75,-0.75) and (7.75,-0.5) .. (8.25,-0.5) ;
+            \draw[->, >=Stealth] (8.25,-1.5) .. controls (8.75,-1.25) and (8.5,-1) .. (8.5,-0.75) ;
+            \draw[->, >=Stealth] (9.5,-0.5) .. controls (9.5,0) and (9.25,0) .. (8.75,-0.5) ;
+            \draw(12,-1) circle (0.25cm);
+            \draw(12,-1.75) circle (0.25cm);
+            \draw(12,-2.5) circle (0.25cm);
+            \draw[->, >=Stealth] (10,-0.5) -- (11.75,-1);
+            \draw[->, >=Stealth] (10.75,-1.25) -- (11.75,-1.75);
+            \draw[->, >=Stealth] (10.75,-2.25) -- (11.75,-2.5);
+            \draw[ dashed] (5.5,0.25) rectangle  (6.5,-4);
+            \draw[ dashed] (7,0.25) rectangle  (11,-4);
+            \draw[ dashed] (11.5,0.25) rectangle  (12.5,-4);
+            \draw[->, >=Stealth] (6.25,-0.75) -- (7.25,-1);
+            \draw[->, >=Stealth] (6.25,-1.5) -- (7.75,-1.5);
+            \draw[->, >=Stealth] (6.25,-2.25) -- (8,-2.25);
+            \draw[->, >=Stealth] (6.25,-3) -- (7.5,-2.75);
+            \node[font=\normalsize] at (6,0.5) {Input Layer};
+            \node[font=\normalsize] at (9,0.5) {Reservoir Layer};
+            \node[font=\normalsize] at (12,0.5) {Output Layer};
+            \node[font=\normalsize] at (5,-2) {$x(t)$};
+            \node[font=\normalsize] at (10.5,-3.5) {$W_{out}$};
+            \node[font=\normalsize] at (13,-2) {$y(t)$};
+        \end{circuitikz}
+    }%
+
+\caption{
+    Reservoir computing architecture showing input nodes, 
+    a recurrent reservoir network with internal dynamics, 
+    and an output layer.
+}
+\label{fig:reservoir_architecture}
+\end{figure}

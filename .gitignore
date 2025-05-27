@@ -17,6 +17,7 @@
 data/datasets/**
 
 src/parameter_sweep/results/**
+
 results/**
  
 paper/*.aux
@@ -26,5 +27,8 @@ paper/*.log
 paper/*.synctex.gz
 paper/*.toc
 paper/*.out
+paper/*.bbl
+paper/*.blg
+
 
 src/run_stats/**
