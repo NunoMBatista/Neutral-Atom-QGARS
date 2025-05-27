@@ -95,7 +95,7 @@ def create_heatmap(df: pd.DataFrame, param_grid: dict, output_path: Optional[str
     # Set axis labels and title
     plt.xlabel('Time Steps', fontsize=12)
     plt.ylabel('Evolution Time', fontsize=12)
-    plt.title('Effect of Time Steps and Evolution Time on QRC Test Accuracy', fontsize=14)
+    #plt.title('Effect of Time Steps and Evolution Time on QRC Test Accuracy', fontsize=14)
     
     # Ensure all labels are visible
     plt.tight_layout()
@@ -103,7 +103,7 @@ def create_heatmap(df: pd.DataFrame, param_grid: dict, output_path: Optional[str
     # Save figure if output path is provided
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, format='pdf', bbox_inches='tight')
         print(f"Figure saved to {output_path}")
     
     plt.show()
@@ -176,8 +176,8 @@ def main():
     parser.add_argument('--param-grid', type=str, default="/home/nbatista/GIC-quAI-QRC/results/generated/time_steps/evolution_time/time_steps_evolution_time_20250522_012322/param_grid.json",
                       help='Path to the parameter grid JSON file')
     parser.add_argument('--output', type=str, 
-                      default="/home/nbatista/GIC-quAI-QRC/results/figures/generated/time_steps_evolution_time_heatmap.png",
-                      help='Path to save the output figure')
+                      default="/home/nbatista/GIC-quAI-QRC/results/figures/generated/time_steps_evolution_time_heatmap.pdf",
+                      help='Path to save the output figure (PDF)')
     
     args = parser.parse_args()
     

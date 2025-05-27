@@ -89,7 +89,7 @@ def plot_autoencoder_regularization_effect(df: pd.DataFrame, output_path: Option
     # Labels and title
     plt.xlabel('Autoencoder Regularization (Weight Decay)', fontsize=12)
     plt.ylabel('QRC Test Accuracy (%)', fontsize=12)
-    plt.title("Effect of Autoencoder Regularization on QRC Accuracy for the Generated Polyp Dataset", fontsize=14)
+    #plt.title("Effect of Autoencoder Regularization on QRC Accuracy for the Generated Polyp Dataset", fontsize=14)
     
     # Add grid for better readability
     plt.grid(True, which='both', linestyle='--', alpha=0.7)
@@ -102,7 +102,7 @@ def plot_autoencoder_regularization_effect(df: pd.DataFrame, output_path: Option
     # Save figure if output path is provided
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, format='pdf', bbox_inches='tight')
         print(f"Figure saved to {output_path}")
     
     plt.show()
@@ -121,7 +121,7 @@ def main():
     print(df[['autoencoder_regularization', 'QRC_final_test_acc']].describe())
     
     # Plot results
-    output_path = "../results/figures/autoencoder_regularization_effect.png"
+    output_path = "../results/figures/autoencoder_regularization_effect.pdf"
     
     # Create plot
     plot_autoencoder_regularization_effect(df, output_path)

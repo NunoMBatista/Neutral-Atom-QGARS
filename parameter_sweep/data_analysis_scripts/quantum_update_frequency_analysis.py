@@ -58,7 +58,7 @@ def plot_quantum_update_frequency_effect(df: pd.DataFrame, output_path: Optional
     # Labels and title
     plt.xlabel('Quantum Update Frequency', fontsize=12)
     plt.ylabel('QRC Accuracy (%)', fontsize=12)
-    plt.title("Effect of Quantum Update Frequency on QRC Performance", fontsize=14)
+    #plt.title("Effect of Quantum Update Frequency on QRC Performance", fontsize=14)
     
     # Add legend
     plt.legend(loc='lower right')
@@ -79,7 +79,7 @@ def plot_quantum_update_frequency_effect(df: pd.DataFrame, output_path: Optional
     # Save figure if output path is provided
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, format='pdf', bbox_inches='tight')
         print(f"Figure saved to {output_path}")
     
     plt.show()
@@ -140,8 +140,8 @@ def main():
                       default="/home/nbatista/GIC-quAI-QRC/results/generated/guided_autoencoder_update_frequency/guided_autoencoder_update_frequency_20250520_160624_20250520_160624/all_results.csv",
                       help='Path to the results CSV file')
     parser.add_argument('--output', type=str, 
-                      default="/home/nbatista/GIC-quAI-QRC/results/figures/generated/quantum_update_frequency_effect.png",
-                      help='Path to save the output figure')
+                      default="/home/nbatista/GIC-quAI-QRC/results/figures/generated/quantum_update_frequency_effect.pdf",
+                      help='Path to save the output figure (PDF)')
     
     args = parser.parse_args()
     

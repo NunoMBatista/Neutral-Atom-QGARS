@@ -77,8 +77,7 @@ def apply_autoencoder(data: Dict[str, Any],
                     verbose: bool = True,
                     use_batch_norm: bool = True,
                     dropout: float = 0.1,
-                    weight_decay: float = 1e-5,
-                    autoencoder_regularization: Optional[float] = None,
+                    autoencoder_regularization: Optional[float] = 1e-5,
                     selected_indices: Optional[np.ndarray] = None,
                     selected_features: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Autoencoder, float]:
     """
@@ -147,7 +146,6 @@ def apply_autoencoder(data: Dict[str, Any],
         verbose=verbose, 
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
-        #weight_decay=weight_decay,
         autoencoder_regularization=autoencoder_regularization
     )
     
@@ -316,8 +314,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             verbose: bool = True,
                             use_batch_norm: bool = True,
                             dropout: float = 0.1,
-                            weight_decay: float = 1e-5,
-                            autoencoder_regularization: Optional[float] = None,
+                            autoencoder_regularization: Optional[float] = 1e-5,
                             selected_indices: Optional[np.ndarray] = None,
                             selected_features: Optional[np.ndarray] = None,
                             selected_targets: Optional[np.ndarray] = None,

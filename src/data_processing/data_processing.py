@@ -217,7 +217,7 @@ class DatasetLoader:
         
         return train_dataset, test_dataset
 
-    def load_mnist_dataset(self, data_dir: str = './data',
+    def load_mnist_dataset(self, data_dir: str = './data/datasets',
                           mnist_type: str = 'mnist',
                           target_size: Tuple[int, int] = (28, 28),
                           num_examples: Optional[int] = None,

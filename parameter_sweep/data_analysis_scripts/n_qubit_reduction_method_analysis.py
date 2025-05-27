@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 
-def plot_qrc_performance_by_method(results_file, output_dir="../results/figures/generated"):
+def plot_qrc_performance_by_method(results_file, output_dir="../../results/figures/generated"):
     """
     Plot QRC performance (train and test accuracy) for different reduction methods
     across varying number of qubits.
@@ -96,8 +96,8 @@ def plot_qrc_performance_by_method(results_file, output_dir="../results/figures/
     plt.tight_layout()
     
     # Save the figure
-    output_file = os.path.join(output_dir, 'qrc_performance_by_reduction_method.png')
-    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    output_file = os.path.join(output_dir, 'qrc_performance_by_reduction_method.pdf')
+    plt.savefig(output_file, format='pdf', bbox_inches='tight')
     print(f"Figure saved to {output_file}")
     
     # Show the plot
@@ -183,8 +183,8 @@ def main():
     if args.results is None:
         # Try to find the most recent results file in the default location
         default_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                  "results", "generated", "n_qubits")
-        
+                                  "..", "results", "generated", "n_qubits")
+
         if os.path.exists(default_dir):
             folders = [f for f in os.listdir(default_dir) if "encoding_dimensions" in f]
             if folders:
