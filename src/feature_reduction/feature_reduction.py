@@ -2,10 +2,10 @@ import numpy as np
 from typing import Dict, Tuple, Optional, Any, Union, List, TYPE_CHECKING
 from sklearn.decomposition import PCA
 from tqdm import tqdm
-from data_processing import flatten_images
+from src.data_processing.data_processing import flatten_images
 
-from autoencoder import Autoencoder, train_autoencoder, encode_data
-from guided_autoencoder import GuidedAutoencoder, train_guided_autoencoder, encode_data_guided
+from src.feature_reduction.autoencoder.autoencoder import Autoencoder, train_autoencoder, encode_data
+from src.feature_reduction.autoencoder.guided_autoencoder import GuidedAutoencoder, train_guided_autoencoder, encode_data_guided
 
 
 def apply_pca(data: Dict[str, Any], 
@@ -70,7 +70,6 @@ def apply_pca(data: Dict[str, Any],
 
 def apply_autoencoder(data: Dict[str, Any],
                     encoding_dim: int = 8,
-                    hidden_dims: Optional[List[int]] = None,
                     batch_size: int = 64,
                     epochs: int = 50,
                     learning_rate: float = 0.001,
@@ -141,7 +140,6 @@ def apply_autoencoder(data: Dict[str, Any],
     model, spectral = train_autoencoder(
         data=data_flat, 
         encoding_dim=encoding_dim, 
-        hidden_dims=hidden_dims, 
         batch_size=batch_size, 
         epochs=epochs, 
         learning_rate=learning_rate, 
@@ -308,7 +306,6 @@ def scale_to_detuning_range(xs: np.ndarray, spectral: float, detuning_max: float
 def apply_guided_autoencoder(data: Dict[str, Any],
                             quantum_layer,
                             encoding_dim: int = 8,
-                            hidden_dims: Optional[List[int]] = None,
                             guided_lambda: float = 0.3,
                             batch_size: int = 32,
                             epochs: int = 50,
@@ -323,7 +320,8 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             autoencoder_regularization: Optional[float] = None,
                             selected_indices: Optional[np.ndarray] = None,
                             selected_features: Optional[np.ndarray] = None,
-                            selected_targets: Optional[np.ndarray] = None) -> Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]:
+                            selected_targets: Optional[np.ndarray] = None,
+                            autoencoder_type: str = "default") -> Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Apply guided autoencoder to reduce image dimensions with quantum guidance.
     
@@ -368,7 +366,10 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Pre-selected features to use, by default None
     selected_targets : Optional[np.ndarray], optional
         Pre-selected targets to use, by default None
+    autoencoder_type : str, optional
+        Type of autoencoder to use ('default' or 'convolutional'), by default "default"
         
+       
     Returns
     -------
     Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]
@@ -399,7 +400,6 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         labels=targets, 
         quantum_layer=quantum_layer, 
         encoding_dim=encoding_dim, 
-        hidden_dims=hidden_dims, 
         guided_lambda=guided_lambda, 
         batch_size=batch_size, 
         epochs=epochs, 
@@ -411,6 +411,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
         autoencoder_regularization=autoencoder_regularization,
+        autoencoder_type=autoencoder_type
     )
     
     # Encode data

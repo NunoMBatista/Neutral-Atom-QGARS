@@ -2,12 +2,12 @@
     "dataset_type": "generated_polyp_dataset",
     "data_dir": null,
     "num_examples": 1000,
-    "num_test_examples": 100,
+    "num_test_examples": 200,
     "target_size": [28, 28],
     "split_ratio": 0.8,
     
     
-    "reduction_method": "autoencoder",
+    "reduction_method": "guided_autoencoder",
     "dim_reduction": 12,
     "guided_lambda": 0.7,
     "quantum_update_frequency": 5,
@@ -45,5 +45,7 @@
 
 
     "seed": 42,
-    "no_plot": true
+    "no_plot": true,
+    "autoencoder_type": "default"
+    
 }

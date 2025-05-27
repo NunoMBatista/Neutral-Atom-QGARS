@@ -4,6 +4,8 @@ import torch.nn as nn
 from typing import Any, List, Optional, Union, Tuple
 import tqdm 
 
+from src.utils.cli_printing import print_sequential_model
+
 class LinearClassifier(nn.Module):
     """
     Simple linear classifier with softmax output.
@@ -22,6 +24,10 @@ class LinearClassifier(nn.Module):
         self.linear = nn.Linear(input_dim, output_dim, bias=bias)
         #self.softmax = nn.Softmax(dim=1)
         # No need for softmax, as it's applies in the CrossEntropyLoss function
+    
+    def __str__(self, use_colors: bool = True) -> str:
+        iterable = nn.Sequential(self.linear)
+        return print_sequential_model(model=iterable, model_name="Linear Classifier", use_colors=use_colors)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -105,6 +111,9 @@ class NeuralNetwork(nn.Module):
         
         self.layers = nn.Sequential(*layers)
     
+    def __str__(self, use_colors: bool = True) -> str:
+        return print_sequential_model(model=self.layers, model_name="Neural Network", use_colors=use_colors)
+    
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through the network.
@@ -135,6 +144,9 @@ class QRCModel:
     def __init__(self, quantum_layer: Any, classifier: Optional[nn.Module] = None):
         self.quantum_layer = quantum_layer
         self.classifier = classifier if classifier is not None else LinearClassifier
+      
+    def __str__(self, use_colors: bool = True) -> str:
+        return print_sequential_model(model=self.classifier, model_name="QRC Model", use_colors=use_colors)
         
     def fit(self, x_train: np.ndarray, y_train: np.ndarray, 
             x_test: np.ndarray, y_test: np.ndarray, 
@@ -171,3 +183,4 @@ class QRCModel:
         
         # Train classical model
         return train(train_embeddings, y_train, test_embeddings, y_test, **kwargs)
+

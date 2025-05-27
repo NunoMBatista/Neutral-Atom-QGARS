@@ -1,3 +1,4 @@
+from turtle import mode
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -6,10 +7,10 @@ import numpy as np
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional
 
-from autoencoder import Autoencoder
-from qrc_layer import DetuningLayer
-from quantum_surrogate import QuantumSurrogate, create_and_train_surrogate, train_surrogate
-from models import LinearClassifier  # Import LinearClassifier from models.py
+from src.feature_reduction.autoencoder.autoencoder import Autoencoder
+from src.quantum_layer.qrc_layer import DetuningLayer
+from src.feature_reduction.autoencoder.quantum_surrogate import QuantumSurrogate, create_and_train_surrogate, train_surrogate
+from src.classification_models.models import LinearClassifier 
 
 class GuidedAutoencoder:
     """
@@ -34,22 +35,25 @@ class GuidedAutoencoder:
         Whether to use batch normalization, by default True
     dropout : float, optional
         Dropout probability, by default 0.1
+    autoencoder_type : str, optional
+        Type of autoencoder architecture to use, by default 'default'
+        Options: 'default', 'convolutional'
     """
     def __init__(self, 
                  input_dim: int,
                  encoding_dim: int, 
                  output_dim: int,
                  quantum_dim: int = None,
-                 hidden_dims: Optional[List[int]] = None,
                  guided_lambda: float = 0.3,
                  use_batch_norm: bool = True,
-                 dropout: float = 0.1):
+                 dropout: float = 0.1,
+                 autoencoder_type: str = 'default'):
         self.autoencoder = Autoencoder(
-                                input_dim=input_dim, 
-                                encoding_dim=encoding_dim, 
-                                hidden_dims=hidden_dims, 
-                                use_batch_norm=use_batch_norm, 
-                                dropout=dropout
+                                    input_dim=input_dim, 
+                                    encoding_dim=encoding_dim, 
+                                    use_batch_norm=use_batch_norm, 
+                                    dropout=dropout,
+                                    type=autoencoder_type
                                 )
         self.guided_lambda = guided_lambda
         self.encoding_dim = encoding_dim
@@ -65,6 +69,7 @@ class GuidedAutoencoder:
         # Embedding cache
         self.quantum_embeddings_cache = {}
     
+
     def initialize_classifier(self, quantum_dim: int):
         """Initialize classifier with the correct input dimension"""
         self.quantum_dim = quantum_dim
@@ -76,11 +81,13 @@ class GuidedAutoencoder:
         )
         return self.classifier
     
+
     def initialize_surrogate(self, surrogate_model: QuantumSurrogate):
         """Initialize surrogate model"""
         self.surrogate = surrogate_model
         return self.surrogate
         
+
     def to(self, device):
         """Move the model to specified device"""
         self.autoencoder = self.autoencoder.to(device)
@@ -90,14 +97,29 @@ class GuidedAutoencoder:
             self.surrogate = self.surrogate.to(device)
         return self
     
+
     def get_encoder(self):
         """Get the encoder part of the autoencoder"""
         return self.autoencoder.encoder
+
     
     def clear_cache(self):
         """Clear the quantum embeddings cache"""
         self.quantum_embeddings_cache = {}
 
+
+    def __str__(self, use_colors: bool = True):
+        
+        autoencoder_str = self.autoencoder.__str__(use_colors=use_colors)
+        quantum_surrogate_str = self.surrogate.__str__(use_colors=use_colors) if self.surrogate is not None else "No surrogate model"
+        classifier_str = self.classifier.__str__(use_colors=use_colors) if self.classifier is not None else "No classifier"
+        return (
+            "\n\n════════════════════════╕ Quantum Guided Autoencoder Sub-models Summary ╒════════════════════════\n" +
+            autoencoder_str + "\n" + 
+            quantum_surrogate_str + "\n" + 
+            classifier_str + "\n" +
+            "═════════════════════════════════════════════════════════════════════════════════════════════════\n\n"
+        )
 
 def prepare_guided_autoencoder_data(data: np.ndarray, labels: np.ndarray, 
                                    batch_size: int, device: str, 
@@ -152,51 +174,6 @@ def prepare_guided_autoencoder_data(data: np.ndarray, labels: np.ndarray,
         )
         
     return X, y, dataloader
-
-def initialize_guided_autoencoder(input_dim: int, encoding_dim: int, output_dim: int,
-                                 hidden_dims: Optional[List[int]] = None,
-                                 guided_lambda: float = 0.3,
-                                 use_batch_norm: bool = True,
-                                 dropout: float = 0.1,
-                                 device: str = 'cpu') -> GuidedAutoencoder:
-    """
-    Initialize the guided autoencoder model.
-    
-    Parameters
-    ----------
-    input_dim : int
-        Dimension of input features
-    encoding_dim : int
-        Dimension of the encoded representation
-    output_dim : int
-        Number of output classes
-    hidden_dims : Optional[List[int]], optional
-        Dimensions of hidden layers, by default None
-    guided_lambda : float, optional
-        Weight for classification loss, by default 0.3
-    use_batch_norm : bool, optional
-        Whether to use batch normalization, by default True
-    dropout : float, optional
-        Dropout probability, by default 0.1
-    device : str, optional
-        Device to use ('cpu' or 'cuda'), by default 'cpu'
-        
-    Returns
-    -------
-    GuidedAutoencoder
-        Initialized guided autoencoder model
-    """
-    # Initialize model
-    model = GuidedAutoencoder(
-                    input_dim=input_dim, 
-                    encoding_dim=encoding_dim, 
-                    output_dim=output_dim, 
-                    hidden_dims=hidden_dims, 
-                    guided_lambda=guided_lambda,
-                    use_batch_norm=use_batch_norm,
-                    dropout=dropout
-                )
-    return model.to(device)
 
 def setup_guided_training(model: GuidedAutoencoder, learning_rate: float, 
                          autoencoder_regularization: float = 1e-5
@@ -473,7 +450,6 @@ def train_guided_autoencoder(
     labels: np.ndarray,
     quantum_layer: DetuningLayer,
     encoding_dim: int,
-    hidden_dims: Optional[List[int]] = None,
     guided_lambda: float = 0.3,
     batch_size: int = 32,
     epochs: int = 50,
@@ -487,7 +463,8 @@ def train_guided_autoencoder(
     autoencoder_regularization: float = 1e-5,
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
-    class_scale: float = 1.0
+    class_scale: float = 1.0,
+    autoencoder_type: str = 'default'
 ) -> Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Train a guided autoencoder jointly with quantum embeddings.
@@ -533,6 +510,9 @@ def train_guided_autoencoder(
         Scaling factor for reconstruction loss, by default 100.0
     class_scale : float, optional
         Scaling factor for classification loss, by default 1.0
+    autoencoder_type : str, optional
+        Type of autoencoder architecture to use, by default 'default'
+        Options: 'default', 'convolutional'
         
     Returns
     -------
@@ -546,16 +526,25 @@ def train_guided_autoencoder(
     X, y, dataloader = prepare_guided_autoencoder_data(data, labels, batch_size, device, verbose)
     
     # Initialize model
-    model = initialize_guided_autoencoder(
-        input_dim=input_dim,
-        encoding_dim=encoding_dim,
-        output_dim=output_dim,
-        hidden_dims=hidden_dims,
-        guided_lambda=guided_lambda,
-        use_batch_norm=use_batch_norm,
-        dropout=dropout,
-        device=device
-    )
+    # model = initialize_guided_autoencoder(
+    #     input_dim=input_dim,
+    #     encoding_dim=encoding_dim,
+    #     output_dim=output_dim,
+    #     guided_lambda=guided_lambda,
+    #     use_batch_norm=use_batch_norm,
+    #     dropout=dropout,
+    #     device=device
+    # )
+    
+    model = GuidedAutoencoder(
+                    input_dim=input_dim, 
+                    encoding_dim=encoding_dim, 
+                    output_dim=output_dim, 
+                    guided_lambda=guided_lambda,
+                    use_batch_norm=use_batch_norm,
+                    dropout=dropout,
+                    autoencoder_type=autoencoder_type
+            ).to(device)    
     
     # Process one quantum embedding to determine dimension
     model.autoencoder.eval()
@@ -617,7 +606,7 @@ def train_guided_autoencoder(
     
     for epoch in iterator:
         # Update quantum embeddings and surrogate periodically
-        if epoch % quantum_update_frequency == 0:
+        if (epoch % quantum_update_frequency == 0):
             if verbose:
                 tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings and surrogate model...")
             

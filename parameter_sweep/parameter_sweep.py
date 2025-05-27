@@ -8,11 +8,14 @@ import json
 import datetime
 import argparse
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+DEFAULT_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
 
 from main import main
-from config_manager import ConfigManager
-from statistics_tracking import save_all_statistics  # Add this import
+from utils.config_manager import ConfigManager
+from utils.statistics_tracking import save_all_statistics  # Add this import
 
 class ParameterSweep:
     """
@@ -27,7 +30,7 @@ class ParameterSweep:
     """
     def __init__(self, 
                  base_config: Optional[Dict[str, Any]] = None, 
-                 output_dir: str = "../results/parameter_sweep"):
+                 output_dir: str = DEFAULT_OUTPUT_DIR):
         """Initialize parameter sweep with base configuration"""
         self.base_config = base_config if base_config is not None else ConfigManager.get_default_config()
         self.output_dir = output_dir
@@ -99,7 +102,7 @@ class ParameterSweep:
         print(f"Starting parameter sweep with {len(configs)} configurations")
         
         # Create directory for this sweep
-        sweep_dir = os.path.join(self.output_dir, f"{experiment_name}_{self.timestamp}")
+        sweep_dir = os.path.join(self.output_dir, f"{experiment_name}")
         os.makedirs(sweep_dir, exist_ok=True)
         
         # Save parameter grid for reference
@@ -175,10 +178,10 @@ class ParameterSweep:
             os.makedirs(exp_dir, exist_ok=True)
             
             # Run main function with args - now unpacking both return values
-            results, guided_losses = main(args)
+            results, guided_losses = main(args, results_dir=exp_dir)
             
             # Save statistics in the experiment directory - no need to check __main__
-            save_all_statistics(results, guided_losses, exp_dir)
+            #save_all_statistics(results, guided_losses, exp_dir)
             
             # Extract metrics
             metrics = self._extract_metrics(results)

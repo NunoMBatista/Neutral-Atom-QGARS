@@ -4,6 +4,8 @@ import argparse
 import numpy as np
 from typing import Dict, Any, Optional
 
+DEFAULT_RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "results")
+
 class ConfigManager:
     """
     Manages configuration settings for the QRC Polyp Python project.
@@ -106,13 +108,13 @@ class ConfigManager:
         return {
             "dataset_type": "cvc_clinic_db_patches",
             "data_dir": None,
-            "target_size": [128, 128],
+            "target_size": [28, 28],
             "split_ratio": 0.8,
             "reduction_method": "autoencoder",
             "dim_reduction": 12,
             "num_examples": 10000,
             "num_test_examples": 400,
-            "guided_lambda": 0.3,
+            "guided_lambda": 0.7,
             "quantum_update_frequency": 1,
             "guided_batch_size": 32,
             "autoencoder_epochs": 50,
@@ -136,7 +138,9 @@ class ConfigManager:
             "learning_rate": 0.01,
             "seed": 42,
             "no_progress": False,
-            "no_plot": False
+            "no_plot": False,
+            "autoencoder_type": "default",
+            "results_dir": DEFAULT_RESULTS_DIR,
         }
 
 

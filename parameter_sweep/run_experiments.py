@@ -6,10 +6,10 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from parameter_sweep import ParameterSweep
-from config_manager import ConfigManager
+from utils.config_manager import ConfigManager
 
 # Define experiment profiles with parameter ranges
 EXPERIMENT_PROFILES = {
@@ -24,18 +24,19 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # RUNNING THIS ONE NOW
+    # DONE, 0.7 yielded the best results
     "guided_autoencoder_lambda": {
         "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0],
-            "quantum_update_frequency": [1],
+           # "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0], # SWEEP IN LOG SCALE!
+            "guided_lambda": [0.0000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+            "quantum_update_frequency": [5],
             "dim_reduction": [12]
         }
     },
     
-    # RUNNING ON CRAY 4
+    # DONE
     # SHOULD SHOW THAT USING MORE QUBITS IS BETTER
     "encoding_dimensions": {
         "description": "Sweep over encoding dimensions and methods",
@@ -49,14 +50,14 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # WILL RUN ON RTX3095
+    # RUNNING ON RTX3095
     # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
     "guided_autoencoder_update_frequency": {
         "description": "Sweep over guided autoencoder update frequency",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
             "guided_lambda": [0.7], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
-            "quantum_update_frequency": [1, 3, 5, 10, 25, 50],
+            "quantum_update_frequency": [1, 3, 5, 7, 10, 15, 25, 0],
             "dim_reduction": [12], # PEAK PERFORMANCE
             "autoencoder_regularization": [1e-5] # FIXED FROM THE PREVIOUS STEPS
         }
@@ -99,8 +100,8 @@ EXPERIMENT_PROFILES = {
     
 
     
-    # NOT DONE
-    "evolution_time": {
+    # RUNNING ON CRAY-4
+    "time_steps_evolution_time": {
         "description": "Sweep over quantum evolution time and steps",
         "param_grid": {
             "evolution_time": [2.0, 4.0, 6.0],
@@ -174,7 +175,7 @@ def run_experiment_profile(profile_name: str,
     
     # Use default config if not provided
     if base_config is None:
-        from config_manager import get_config_args
+        from src.utils.config_manager import get_config_args
         base_args = get_config_args()
         base_config = vars(base_args)
     
