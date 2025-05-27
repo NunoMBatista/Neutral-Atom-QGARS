@@ -1,4 +1,6 @@
-\begin{figure}[!htb]
+% FIND WHITE NODES
+
+\begin{figure}[!tb]
     \centering
     \resizebox{\columnwidth}{!}{%
         \begin{circuitikz}
@@ -25,7 +27,7 @@
             \draw[ fill={rgb,255:red,154; green,153; blue,150} ] (22.25,11.25) rectangle (23.5,10);
             \node[font=\LARGE] at (23,12.25) {$\hat{x}$};
             \draw[<->, >=Stealth, dashed] (5.25,11.75) .. controls (7.5,16.25) and (21.75,15.75) .. (23,11.75)node[pos=0.5, fill=white]{$\mathcal{L}$};
-            \node[font=\huge] at (17.75,51.5) {};
+            %\node[font=\huge] at (17.75,51.5) {};
             \node[font=\Large] at (14,12.25) {Latent};
         \end{circuitikz}
     }%
