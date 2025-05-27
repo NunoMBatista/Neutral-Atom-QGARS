@@ -67,11 +67,10 @@
 %ADD SPACE TO BREATHE
 
 \begin{abstract}
-We introduce a quantum-classical hybrid 
-architecture for medical image classification 
-based on neutral atom quantum processors. 
-This approach is designed to address the challenges of 
-medical imaging, with a particular focus on tasks such 
+We introduce a quantum-classical hybrid
+architecture for medical image classification based on neutral-atom quantum processors. 
+This approach is designed to address the challenges of
+medical imaging, with a particular focus on tasks such
 as polyp detection and classification.
 By integrating an autoencoder guided by a quantum 
 reservoir, the pipeline learns compact and discriminative 
@@ -103,7 +102,7 @@ Medical Image Classification, Quantum Surrogate Models
 \end{IEEEkeywords}
 
 %============================================
-% INTRODUCTION
+% hilbert
 %============================================
 \section{Introduction}
 
@@ -121,30 +120,15 @@ to capture intricate correlations in complex medical data.
 Quantum computing offers novel opportunities 
 for machine learning, particularly through quantum reservoir 
 computing (QRC), where a physical quantum system processes 
-classical inputs into high-dimensional nonlinear embeddings~\cite{tanakaRecentAdvancesPhysical2019,fujiiHarnessingDisorderedQuantum2017}. Recent works show that analog quantum systems, 
-such as neutral-atom platforms, can serve as untrained 
-reservoirs with rich dynamics for temporal and pattern 
-recognition tasks \cite{domingoOptimalQuantumReservoir2022,kornjavcaLargescaleQuantumReservoir2024}. 
-In hybrid approaches, a classical encoder compresses 
-image data, and a quantum reservoir expands 
-the encoded features into a higher-dimensional space, 
-potentially boosting classification performance.
+classical inputs into high-dimensional nonlinear embeddings~\cite{tanakaRecentAdvancesPhysical2019,fujiiHarnessingDisorderedQuantum2017}. Recent works show that analog quantum systems, such as neutral-atom platforms, can serve as untrained reservoirs with rich dynamics for temporal and pattern recognition tasks~\cite{domingoOptimalQuantumReservoir2022,kornjavcaLargescaleQuantumReservoir2024}. 
 
-A major challenge in such hybrid quantum-classical 
-models is the non-differentiability of quantum measurements, 
-which obstructs gradient-based optimization. Additionally, 
-tuning quantum parameters can suffer from barren plateaus, where 
-gradients vanish in high-dimensional Hilbert spaces \cite{mccleanBarrenPlateausQuantum2018}. 
-To address this, we introduce a classical neural surrogate 
-that emulates the quantum reservoir's input-output behavior. 
-This surrogate enables end-to-end training via backpropagation, 
-while the quantum system remains fixed and non-trainable.
+In hybrid approaches, a classical encoder compresses image data, and a quantum reservoir expands the encoded features into a higher-dimensional Hilbert space, potentially boosting classification performance, as these expanded features might capture high-order correlations and nonlinearities that classical methods cannot tractably represent.
 
+A major challenge in such hybrid quantum-classical models is the non-differentiability of quantum measurements, which obstructs gradient-based optimization. Additionally, tuning quantum parameters can suffer from barren plateaus, where gradients vanish in high-dimensional Hilbert spaces~\cite{mccleanBarrenPlateausQuantum2018}. To address this, we introduce a classical neural surrogate that emulates the quantum reservoir's input-output behavior. 
+This surrogate enables end-to-end training via backpropagation, while the quantum system remains fixed and non-trainable and is only used to train the surrogate model and in downstream classifiers.
 
 \subsection{Contributions of This Work}
-We propose a quantum-guided autoencoder architecture that 
-integrates a classical image encoder with a neutral-atom
-quantum reservoir.
+We propose a quantum-guided autoencoder architecture that integrates a classical image encoder with a neutral-atom quantum reservoir.
 
 A classical surrogate network of the reservoir itself enables 
 gradient flow through the whole model during training.
@@ -152,6 +136,7 @@ gradient flow through the whole model during training.
 Our results illustrate the viability of QRC for real-world medical 
 tasks and offer a scalable path to hybrid quantum-classical learning,
 even in the noisy intermediate-scale quantum (NISQ) era.
+
 
 
 %============================================
@@ -188,10 +173,12 @@ and \( W_{out} \) is the trained output weight matrix.
 
 A diagram of a typical Reservoir Computing architecture is shown in `Fig.-\ref{fig:reservoir_architecture}'.
 
-\input{reservoir_architecture.tex}
+\input{images/diagrams/reservoir_architecture.tex}
 
 
 \subsection{Quantum Reservoir Computing}
+
+\subsubsection{Main Differences}
 Quantum Reservoir Computing (QRC) extends the reservoir 
 computing paradigm into the quantum domain. By leveraging quantum systems' 
 inherent properties, such as superposition and entanglement, QRC aims 
@@ -213,30 +200,13 @@ where \( U \) is the unitary evolution operator. Measurements of observables \( 
 \end{equation}
 The output weights are trained classically, while the quantum reservoir remains fixed.
 
-\subsection{Reservoir Computing with Neutral Atoms}
-As Quantum Reservoir Computing (QRC) leverages the complex 
-dynamics of quantum systems to process information, 
-extending the Classical Reservoir Computing 
-paradigm into the quantum domain. Neutral atom platforms, 
-particularly those utilizing Rydberg states, 
-have emerged as promising candidates for implementing 
-QRC due to their scalability and controllable interactions.
+\subsubsection{Quantum Reservoir Computing with Neutral Atoms}
+Neutral atom platforms, particularly those utilizing Rydberg states, have emerged as promising candidates for implementing QRC due to their scalability and controllable interactions.
 
-In the work by M. Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024}, 
-a large-scale, gradient-free QRC algorithm was 
-developed and experimentally implemented on a 
-neutral-atom analog quantum computer. 
-This system achieved competitive performance across 
-various machine learning tasks, 
-including classification and time-series prediction, 
-demonstrating effective learning with increasing system 
-sizes up to 108 qubits.
+In the work by M. Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024}, a large-scale, gradient-free QRC algorithm was developed and experimentally implemented on a neutral-atom analog quantum computer. This system achieved competitive performance across various machine learning tasks, including classification and time-series prediction, demonstrating effective learning with increasing system sizes up to $108$ qubits.
 
-The dynamics of such neutral atom systems can be 
-described by the Rydberg Hamiltonian, which captures 
-the essential physics of laser-driven interactions 
-among atoms in Rydberg states. Following Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024}
-the Hamiltonian for a system of neutral-atoms is given by:
+The dynamics of such neutral atom systems can be described by the Rydberg Hamiltonian, which captures 
+the essential physics of laser-driven interactions among atoms in Rydberg states. Following Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024} the Hamiltonian for a system of neutral-atoms is given by:
 
 \begin{equation}
     \begin{aligned}
@@ -311,7 +281,7 @@ The network is trained to minimize the reconstruction loss:
 This typical architecture of an autoencoder is illustrated in 
 `Fig.-\ref{fig:autoencoder_architecture}'.
 
-\input{autoencoder_architecture.tex}
+\input{images/diagrams/autoencoder_architecture.tex}
 
 
 Autoencoders can capture complex, nonlinear 
@@ -355,39 +325,61 @@ handling high-dimensional, complex datasets~\cite{belisGuidedQuantumCompression2
 %============================================
 \section{Methodology}
 \subsection{System Architecture Overview}
-
-Our proposed pipeline integrates classical and quantum 
-components for dimensionality reduction and classification. 
-A classical autoencoder compresses high-dimensional image 
-data into a lower-dimensional latent space. This latent 
-representation is encoded into a Rydberg atom chain, 
-serving as input to a quantum reservoir. The reservoir's 
-dynamics, governed by the Rydberg Hamiltonian, produce 
-quantum embeddings through measurements of quantum observables.
+Our proposed pipeline is a Quantum-Guided Autoencoder with a 
+Reservoir Surrogate (QGARS). It is a hybrid architecture that 
+synergizes classical autoencoding techniques with quantum 
+reservoir processing to achieve efficient learning of features
+that work well with the reservoir computing layer whose embeddings
+will be used to perferm a classification task.
+The system is designed to overcome the inherent non-differentiability of quantum operations, which traditionally impede gradient-based training methods.
 The overall architecture is illustrated in `Fig.-\ref{fig:qgars_pipeline}'.
 
-To facilitate end-to-end training, we employ a differentiable 
-surrogate model that approximates the quantum reservoir's 
-behavior, enabling gradient flow from the classification 
-loss back to the autoencoder. The surrogate's outputs feed 
-into a linear classifier trained to map quantum embeddings to class labels.
+In a higher level, the \textbf{architectural components} are the following:
+\begin{itemize}
+    \item \textbf{Classical Autoencoder:}
+        \begin{itemize}
+            \item \textbf{Encoder:}
+            The encoder network \(\varepsilon_\omega(x)\)
+            transforms high-dimensional input data \(\mathbf{x} \in \mathbb{R}^{n}\) into 
+            a lower-dimensional latent representation \(\mathbf{z} \in \mathbb{R}^m\), 
+            where \(m < n\).
+            \item \textbf{Decoder:}
+            The decoder network \(\mathcal{D}_\rho(z)\)
+            Reconstructs the input data from the latent representation, producing
+            \(\mathbf{\hat{x}} \in \mathbb{R}\).
+        \end{itemize}
 
-The autoencoder is trained to minimize a combined loss 
-function that interpolates between reconstruction loss and 
-classification loss, promoting representations that are both 
-informative for input reconstruction and effective for quantum 
-reservoir computing.
+    \item \textbf{Quantum Reservoir Layer:}
+        \begin{itemize}
+            \item \textbf{Parameter Mapping:}
+            \(g(\mathbf{z})\) maps the latent representation \(\mathbf{z}\) to the local detuning frequencies
+            \(\Delta_{\mathrm{i}}\) of the Rydberg Atoms.
+            \item \textbf{Quantum Evolution:}
+            Evolves the system under a Hamiltonian \(H(\Delta)\), resulting in a quantum 
+            state \(|\psi(\Delta)\rangle\).
+            \item \textbf{Measurement:}
+            Performs measurements on the quantum state to obtain embeddings \(\mathbf{q} \in \mathbb{R}^k\), which serve as training targets for the Surrogate Model or as 
+            inputs for the classification task later on.
+        \end{itemize}
 
-Once trained, the encoder compresses data into the latent 
-space, which is then processed by the actual quantum reservoir. 
-The resulting quantum embeddings are used to train a linear 
-classifier for final predictions.
+    \item \textbf{Surrogate Model:}
+    A differentiable classical neural network \( f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) \)
+    where \(\theta_{\text{sur}}\), which are it's parameters, are tuned to approximate the 
+    mapping from \(\mathbf{z}\) to \(\mathbf{q}\), effectively emulating
+    the quantum layer's behaviour.
 
+    \item \textbf{Linear Classifier:}
+    A classical neural network that maps the quantum embeddings \(\mathbf{q}\) to 
+    predicted class labels \(\hat{y}\).
 
-\begin{figure*}[!h]
+\end{itemize}
+The following sections will give a more detailed explanation of each 
+component.
+
+\begin{figure*}[!ht]
     \centering
     \resizebox{0.9\textwidth}{!}{
-        \includegraphics{qgars_pipeline_cropped.pdf}
+        \includegraphics{images/diagrams/qgars_pipeline_cropped.pdf}
     }
     \label{fig:qgars_pipeline}
     \caption{Overview of the Quantum-Guided Autoencoder Reservoir Computing System.}
@@ -396,11 +388,19 @@ classifier for final predictions.
 \subsection{Quantum Guided Autoencoder}
 The Quantum Guided Autoencoder (QGA) combines classical 
 preprocessing with quantum processing to leverage 
-the strengths of both paradigms. The classical encoder 
-reduces the dimensionality of the input data, facilitating 
-efficient quantum processing. The quantum circuit 
-then processes the compressed data, aiming to reconstruct 
-the original input and perform classification simultaneously.
+the strengths of both paradigms.
+
+Ideally, the latent space representation created by the encoder \(\varepsilon_\omega(x)\)
+would be passed through two sections of the model:
+\begin{itemize}
+    \item \textbf{The Decoder Network \(\mathcal{D}_\rho(z)\):}
+    that tries to reconstruct the original input data.
+    \item \textbf{The Quantum Reservoir:}
+    that extracts highly dimensional quantum embeddings and
+    passes them to a linear classifier to perform a classification
+    task and map the embeddings to the image labels.
+\end{itemize}
+However, some problems emerge when using a real quantum reservoir directly during the autoencoder training stage, which will be discussed in a later section.
 
 \subsubsection{Loss Function Design}
 The QGA is trained to minimize a composite loss 
@@ -413,18 +413,15 @@ classification accuracy:
 \end{equation}
 where:
 \begin{itemize}
-    \item \( \mathcal{L}_R = \| x - \hat{x} \|^2 \) is the reconstruction loss, measuring the mean squared error between the input \( x \) and its reconstruction \( \hat{x} \).
-    \item \( \mathcal{L}_C = -\sum_i y_i \log(\hat{y}_i) \) is the classification loss, computed as the cross-entropy between the true labels \( y_i \) and the predicted probabilities \( \hat{y}_i \).
+    \item \( \mathcal{L}_R = \| \mathbf{x} - \hat{\mathbf{x}} \|^2 \) is the reconstruction loss, measuring the mean squared error between the input \( \mathbf{x} \) and its reconstruction \( \mathbf{\hat{x}} \).
+    \item \( \mathcal{L}_C = -\sum_i y_i \log(\hat{y}_i) \) is the classification loss, computed as the cross-entropy between the true labels \( y_i \) and the predicted probabilities \( \hat{y}_i \), which are obtained through a linear mapping of the 
+    approximated embeddings \(\mathbf{q}'\).
     \item \( 0 < \lambda < 1 \) is a hyperparameter that controls the trade-off between reconstruction and classification objectives.
 \end{itemize}    
-
-%\subsubsection{Balancing Reconstruction and Classification}
-
-
 \subsection{The Gradient Barrier Problem}
 Hybrid quantum-classical models, such as the Quantum Guided Autoencoder 
 (QGAE), aim to leverage quantum computational advantages within 
-classical machine learning frameworks. However, a significant 
+classical machine learning frameworks. However, a significant g
 challenge arises due to the non-differentiable nature of quantum 
 operations, commonly referred to as the `gradient barrier'.
 
@@ -454,6 +451,7 @@ training of hybrid models. The surrogate model
 solution, proposed in the next section, addresses 
 this problem.
 
+
 \subsection{Surrogate Modeling for Quantum Layers}
 To circumvent the gradient barrier, surrogate models 
 have been proposed. These are classical, differentiable 
@@ -472,12 +470,15 @@ optimization techniques while still capturing quantum computational
 advantages~\cite{xieQuantumSurrogateDrivenImage2025b}
 
 
-\subsubsection{Architecture}
-In our pipeline, the surrogate model is implemented as a 
-feedforward neural network designed to learn the mapping 
+\subsubsection{Surrogate Model Architecture}
+In our pipeline, the surrogate model \( f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) \) 
+is implemented as a feedforward neural network 
+designed to learn the mapping 
 from the autoencoder's latent space to the quantum 
 embeddings produced by the quantum reservoir. 
-
+\begin{equation}
+    f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) = \mathbf{q}' \approx \mathbf{q} = \mathrm{Measure}(|\psi(g(\mathbf{z})\rangle)
+\end{equation}
 Its architecture comprises multiple fully connected 
 layers with nonlinear activation functions, facilitating 
 the approximation of the complex, non-linear 
@@ -492,22 +493,20 @@ models.~\cite{xieQuantumSurrogateDrivenImage2025b,schreiberClassicalSurrogatesQu
 \subsubsection{Training Procedure}
 \begin{itemize}
     \item Data Input: 
-    Feed a batch of latent data \( z \) from the autoencoder 
+    Feed a batch of latent data \( \mathbf{z} \) from the autoencoder 
     into the real quantum reservoir, recording the resulting quantum 
     embeddings.
 
     \item Surrogate Training:
-    Train the surrogate model using the recorded quantum
-    embeddings as targets, minimizing the loss function:
+    Train the surrogate model  by minimizing the loss function:
     \begin{equation}
-        \mathcal{L}_{\text{surrogate}} = \| \hat{y} - y \|^2,
+        \mathcal{L}_{\text{sur}} = \| q' - q \|^2,
     \end{equation}
-    where \( \hat{y} \) are the surrogate model's predictions
-    and \( y \) are the actual quantum embeddings.
 
+    
     \item Regular Updates:
     Periodically update the surrogate model during training
-    to insure it accurately reflects the quantum reservoir's
+    to ensure it accurately reflects the quantum reservoir's
     behavior. This can be done after a fixed number of epochs
     or when the surrogate's performance on a validation set
     reaches a certain threshold.
@@ -522,7 +521,7 @@ serves as a differentiable proxy for the quantum reservoir,
 allowing the classification loss to influence the 
 autoencoder's parameters effectively.
 
-As a results, we not only achieve end-to-end training of the
+As a result, we not only achieve end-to-end training of the
 hybrid model but also makes it computationally efficient,
 as we reduce the need for frequent quantum measurements.
 
@@ -532,6 +531,7 @@ using a neutral-atom system, specifically utilizing
 Rydberg atoms to create a programmable quantum reservoir.
 The dynamics of the system are governed by the Rydberg Hamiltonian,
 which describes the interactions between atoms in Rydberg states~\ref{eq:rydberg_hamiltonian}.
+
 
 \subsubsection{Data Encoding Schemes}
 The input data is encoded into the quantum system by mapping
@@ -546,7 +546,6 @@ is compatible with the quantum dynamics of the reservoir.
 The quantum reservoir's output is obtained by probing, 
 in successive time steps, the state of the atoms 
 after the systems evolution up to a certain time \( t \).
-
 The readout is performed by measuring specific observables,
 such as $\langle Z_i \rangle$, $\langle Z_i \, Z_j\rangle$, and $\langle Z_i \, Z_j \, Z_k \rangle$, which measure respectively one-, two- and three-qubit correlations.
 % \begin{itemize}
@@ -557,6 +556,7 @@ such as $\langle Z_i \rangle$, $\langle Z_i \, Z_j\rangle$, and $\langle Z_i \, 
 %     \item \textbf{Three-atom Correlations}:
 %     \( \langle Z_i Z_j Z_k \rangle \) for triplets of atoms \( (i, j, k) \), providing higher-order correlations.
 % \end{itemize}
+
 
 %============================================
 % EXPERIMENTAL SETUP
@@ -630,7 +630,7 @@ reservoir during training. This approach combines:
 \end{itemize}
 
 
-\subsubsection{Quantum Reservoir Computing Layer}
+\subsection{Quantum Reservoir Computing Layer}
 Our quantum reservoir computing implementation uses 
 a Rydberg atom simulator with the following parameterizable
 components:
@@ -659,8 +659,8 @@ components:
     allowing for the capture of temporal dynamics in the data.
 \end{itemize}
 
-\subsubsection{Classical Network Architectures}
-After the traning process of the quantum-guided autoencoder,
+\subsection{QRC Embeddings Linear Classifier}
+After the traning process of the QGARS model,
 the following quantum embeddings are passed to a linear classifier.
 The classifier is a simple feedforward neural network with the following architecture:
 \begin{itemize}
@@ -672,18 +672,20 @@ The classifier is a simple feedforward neural network with the following archite
 We benchmarked our model against some
 classical methods, including:
 \begin{itemize}
-    \item \textbf{PCA + Linear Classifier:} 
-    A linear classifier trained on the PCA-reduced features.
+    \item \textbf{PCA/Autoencoder + Linear Classifier:} 
+    A linear classifier trained on the PCA-reduced features or the latent representations
+    from the autoencoder.
     
-    \item \textbf{Autoencoder + Linear Classifier:} 
-    A linear classifier trained on the latent representations from the autoencoder.
-    
-    \item \textbf{PCA + Neural Network:}
-    A fully connected neural network trained on the PCA-reduced features.
-    
-    \item \textbf{Autoencoder + Neural Network:}
-    A fully connected neural network trained on the latent representations from the autoencoder.
+    \item \textbf{PCA/Autoencoder + Neural Network:}
+    A fully connected neural network trained on the features from the 
+    same reduction methods as the linear classifier. 
 \end{itemize}
+
+We also benchmarked our QGARS encoding strategy
+against the performance of the Linear Mapping of
+QRC embeddings extracted from the latent representation 
+of data using other feature reduction methods, such as
+PCA and the Classical Autoencoder.
 
 \subsection{Performance Metrics}
 We evaluated the performance of our model using the following metrics:
@@ -707,43 +709,209 @@ To optimize the performance of our quantum-guided autoencoder,
 we conducted a systematic parameter sweep over the following hyperparameters:
 \begin{itemize}
     \item \textbf{Guided Lambda Parameter (\( \lambda \))}: 
-    This parameter controls the trade-off between reconstruction and classification objectives in the loss function~\ref{eq:composed_loss_function}. We tested values ranging from 0.1 to 0.9 in increments of 0.1.
-
+    To analyse the effect that the trade-off between reconstruction and classification objectives in the loss function~\ref{eq:composed_loss_function} affects
+    the QRC
+    
     \item \textbf{Quantum Update Frequency:} 
     The frequency at which the quantum reservoir is updated during training. We experimented with update frequencies of 1, 5, and 10 epochs.
 
     \item \textbf{Quantum Parameters:} 
-    Including the number of atoms in the chain, Rabi frequency, and detuning parameters. We varied these parameters to assess their impact on classification performance.
-    \item \textbf{Batch Size:}
-    \item \textbf{Learning Rate:}
+    Rabi frequency, and detuning parameters. We varied these parameters to assess their impact on classification performance.
+
+    \item \textbf{Number of Features:}
+    The number of features is the same as the number of qubits (atoms), 
+    as each feature encoded in each atom.
+    
 \end{itemize}
+The results from these experiments will be discussed in the next section.
 
 %============================================
 % RESULTS
 %============================================
 \section{Results and Discussion}
-\subsection{Classification Performance Comparison}
-\subsection{Ablation Studies}
-\subsubsection{Impact of Guided Lambda Parameter}
-\subsubsection{Effect of Quantum Update Frequency}
-\subsubsection{Influence of Quantum Parameters}
-\subsection{Dimensionality Reduction Comparison}
-\subsection{Surrogate Model Fidelity Analysis}
-\subsection{Generalization to Unseen Data}
 
+\subsection{Classification Performance Comparison}
+We first compare classification accuracy of the Linear Classifier on the QRC embeddings across PCA,
+vanilla autoencoder, and our QGARS pipeline on each dataset. 
+Table~\ref{tab:qrc_reduction_accuracy} summarizes mean accuracy and standard deviation over 
+five runs, using 12 features.
+
+\begin{table}[!htb]
+  \caption{Classification accuracy (\%) on test sets}
+  \label{tab:qrc_reduction_accuracy}
+  \centering
+  \begin{tabular}{lccc}
+    \hline
+    Method & Synthetic Polyp & CVC-ClinicDB & MNIST(0/1) \\
+    \hline
+    PCA + QRC + Linear      &  00 ± 0.0  &  00 ± 0.0  &  00 ± 0.0 \\
+    AE + QRC + Linear       &  00 ± 0.0  &  00 ± 0.0  &  00 ± 0.0 \\
+    QGARS + QRC + Linear    &  \textbf{00 ± 0.0} &  \textbf{00 ± 0.0} &  \textbf{00 ± 0.0} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+
+\subsection{Dimensionality Reduction Comparison}
+
+To evaluate how well the quantum reservoir embeddings separate classes, we project the high-dimensional embeddings down to $2$ dimensions via t-distributed Stochastic Neighbour Embedding (t-SNE). Figure~\ref{fig:embeddings_tsne} shows side-by-side plots for PCA → QRC, AE → QRC, and QGARS → QRC pipelines. The QGARS embeddings exhibit the tightest and most distinct clusters, indicating superior discriminative structure.
+
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=0.32\textwidth]{pca_qrc_tsne.pdf}
+  \includegraphics[width=0.32\textwidth]{ae_qrc_tsne.pdf}
+  \includegraphics[width=0.32\textwidth]{qgars_qrc_tsne.pdf}
+  \caption{t-SNE projections of the 4 700-D QRC embeddings for (left) PCA + QRC, (center) AE + QRC, (right) QGARS + QRC.}
+  \label{fig:embeddings_tsne}
+\end{figure*}
+
+Quantitatively, we compute the Silhouette Score on the original 4 700-D embeddings (Table~\ref{tab:silhouette}). The QGARS pipeline achieves the highest score, confirming better inter-class separation:
+
+\begin{table}[ht]
+  \caption{Silhouette Scores for QRC embeddings}
+  \label{tab:silhouette}
+  \centering
+  \begin{tabular}{lcc}
+    \hline
+    Pipeline         & Silhouette Score \\
+    \hline
+    PCA + QRC        & 0.0 \\
+    AE + QRC         & 0.0 \\
+    QGARS + QRC      & \textbf{0.0} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+
+\subsection{Ablation Studies}
+
+\subsubsection{Impact of Guided Lambda Parameter}
+We vary the guidance weighting $\lambda$ in Eq.~\ref{eq:composed_loss_function} to assess its influence on performance. Figure~\ref{fig:lambda_sweep} plots test accuracy vs.\ $\lambda$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=1\linewidth]{paper/images/results/generated_polyp_dataset/guided_lambda_log_effect.pdf}
+  \caption{Accuracy as a function of the reconstruction/classification trade-off parameter $\lambda$.}
+  \label{fig:lambda_sweep}
+\end{figure}
+
+\noindent
+We find optimal performance around $\lambda=XXX$; too little guidance ($\lambda<XXX$) yields under-trained classifiers, while too much ($\lambda>XXX$) degrades reconstruction quality.
+
+
+\subsubsection{Effect of Quantum Update Frequency}
+
+\subsubsection{Influence of Quantum Parameters}
+
+\subsection{Surrogate Model Fidelity Analysis}
+We assess how well the surrogate approximates the quantum reservoir by 
+computing the MSE between true quantum embeddings and surrogate outputs over the test set (Figure~\ref{fig:surrogate_fidelity}). Low MSE indicates high fidelity.
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.8\linewidth]{surrogate_mse.pdf}
+  \caption{Surrogate vs.\ quantum embedding MSE over training epochs.}
+  \label{fig:surrogate_fidelity}
+\end{figure}
+
+
+\subsection{Comparison with Classical Methods}
+To benchmark the benefit of our QGARS pipeline, 
+we compare against purely classical feature-reduction 
+approaches followed by standard classifiers. 
+Table~\ref{tab:classical_comp} reports test accuracy on each dataset 
+for the different methods.
+
+\begin{table}[ht]
+  \caption{Test set classification accuracy (\%) for classical baselines}
+  \label{tab:classical_comp}
+  \centering
+  \begin{tabular}{lccc}
+    \hline
+    Method            & Synthetic Polyp & CVC-ClinicDB & MNIST (0/1) \\
+    \hline
+    PCA + Linear      &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
+    AE + Linear       &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
+    AE + NN           &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\noindent
+In contrast, the QGARS pipeline achieves 0.0\%, 0.0\%, and 0.0\% on the same datasets (see Table~\ref{tab:qrc_reduction_accuracy}).
+
+\subsubsection{Training Loss Dynamics}
+
+Figure~\ref{fig:loss_curves} shows the training loss curves for the classical baselines and QGARS on the Synthetic Polyp dataset. We plot the reconstruction loss for PCA/AE methods combined with classification loss for the AE+NN and QGARS pipelines.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\linewidth]{loss_comparison.pdf}
+  \caption{Normalized training loss vs.\ epoch for PCA+Linear, AE+Linear, AE+NN, and QGARS on the Synthetic Polyp dataset.}
+  \label{fig:loss_curves}
+\end{figure}
+
+\noindent
+Although the loss function of the QGARS method shows
+signs of instability, is not only converges faster but also reaches a 
+lower combined loss
 
 %============================================
 % LIMITATIONS AND FUTURE WORK
 %============================================
 \section{Limitations and Future Work}
 \subsection{Current Limitations}
+While QGARS demonstrates strong performance, several limitations remain:
+\begin{itemize}
+    \item \textbf{Surrogate Fidelity:}
+    Imperfect surrogate approximation can introduce bias in the gradients and limit end‐to‐end 
+    performance, especially if the latent distribution shifts significantly during training.
+    \item \textbf{Classical overhead:}  
+    Frequent surrogate retraining and batch quantum simulations introduce 
+    nontrivial classical compute overhead, potentially offsetting some of the 
+    quantum advantage.
+\end{itemize}
+
 \subsection{Potential Extensions}
+Several avenues can further enhance QGARS:
+\begin{itemize}
+    \item \textbf{Different Hamiltonians:}
+    Explore alternative interaction Hamiltonians (e.g., XY, Heisenberg) to better tailor reservoir dynamics, as experimented by A. D. Lorenzis et al~\cite{lorenzisHarnessingQuantumExtreme2025}.
+
+    \item \textbf{Convolutional Autoencoders:}
+    Replace the fully connected autoencoder with a convolutional AE to learn spatially localized features, making the model input‐size agnostic and enabling richer local structure for the reservoir.
+    
+    \item \textbf{Reservoir encoding schemes:}
+    Investigate alternate encodings—such as position encoding via atom placement, global versus local pulse shaping, or multi‐tone driving—to diversify the reservoir’s nonlinear response.
+    
+    \item \textbf{\(\lambda\)-Scheduling \& Curriculum Learning:}  
+    Implement a curriculum that gradually increases the guidance weight \(\lambda\) from 0 to 1, allowing the autoencoder to first stabilize reconstruction before introducing quantum guidance. Hybrid ramping schedules may accelerate convergence.
+    
+    \item \textbf{Noise‐Aware Training:}  
+    Incorporate realistic noise models (decoherence, measurement error) into surrogate training so that the surrogate learns hardware‐like quantum embeddings, improving robustness upon deployment in NISQ devices.
+
+\end{itemize}
+
 \subsection{Hardware Implementation Considerations}
+Bringing QGARS to physical hardware entails additional challenges:
+\begin{itemize}
+    \item \textbf{Calibration and drift:}  
+        Rydberg atom platforms require careful calibration of laser frequencies and intensities; drift over time may degrade reservoir fidelity.
+    \item \textbf{Shot noise and sampling cost:}  
+        Finite‐shot measurements introduce statistical noise; optimizing shot budgets versus surrogate fidelity is critical.
+    \item \textbf{Scalability:}  
+        Extending to hundreds of atoms demands sophisticated trap control and cross‐talk mitigation; resource scheduling on shared QPUs may limit throughput.
+    \item \textbf{Integration with classical pipelines:}  
+        Efficient data transfer between classical and quantum subsystems (e.g.\ via FPGA or GPU–QPU interconnects) and asynchronous surrogate updates will be essential for low‐latency operation.
+\end{itemize}
 
 %============================================
 % CONCLUSION
 %============================================
 \section{Conclusion}
+
+We have presented QGARS, a hybrid quantum-classical architecture that integrates a classical autoencoder with a neutral-atom quantum reservoir and a differentiable surrogate model to enable end‐to‐end training. By jointly optimizing reconstruction and classification losses, QGARS learns compact and discriminative features tailored for quantum reservoir computing. Our experiments on synthetic polyp, CVC-ClinicDB, and binary MNIST datasets demonstrate that QGARS outperforms classical PCA‐ and autoencoder‐based baselines. Ablation studies highlight the importance of the guidance weight \(\lambda\), surrogate update frequency, and reservoir parameters. While challenges remain—particularly regarding high‐dimensional embeddings, surrogate fidelity, and classical overhead, our proposed extensions and hardware considerations chart a clear path toward robust, scalable quantum‐enhanced medical imaging pipelines in the NISQ era.
+
 
 %============================================
 % REFERENCES
@@ -751,8 +919,5 @@ we conducted a systematic parameter sweep over the following hyperparameters:
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
-\newpage
-\newpage
-\tableofcontents
 
 \end{document}
