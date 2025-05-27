@@ -413,6 +413,7 @@ classification accuracy:
 
 \begin{equation}
     \mathcal{L} = (1-\lambda) \cdot \mathcal{L}_R + \lambda \cdot \mathcal{L}_{C},
+    \label{eq:composed_loss_function}
 \end{equation}
 where:
 \begin{itemize}
@@ -564,12 +565,158 @@ such as:
 %============================================
 \section{Experimental Setup}
 \subsection{Datasets}
-\subsection{Implementation Details}
-\subsubsection{Quantum Simulation Parameters}
+We evaluate our proposed architecture on three primary datasets:
+\begin{enumerate}
+    \item \textbf{Synthetic Polyp Dataset:} 
+    A synthetic dataset of polyp images generated to simulate 
+    realistic medical imaging scenarios.
+    
+    \item \textbf{CVC-ClinicDB Dataset:} 
+    Real image patches extracted from the CVC-ClinicDB 
+    dataset, a well-known benchmark for polyp detection. 
+    This dataset provides a diverse set of polyp images 
+    with varying characteristics, allowing for robust 
+    evaluation of classification performance.
+    
+    \item \textbf{MNIST Dataset:} 
+    A reduced version of the MNIST dataset, 
+    containing only the digits 0 and 1, suitable 
+    for binary classification tasks. This dataset 
+    serves as a controlled environment to assess 
+    the model's performance on simpler classification tasks.
+\end{enumerate}
+
+\subsection{Feature Reduction Methods}
+We implemented and compared three distinct feature reduction approaches:
+\subsubsection{Principal Component Analysis (PCA)}
+PCA was employed as a baseline linear 
+dimensionality reduction technique. 
+We extracted the top-k principal components 
+(typically 4-12) from the flattened image data, 
+which were then used as inputs to both classical and 
+quantum-enhanced classifiers.
+
+\subsubsection{Autoencoder}
+We implemented a neural network-based autoencoder with the following architecture:
+
+\begin{itemize}
+    \item An encoder network that compresses
+    the input to a lower-dimensional latent space.
+    
+    \item A decoder network that reconstructs 
+    the original input from the latent representation
+
+    \item Batch normalization and dropout layers 
+    to improve training stability and prevent overfitting.
+\end{itemize}
+
+The autoencoder was trained to minimize reconstruction 
+loss using the Adam optimizer with learning rates 
+between 0.001—0.01 and weight decay for regularization.
+
+\subsubsection{Quantum-Guided Autoencoder}
+We introduced a quantum-guided autoencoder 
+that incorporates feedback from the quantum 
+reservoir during training. This approach combines:
+
+\begin{itemize}
+    \item A standard autoencoder architecture
+    \item A linear classifier that maps quantum embeddings to class labels.
+    \item A classification loss computed on quantum embeddings
+    \item A weighting parameter $\lambda$ to control the trade-off between 
+    reconstruction and classification objectives~\ref{eq:composed_loss_function}.
+    \item A differentiable surrogate model that approximates the quantum reservoir's behavior,
+    enabling end-to-end backpropagation through the entire pipeline. The frequency 
+    of quantum updates is controlled by a hyperparameter, allowing for
+    flexible integration of quantum dynamics into the training process.
+\end{itemize}
+
+
+\subsubsection{Quantum Reservoir Computing Layer}
+Our quantum reservoir computing implementation uses 
+a Rydberg atom simulator with the following parameterizable
+components:
+
+\begin{itemize}
+    \item \textbf{Atom Chain Length:} 
+    The number of atoms in the chain, which can be adjusted 
+    to control the reservoir's capacity and complexity.
+    
+    \item \textbf{Rabi Frequency:} 
+    The global Rabi drive amplitude, which influences the 
+    strength of interactions between atoms.
+    
+    \item \textbf{Detuning Parameters:} 
+    Site-dependent detuning parameters that encode the input data.
+    
+    \item \textbf{Measurement Strategy:} 
+    The specific observables measured to obtain quantum embeddings.
+
+    \item \textbf{Encoding Scale:}
+    The scale of the input data encoding, which can be adjusted
+    to optimize the quantum reservoir's response to the input data.
+
+    \item \textbf{Time steps:}
+    The number of time steps for which the quantum reservoir evolves,
+    allowing for the capture of temporal dynamics in the data.
+\end{itemize}
+
 \subsubsection{Classical Network Architectures}
+After the traning process of the quantum-guided autoencoder,
+the following quantum embeddings are passed to a linear classifier.
+The classifier is a simple feedforward neural network with the following architecture:
+\begin{itemize}
+    \item A single hidden layer with a ReLU activation function.
+    \item Cross-entropy loss for training, optimized using the Adam optimizer.
+\end{itemize}
+
 \subsection{Comparison Methods}
+We benchmarked our model against some
+classical methods, including:
+\begin{itemize}
+    \item \textbf{PCA + Linear Classifier:} 
+    A linear classifier trained on the PCA-reduced features.
+    
+    \item \textbf{Autoencoder + Linear Classifier:} 
+    A linear classifier trained on the latent representations from the autoencoder.
+    
+    \item \textbf{PCA + Neural Network:}
+    A fully connected neural network trained on the PCA-reduced features.
+    
+    \item \textbf{Autoencoder + Neural Network:}
+    A fully connected neural network trained on the latent representations from the autoencoder.
+\end{itemize}
+
 \subsection{Performance Metrics}
+We evaluated the performance of our model using the following metrics:
+\begin{itemize}
+    \item \textbf{Classification Accuracy:} 
+    The percentage of correctly classified instances in the test set.
+    
+    \item \textbf{F1 Score:} 
+    The harmonic mean of precision and recall, providing a balanced measure of classification performance.
+    
+    \item \textbf{Confusion Matrix:} 
+    A matrix summarizing the classification results, showing true positives, false positives, true negatives, and false negatives.
+    
+\end{itemize}
+
+
 \subsection{Parameter Sweep Strategy}
+To optimize the performance of our quantum-guided autoencoder, 
+we conducted a systematic parameter sweep over the following hyperparameters:
+\begin{itemize}
+    \item \textbf{Guided Lambda Parameter (\( \lambda \))}: 
+    This parameter controls the trade-off between reconstruction and classification objectives in the loss function~\ref{eq:composed_loss_function}. We tested values ranging from 0.1 to 0.9 in increments of 0.1.
+
+    \item \textbf{Quantum Update Frequency:} 
+    The frequency at which the quantum reservoir is updated during training. We experimented with update frequencies of 1, 5, and 10 epochs.
+
+    \item \textbf{Quantum Parameters:} 
+    Including the number of atoms in the chain, Rabi frequency, and detuning parameters. We varied these parameters to assess their impact on classification performance.
+    \item \textbf{Batch Size:}
+    \item \textbf{Learning Rate:}
+\end{itemize}
 
 %============================================
 % RESULTS
