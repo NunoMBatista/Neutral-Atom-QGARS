@@ -30,7 +30,12 @@ EXPERIMENT_PROFILES = {
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
            # "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0], # SWEEP IN LOG SCALE!
-            "guided_lambda": [0.0000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+           
+           
+           # ADD SYMETRIC
+            "guided_lambda": [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.0,
+                              0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                              1-0.01, 1-0.001, 1-0.0001, 1-0.00001, 1-0.000001, 1],
             "quantum_update_frequency": [5],
             "dim_reduction": [12]
         }
@@ -50,8 +55,7 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # RUNNING ON RTX3095
-    # SHOULD SHOW THAT THE MORE YOU QUERY THE RESERVOIR THE BETTER
+    # DONE 
     "guided_autoencoder_update_frequency": {
         "description": "Sweep over guided autoencoder update frequency",
         "param_grid": {
@@ -85,14 +89,15 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # NOT DONE
-    # UNSURE
+    # RUNNING ON CRAY-4
     "shot_noise": {
         "description": "Sweep over number of quantum shots",
         "param_grid": {
             "n_shots": [100, 500, 1000, 2000],
             "readout_type": ["all"],
             "reduction_method": ["guided_autoencoder"],
+            "quantum_update_frequency": [5],
+            "guided_lambda": [0.7], 
             "dim_reduction": [12]
         }
     },
