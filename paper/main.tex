@@ -1,4 +1,5 @@
 \documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
 \IEEEoverridecommandlockouts
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 %Template version as of 6/27/2024
@@ -14,6 +15,7 @@
 \usepackage{hyperref}
 \usepackage{physics}
 \usepackage{float}
+\usepackage{inputenc}
 
 % Add TikZ package and necessary libraries
 \usepackage{tikz}
@@ -44,6 +46,7 @@
 % should not be used}
 }
 
+\author{\IEEEauthorblockN{Anonymous Authors}}
 % \author{
 % \IEEEauthorblockN{Nuno Batista}
 % \IEEEauthorblockA{\textit{Department of Informatics Engineering} \\
@@ -108,11 +111,11 @@ Medical Image Classification, Quantum Surrogate Models
 Advances in medical imaging have significantly improved 
 disease diagnosis and treatment planning. For conditions 
 like colorectal cancer, early detection of polyps through 
-colonoscopy image analysis is critical for reducing mortality~\cite{estevaGuideDeepLearning2019a}. 
+colonoscopy image analysis is critical for reducing mortality~\cite{estevaGuideDeepLearning2019}. 
 Deep learning techniques, especially autoencoders, are widely 
 used to extract compressed, informative features from 
 high-dimensional images for classification and segmentation 
-tasks~\cite{bengioLearningDeepArchitecturesa}. However, classical neural networks may struggle 
+tasks~\cite{bengioLearningDeepArchitectures}. However, classical neural networks may struggle 
 to capture intricate correlations in complex medical data.
 
 Quantum computing offers novel opportunities 
@@ -146,14 +149,6 @@ quantum reservoir.
 A classical surrogate network of the reservoir itself enables 
 gradient flow through the whole model during training.
 
-The model is evaluated and compared to classical benchmarks on three 
-different datasets: 
-\begin{enumerate}
-    \item A synthetic dataset of polyp images, generated to simulate realistic medical imaging scenarios.
-    \item Real image patches extracted from the CVC-ClinicDB dataset, a well-known benchmark for polyp detection.
-    \item A reduced version of the MNIST dataset, containing only the digits 0 and 1, suitable for binary classification tasks.
-\end{enumerate}
-
 Our results illustrate the viability of QRC for real-world medical 
 tasks and offer a scalable path to hybrid quantum-classical learning,
 even in the noisy intermediate-scale quantum (NISQ) era.
@@ -162,7 +157,7 @@ even in the noisy intermediate-scale quantum (NISQ) era.
 %============================================
 % BACKGROUND 
 %============================================
-\section{Background}
+\section{Background and Related Work}
 
 \subsection{Principles of Reservoir Computing}
 Reservoir computing is a computational framework 
@@ -191,7 +186,7 @@ Where \( f \) is a nonlinear activation function,
 \( W_{in} \) and \( W_{res} \) are fixed input and reservoir weight matrices, 
 and \( W_{out} \) is the trained output weight matrix.
 
-A diagram of a typical reservoir computing architecture is shown in `Fig.-\ref{fig:reservoir_architecture}'.
+A diagram of a typical Reservoir Computing architecture is shown in `Fig.-\ref{fig:reservoir_architecture}'.
 
 \input{reservoir_architecture.tex}
 
@@ -219,9 +214,9 @@ where \( U \) is the unitary evolution operator. Measurements of observables \( 
 The output weights are trained classically, while the quantum reservoir remains fixed.
 
 \subsection{Reservoir Computing with Neutral Atoms}
-As quantum Reservoir Computing (QRC) leverages the complex 
+As Quantum Reservoir Computing (QRC) leverages the complex 
 dynamics of quantum systems to process information, 
-extending the classical reservoir computing 
+extending the Classical Reservoir Computing 
 paradigm into the quantum domain. Neutral atom platforms, 
 particularly those utilizing Rydberg states, 
 have emerged as promising candidates for implementing 
@@ -241,7 +236,7 @@ The dynamics of such neutral atom systems can be
 described by the Rydberg Hamiltonian, which captures 
 the essential physics of laser-driven interactions 
 among atoms in Rydberg states. Following Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024}
-The Hamiltonian for a system of neutral-atoms is given by:
+the Hamiltonian for a system of neutral-atoms is given by:
 
 \begin{equation}
     \begin{aligned}
@@ -250,7 +245,6 @@ The Hamiltonian for a system of neutral-atoms is given by:
     \end{aligned}
     \label{eq:rydberg_hamiltonian}
 \end{equation}
-
 where \( \Omega(t) \) is the global Rabi drive amplitude between a 
 ground state \( |g_j\rangle \) and a highly-excited Rydberg state 
 \( |r_j\rangle \) of an atom,
@@ -323,7 +317,7 @@ This typical architecture of an autoencoder is illustrated in
 Autoencoders can capture complex, nonlinear 
 relationships in the data, making them suitable for tasks 
 like image compression, denoising, and anomaly 
-detection~\cite{hintonReducingDimensionalityData2006, estevaGuideDeepLearning2019a}.
+detection~\cite{hintonReducingDimensionalityData2006, estevaGuideDeepLearning2019}.
 
 \subsubsection{Quantum-Guided Autoencoding}
 Quantum-Guided Autoencoders integrate quantum 
@@ -361,6 +355,7 @@ handling high-dimensional, complex datasets~\cite{belisGuidedQuantumCompression2
 %============================================
 \section{Methodology}
 \subsection{System Architecture Overview}
+
 Our proposed pipeline integrates classical and quantum 
 components for dimensionality reduction and classification. 
 A classical autoencoder compresses high-dimensional image 
@@ -369,6 +364,7 @@ representation is encoded into a Rydberg atom chain,
 serving as input to a quantum reservoir. The reservoir's 
 dynamics, governed by the Rydberg Hamiltonian, produce 
 quantum embeddings through measurements of quantum observables.
+The overall architecture is illustrated in `Fig.-\ref{fig:qgars_pipeline}'.
 
 To facilitate end-to-end training, we employ a differentiable 
 surrogate model that approximates the quantum reservoir's 
@@ -387,7 +383,6 @@ space, which is then processed by the actual quantum reservoir.
 The resulting quantum embeddings are used to train a linear 
 classifier for final predictions.
 
-The overall architecture is illustrated in `Fig.-\ref{fig:qgars_pipeline}'.
 
 \begin{figure*}[!h]
     \centering
@@ -455,7 +450,9 @@ layers introduces operations that are inherently non-differentiable:
 These aspects hinder the direct application of 
 gradient-based optimization methods across the 
 quantum-classical boundary, obstructing end-to-end 
-training of hybrid models.
+training of hybrid models. The surrogate model 
+solution, proposed in the next section, addresses 
+this problem.
 
 \subsection{Surrogate Modeling for Quantum Layers}
 To circumvent the gradient barrier, surrogate models 
@@ -551,15 +548,15 @@ in successive time steps, the state of the atoms
 after the systems evolution up to a certain time \( t \).
 
 The readout is performed by measuring specific observables,
-such as:
-\begin{itemize}
-    \item \textbf{Single-atom Measurements}: 
-    \( \langle Z_i \rangle \) for each atom \( i \), where \( Z_i \) is the Pauli-Z operator.
-    \item \textbf{Two-atom Correlations}: 
-    \( \langle Z_i Z_j \rangle \) for pairs of atoms \( (i, j) \), capturing correlations between their states.
-    \item \textbf{Three-atom Correlations}:
-    \( \langle Z_i Z_j Z_k \rangle \) for triplets of atoms \( (i, j, k) \), providing higher-order correlations.
-\end{itemize}
+such as $\langle Z_i \rangle$, $\langle Z_i \, Z_j\rangle$, and $\langle Z_i \, Z_j \, Z_k \rangle$, which measure respectively one-, two- and three-qubit correlations.
+% \begin{itemize}
+%     \item \textbf{Single-atom Measurements}: 
+%     \( \langle Z_i \rangle \) for each atom \( i \), where \( Z_i \) is the Pauli-Z operator.
+%     \item \textbf{Two-atom Correlations}: 
+%     \( \langle Z_i Z_j \rangle \) for pairs of atoms \( (i, j) \), capturing correlations between their states.
+%     \item \textbf{Three-atom Correlations}:
+%     \( \langle Z_i Z_j Z_k \rangle \) for triplets of atoms \( (i, j, k) \), providing higher-order correlations.
+% \end{itemize}
 
 %============================================
 % EXPERIMENTAL SETUP
@@ -613,7 +610,7 @@ We implemented a neural network-based autoencoder with the following architectur
 
 The autoencoder was trained to minimize reconstruction 
 loss using the Adam optimizer with learning rates 
-between 0.001—0.01 and weight decay for regularization.
+between $0.001$--$0.01$ and weight decay for regularization.
 
 \subsubsection{Quantum-Guided Autoencoder}
 We introduced a quantum-guided autoencoder 
@@ -690,17 +687,19 @@ classical methods, including:
 
 \subsection{Performance Metrics}
 We evaluated the performance of our model using the following metrics:
-\begin{itemize}
-    \item \textbf{Classification Accuracy:} 
-    The percentage of correctly classified instances in the test set.
+Classification Accuracy, F1 Score, Confusion Matrix.
+
+% \begin{itemize}
+%     \item \textbf{Classification Accuracy} 
+%     %The percentage of correctly classified instances in the test set.
     
-    \item \textbf{F1 Score:} 
-    The harmonic mean of precision and recall, providing a balanced measure of classification performance.
+%     \item \textbf{F1 Score} 
+%     %The harmonic mean of precision and recall, providing a balanced measure of %classification performance.
     
-    \item \textbf{Confusion Matrix:} 
-    A matrix summarizing the classification results, showing true positives, false positives, true negatives, and false negatives.
+%     \item \textbf{Confusion Matrix} 
+%    % A matrix summarizing the classification results, showing true positives, %false positives, true negatives, and false negatives.
     
-\end{itemize}
+% \end{itemize}
 
 
 \subsection{Parameter Sweep Strategy}
