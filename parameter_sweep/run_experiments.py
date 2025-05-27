@@ -103,8 +103,6 @@ EXPERIMENT_PROFILES = {
     },
     
     
-
-    
     # RUNNING ON CRAY-4
     "time_steps_evolution_time": {
         "description": "Sweep over quantum evolution time and steps",
@@ -139,7 +137,19 @@ EXPERIMENT_PROFILES = {
             "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12],
         }
+    },
+    
+    # MOST IMPORTANT FOR THE PAPER
+    "general_test": {
+        "description": "Run a general test with fixed parameters",
+        "seed": [42, 43, 44],
+        "dataset_type": ["binary_mnist", "generated_polyp_dataset", "cvc_clinic_db_patches"],
+        "num_examples": [2000],
+        "num_test_examples": [400],
+        "reduction_method": ["guided_autoencoder", "autoencoder", "pca"],
+        "dim_reduction": [12]
     }
+    
 }
 
 def run_experiment_profile(profile_name: str, 

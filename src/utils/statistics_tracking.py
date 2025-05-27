@@ -60,7 +60,7 @@ def save_classifier_loss_plot(results_dict: Dict[str, Tuple[List[float], List[fl
     """
     plt.figure(figsize=(10, 6))
     
-    for name, (losses, _, _, _) in results_dict.items():
+    for name, (losses, _, _, _, _, _) in results_dict.items():
         plt.plot(losses, label=f"{name} loss")
     
     plt.xlabel("Epoch")
@@ -91,7 +91,7 @@ def save_classifier_accuracy_plot(results_dict: Dict[str, Tuple[List[float], Lis
     """
     plt.figure(figsize=(10, 6))
     
-    for name, (_, accs_train, accs_test, _) in results_dict.items():
+    for name, (_, accs_train, accs_test, _, _, _) in results_dict.items():
         plt.plot(accs_train, label=f"{name} train")
         plt.plot(accs_test, label=f"{name} test")
     
@@ -168,6 +168,22 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
         
         logging.info(f"Saved surrogate model loss plot to {surrogate_plot_path}")
 
+def get_f1_score(confusion_matrix: Dict[str, int]) -> float:
+    tp = confusion_matrix['true_positive']
+    tn = confusion_matrix['true_negative']
+    fp = confusion_matrix['false_positive']
+    fn = confusion_matrix['false_negative']
+    
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    
+    if precision + recall == 0:
+        return 0.0
+    
+    f1_score = 2 * (precision * recall) / (precision + recall)
+    
+    return f1_score
+
 def save_loss_logs(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
                   output_dir: str) -> None:
     """
@@ -182,7 +198,7 @@ def save_loss_logs(results_dict: Dict[str, Tuple[List[float], List[float], List[
     """
     log_data = {}
     
-    for name, (losses, accs_train, accs_test, _) in results_dict.items():
+    for name, (losses, accs_train, accs_test, _, _, _) in results_dict.items():
         log_data[name] = {
             'losses': losses,
             'train_accuracy': accs_train,
@@ -234,10 +250,14 @@ def extract_metrics(results_dict: Dict[str, Tuple[List[float], List[float], List
     }
     
     # Extract final metrics from each model
-    for model_name, (losses, accs_train, accs_test, _) in results_dict.items():
+    for model_name, (losses, accs_train, accs_test, _, confusion_matrix_train, confusion_matrix_test) in results_dict.items():
         metrics[f"{model_name}_final_train_acc"] = float(accs_train[-1])
         metrics[f"{model_name}_final_test_acc"] = float(accs_test[-1])
         metrics[f"{model_name}_final_loss"] = float(losses[-1])
+        metrics[f"{model_name}_confusion_matrix_train"] = confusion_matrix_train
+        metrics[f"{model_name}_f1_score_train"] = get_f1_score(confusion_matrix_train)
+        metrics[f"{model_name}_confusion_matrix_test"] = confusion_matrix_test
+        metrics[f"{model_name}_f1_score_test"] = get_f1_score(confusion_matrix_test)
         
         # Add mean metrics for the last 10% of training (stability)
         if len(accs_test) > 5:

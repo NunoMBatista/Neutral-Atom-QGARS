@@ -326,7 +326,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     # Train different models
     results = {}
     
-    loss_lin, accs_train_lin, accs_test_lin, model_lin = train(
+    loss_lin, accs_train_lin, accs_test_lin, model_lin, confusion_matrix_train, confusion_matrix_test = train(
         x_train=xs, 
         y_train=ys, 
         x_test=test_features, 
@@ -338,7 +338,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         verbose=not args.no_progress,
         nonlinear=False
     )
-    results["linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin)
+    results["linear"] = (loss_lin, accs_train_lin, accs_test_lin, model_lin, confusion_matrix_train, confusion_matrix_test)
     
     print(model_lin)
     
@@ -351,7 +351,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         
         """)
     
-    loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc = train(
+    loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc, confusion_matrix_train, confusion_matrix_test = train(
         embeddings, ys, test_embeddings, test_targets, 
         regularization=args.classifier_regularization,  # Use classifier regularization
         nepochs=args.nepochs, 
@@ -360,7 +360,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         verbose=not args.no_progress,
         nonlinear=False
     )
-    results["QRC"] = (loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc)
+    results["QRC"] = (loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc, confusion_matrix_train, confusion_matrix_test)
     
     print(model_qrc)
     
@@ -372,7 +372,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         =========================================
         
         """)
-    loss_nn, accs_train_nn, accs_test_nn, model_nn = train(
+    loss_nn, accs_train_nn, accs_test_nn, model_nn, confusion_matrix_train, confusion_matrix_test = train(
         xs, ys, test_features, test_targets, 
         regularization=args.classifier_regularization,  # Use classifier regularization 
         nepochs=args.nepochs, 
@@ -381,7 +381,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         verbose=not args.no_progress,
         nonlinear=True
     )
-    results["NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn)
+    results["NN"] = (loss_nn, accs_train_nn, accs_test_nn, model_nn, confusion_matrix_train, confusion_matrix_test)
     
     print(model_nn)
     
