@@ -13,6 +13,7 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{physics}
+\usepackage{float}
 
 % Add TikZ package and necessary libraries
 \usepackage{tikz}
@@ -39,8 +40,8 @@
 \begin{document}
 
 \title{Medical Imaging Classification with Cold-Atom Reservoir Computing using Auto-Encoders and Surrogate-Driven Training\\
-{\footnotesize \textsuperscript{*}Note: Sub-titles are not captured for https://ieeexplore.ieee.org  and
-should not be used}
+% {\footnotesize \textsuperscript{*}Note: Sub-titles are not captured for https://ieeexplore.ieee.org  and
+% should not be used}
 }
 
 \author{
@@ -246,6 +247,7 @@ The Hamiltonian for a system of neutral-atoms is given by:
         H(t) &= \dfrac{\Omega(t)}{2}\sum_j \left(\ket{g_j}\bra{r_j}+\ket{r_j}\bra{g_j}\right) \\
              &{{\quad}} + \sum_{j<k}V_{jk}n_jn_k - \sum_j \left[\Delta_{\mathrm{g}}(t) + \alpha_j\Delta_{\mathrm{l}}(t)\right] n_j,
     \end{aligned}
+    \label{eq:rydberg_hamiltonian}
 \end{equation}
 
 where \( \Omega(t) \) is the global Rabi drive amplitude between a 
@@ -313,6 +315,7 @@ The network is trained to minimize the reconstruction loss:
 
 This typical architecture of an autoencoder is illustrated in 
 `Fig.-\ref{fig:autoencoder_architecture}'.
+
 \input{autoencoder_architecture.tex}
 
 
@@ -358,46 +361,34 @@ handling high-dimensional, complex datasets~\cite{belisGuidedQuantumCompression2
 \section{Methodology}
 \subsection{System Architecture Overview}
 Our proposed pipeline integrates classical and quantum 
-components to perform dimensionality reduction and
-classification. 
-A classical autoencoder compresses
-high-dimensional image data into a lower-dimensional
-latent space. 
-This compressed representation is 
-encoded into a Rydberg Atom chain, which serves as 
-the input to a quantum reservoir. 
-The reservoir will then produce quantum embeddings
-by measuring quantum observables, which capture the
-dynamics of the quantum system in response to the input data.
+components for dimensionality reduction and classification. 
+A classical autoencoder compresses high-dimensional image 
+data into a lower-dimensional latent space. This latent 
+representation is encoded into a Rydberg atom chain, 
+serving as input to a quantum reservoir. The reservoir's 
+dynamics, governed by the Rydberg Hamiltonian, produce 
+quantum embeddings through measurements of quantum observables.
 
-These quantum embeddings will be used to train a
-surrogate model that aims to 
-approximates the quantum reservoir's behaviour.
+To facilitate end-to-end training, we employ a differentiable 
+surrogate model that approximates the quantum reservoir's 
+behavior, enabling gradient flow from the classification 
+loss back to the autoencoder. The surrogate's outputs feed 
+into a linear classifier trained to map quantum embeddings to class labels.
 
-The surrogate model's outputs will then pass 
-through a linear classifier, which is trained
-to map the approximated quantume embeddings to class labels.
+The autoencoder is trained to minimize a combined loss 
+function that interpolates between reconstruction loss and 
+classification loss, promoting representations that are both 
+informative for input reconstruction and effective for quantum 
+reservoir computing.
 
-The autoencoder is trained to minimize in interpolation
-between the data reconstruction's loss function as well 
-as the classification task loss function.
-
-Our approach, allows the model to learn representations that are not only
-compact and informative for the reconstruction of the input data,
-but also well-suited for quantum reservoir computing.
-
-When autoencoder model is trained,
-we can use the trained encoder to compress the train
-data into the latent space, and then pass the 
-compressed data through the real quantum reservoir.
-The obtained embeddings are then used to train a linear
-classifier that maps the quantum embeddings to class labels.
+Once trained, the encoder compresses data into the latent 
+space, which is then processed by the actual quantum reservoir. 
+The resulting quantum embeddings are used to train a linear 
+classifier for final predictions.
 
 The overall architecture is illustrated in `Fig.-\ref{fig:qgars_pipeline}'.
 
-
-% input pdf image
-\begin{figure*}[!b]
+\begin{figure*}[!h]
     \centering
     \resizebox{0.9\textwidth}{!}{
         \includegraphics{qgars_pipeline_cropped.pdf}
@@ -416,20 +407,6 @@ then processes the compressed data, aiming to reconstruct
 the original input and perform classification simultaneously.
 
 \subsubsection{Loss Function Design}
-% Loss Function Design
-
-% The QGA is trained to minimize a composite loss function that balances reconstruction fidelity and classification accuracy:
-% L=λrec⋅Lrec+λcls⋅Lcls,
-% L=λrec​⋅Lrec​+λcls​⋅Lcls​,
-
-% where:
-
-%     Lrec=∥x−x^∥2Lrec​=∥x−x^∥2 is the reconstruction loss, measuring the mean squared error between the input xx and its reconstruction x^x^.
-
-%     Lcls=−∑iyilog⁡(y^i)Lcls​=−∑i​yi​log(y^​i​) is the classification loss, computed as the cross-entropy between the true labels yiyi​ and the predicted probabilities y^iy^​i​.
-
-%     λrecλrec​ and λclsλcls​ are hyperparameters that control the trade-off between reconstruction and classification objectives [2].
-
 The QGA is trained to minimize a composite loss 
 function that balances reconstruction fidelity and 
 classification accuracy:
@@ -444,19 +421,143 @@ where:
     \item \( 0 < \lambda < 1 \) is a hyperparameter that controls the trade-off between reconstruction and classification objectives.
 \end{itemize}    
 
-\subsubsection{Balancing Reconstruction and Classification}
+%\subsubsection{Balancing Reconstruction and Classification}
 
 
 \subsection{The Gradient Barrier Problem}
+Hybrid quantum-classical models, such as the Quantum Guided Autoencoder 
+(QGAE), aim to leverage quantum computational advantages within 
+classical machine learning frameworks. However, a significant 
+challenge arises due to the non-differentiable nature of quantum 
+operations, commonly referred to as the `gradient barrier'.
+
+In classical neural networks, training relies on backpropagation, 
+which requires the computation of gradients through all components 
+of the network. In hybrid models, the inclusion of quantum 
+layers introduces operations that are inherently non-differentiable:
+
+\begin{itemize}
+    \item \textbf{Quantum State Preparation}: 
+    Encoding classical data into 
+    quantum states often involves operations 
+    that are not smoothly differentiable with 
+    respect to the input data.
+    
+    \item \textbf{Quantum Measurements}:
+    Observing quantum states collapses them, 
+    introducing stochasticity and breaking the 
+    deterministic gradient flow required 
+    for backpropagation.
+\end{itemize}
+
+These aspects hinder the direct application of 
+gradient-based optimization methods across the 
+quantum-classical boundary, obstructing end-to-end 
+training of hybrid models.
+
 \subsection{Surrogate Modeling for Quantum Layers}
-\subsubsection{Architecture and Training}
+To circumvent the gradient barrier, surrogate models 
+have been proposed. These are classical, differentiable 
+models trained to approximate the input-output behavior 
+of quantum circuits. By replacing the non-differentiable 
+quantum components with their surrogate counterparts during 
+training, gradients can be propagated through the entire network, 
+enabling end-to-end optimization. 
+
+Recent studies have demonstrated the efficacy of 
+surrogate models in mitigating the effects of barren plateaus 
+and facilitating the training of hybrid quantum-classical models. 
+These approaches allow for the practical implementation of 
+quantum-enhanced machine learning models by leveraging classical 
+optimization techniques while still capturing quantum computational 
+advantages~\cite{xieQuantumSurrogateDrivenImage2025b}
+
+
+\subsubsection{Architecture}
+In our pipeline, the surrogate model is implemented as a 
+feedforward neural network designed to learn the mapping 
+from the autoencoder's latent space to the quantum 
+embeddings produced by the quantum reservoir. 
+
+Its architecture comprises multiple fully connected 
+layers with nonlinear activation functions, facilitating 
+the approximation of the complex, non-linear 
+transformations inherent in quantum dynamics.
+
+This approach draws inspiration from recent studies 
+demonstrating the effectiveness of surrogate models 
+in approximating quantum circuit behaviors, thereby 
+facilitating efficient training of hybrid 
+models.~\cite{xieQuantumSurrogateDrivenImage2025b,schreiberClassicalSurrogatesQuantum2023}
+
+\subsubsection{Training Procedure}
+\begin{itemize}
+    \item Data Input: 
+    Feed a batch of latent data \( z \) from the autoencoder 
+    into the real quantum reservoir, recording the resulting quantum 
+    embeddings.
+
+    \item Surrogate Training:
+    Train the surrogate model using the recorded quantum
+    embeddings as targets, minimizing the loss function:
+    \begin{equation}
+        \mathcal{L}_{\text{surrogate}} = \| \hat{y} - y \|^2,
+    \end{equation}
+    where \( \hat{y} \) are the surrogate model's predictions
+    and \( y \) are the actual quantum embeddings.
+
+    \item Regular Updates:
+    Periodically update the surrogate model during training
+    to insure it accurately reflects the quantum reservoir's
+    behavior. This can be done after a fixed number of epochs
+    or when the surrogate's performance on a validation set
+    reaches a certain threshold.
+\end{itemize}
+
 \subsubsection{Gradient Flow Through Surrogate Models}
+By integrating the surrogate model into the training pipeline, 
+we establish a continuous computational graph from the 
+output layer back to the input layer, enabling the use of 
+gradient-based optimization techniques. The surrogate model 
+serves as a differentiable proxy for the quantum reservoir, 
+allowing the classification loss to influence the 
+autoencoder's parameters effectively.
+
+As a results, we not only achieve end-to-end training of the
+hybrid model but also makes it computationally efficient,
+as we reduce the need for frequent quantum measurements.
+
 \subsection{Rydberg Hamiltonian and Quantum Dynamics}
-\subsection{Data Encoding Schemes}
-\subsection{Quantum Readout Methods}
-\subsubsection{Single-atom Measurements}
-\subsubsection{Two-atom Correlations}
-\subsubsection{Three-atom Correlations}
+The quantum reservoir in our architecture is implemented
+using a neutral-atom system, specifically utilizing
+Rydberg atoms to create a programmable quantum reservoir.
+The dynamics of the system are governed by the Rydberg Hamiltonian,
+which describes the interactions between atoms in Rydberg states~\ref{eq:rydberg_hamiltonian}.
+
+\subsubsection{Data Encoding Schemes}
+The input data is encoded into the quantum system by mapping
+the latent representations from the autoencoder to the
+detuning parameters of the Rydberg Hamiltonian.
+This encoding process involves adjusting the detuning
+parameters \( \Delta_{\mathrm{l}}(t) \) for each atom in the chain,
+allowing the system to represent the input data in a way that
+is compatible with the quantum dynamics of the reservoir.
+
+\subsubsection{Quantum Readout Methods}
+The quantum reservoir's output is obtained by probing, 
+in successive time steps, the state of the atoms 
+after the systems evolution up to a certain time \( t \).
+
+The readout is performed by measuring specific observables,
+such as:
+\begin{itemize}
+    \item \textbf{Single-atom Measurements}: 
+    \( \langle Z_i \rangle \) for each atom \( i \), where \( Z_i \) is the Pauli-Z operator.
+    \item \textbf{Two-atom Correlations}: 
+    \( \langle Z_i Z_j \rangle \) for pairs of atoms \( (i, j) \), capturing correlations between their states.
+    \item \textbf{Three-atom Correlations}:
+    \( \langle Z_i Z_j Z_k \rangle \) for triplets of atoms \( (i, j, k) \), providing higher-order correlations.
+\end{itemize}
 
 %============================================
 % EXPERIMENTAL SETUP
@@ -483,14 +584,6 @@ where:
 \subsection{Surrogate Model Fidelity Analysis}
 \subsection{Generalization to Unseen Data}
 
-%============================================
-% THEORETICAL ANALYSIS
-%============================================
-\section{Theoretical Analysis}
-\subsection{Information Encoding in Quantum Reservoirs}
-\subsection{Gradient Flow in Quantum-Classical Hybrid Systems}
-\subsection{Computational Complexity}
-\subsection{Quantum Resource Requirements}
 
 %============================================
 % LIMITATIONS AND FUTURE WORK

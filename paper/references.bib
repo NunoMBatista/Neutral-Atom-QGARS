@@ -19,7 +19,7 @@
   file = {/home/nuno/Zotero/storage/KTQ3F2MY/Belis et al. - 2024 - Guided Quantum Compression for High Dimensional Data Classification.pdf}
 }
 
-@article{bengioLearningDeepArchitecturesa,
+@article{bengioLearningDeepArchitectures,
   title = {Learning {{Deep Architectures}} for {{AI}}},
   author = {Bengio, Yoshua},
   abstract = {Theoretical results suggest that in order to learn the kind of complicated functions that can represent highlevel abstractions (e.g. in vision, language, and other AI-level tasks), one may need deep architectures. Deep architectures are composed of multiple levels of non-linear operations, such as in neural nets with many hidden layers or in complicated propositional formulae re-using many sub-formulae. Searching the parameter space of deep architectures is a difficult task, but learning algorithms such as those for Deep Belief Networks have recently been proposed to tackle this problem with notable success, beating the state-of-the-art in certain areas. This paper discusses the motivations and principles regarding learning algorithms for deep architectures, in particular those exploiting as building blocks unsupervised learning of single-layer models such as Restricted Boltzmann Machines, used to construct deeper models such as Deep Belief Networks.},
@@ -45,7 +45,7 @@
   file = {/home/nuno/Zotero/storage/LGLWR7RK/Domingo et al. - 2022 - Optimal quantum reservoir computing for the NISQ era.pdf}
 }
 
-@article{estevaGuideDeepLearning2019a,
+@article{estevaGuideDeepLearning2019,
   title = {A Guide to Deep Learning in Healthcare},
   author = {Esteva, Andre and Robicquet, Alexandre and Ramsundar, Bharath and Kuleshov, Volodymyr and DePristo, Mark and Chou, Katherine and Cui, Claire and Corrado, Greg and Thrun, Sebastian and Dean, Jeff},
   year = {2019},
@@ -99,7 +99,7 @@
   file = {/home/nuno/Zotero/storage/C69T23J9/Hinton and Salakhutdinov - 2006 - Reducing the Dimensionality of Data with Neural Networks.pdf}
 }
 
-@misc{HttpsArxivorgPdfa,
+@misc{HttpsArxivorgPdf,
   title = {{{https://arxiv.org/pdf/2306.11727}}},
   urldate = {2025-05-26},
   howpublished = {https://arxiv.org/pdf/2306.11727},
@@ -155,6 +155,27 @@
   file = {/home/nuno/Zotero/storage/6KHLIB5R/McClean et al. - 2018 - Barren plateaus in quantum neural network training landscapes.pdf}
 }
 
+@article{schreiberClassicalSurrogatesQuantum2023,
+  title = {Classical Surrogates for Quantum Learning Models},
+  author = {Schreiber, Franz J. and Eisert, Jens and Meyer, Johannes Jakob},
+  year = {2023},
+  month = sep,
+  journal = {Physical Review Letters},
+  volume = {131},
+  number = {10},
+  eprint = {2206.11740},
+  primaryclass = {quant-ph},
+  pages = {100803},
+  issn = {0031-9007, 1079-7114},
+  doi = {10.1103/PhysRevLett.131.100803},
+  urldate = {2025-05-27},
+  abstract = {The advent of noisy intermediate-scale quantum computers has put the search for possible applications to the forefront of quantum information science. One area where hopes for an advantage through near-term quantum computers are high is quantum machine learning, where variational quantum learning models based on parametrized quantum circuits are discussed. In this work, we introduce the concept of a classical surrogate, a classical model which can be efficiently obtained from a trained quantum learning model and reproduces its input-output relations. As inference can be performed classically, the existence of a classical surrogate greatly enhances the applicability of a quantum learning strategy. However, the classical surrogate also challenges possible advantages of quantum schemes. As it is possible to directly optimize the ansatz of the classical surrogate, they create a natural benchmark the quantum model has to outperform. We show that large classes of well-analyzed re-uploading models have a classical surrogate. We conducted numerical experiments and found that these quantum models show no advantage in performance or trainability in the problems we analyze. This leaves only generalization capability as possible point of quantum advantage and emphasizes the dire need for a better understanding of inductive biases of quantum learning models.},
+  archiveprefix = {arXiv},
+  langid = {english},
+  keywords = {Computer Science - Artificial Intelligence,Computer Science - Machine Learning,Quantum Physics},
+  file = {/home/nuno/Zotero/storage/WJI8KNWZ/Schreiber et al. - 2023 - Classical surrogates for quantum learning models.pdf}
+}
+
 @misc{shlensTutorialPrincipalComponent2014,
   title = {A {{Tutorial}} on {{Principal Component Analysis}}},
   author = {Shlens, Jonathon},
@@ -173,6 +194,26 @@
   file = {/home/nuno/Zotero/storage/GKNSGH3Z/Shlens - 2014 - A Tutorial on Principal Component Analysis.pdf}
 }
 
+@article{swekeStochasticGradientDescent2020,
+  title = {Stochastic Gradient Descent for Hybrid Quantum-Classical Optimization},
+  author = {Sweke, Ryan and Wilde, Frederik and Meyer, Johannes and Schuld, Maria and Faehrmann, Paul K. and {Meynard-Piganeau}, Barth{\'e}l{\'e}my and Eisert, Jens},
+  year = {2020},
+  month = aug,
+  journal = {Quantum},
+  volume = {4},
+  eprint = {1910.01155},
+  primaryclass = {quant-ph},
+  pages = {314},
+  issn = {2521-327X},
+  doi = {10.22331/q-2020-08-31-314},
+  urldate = {2025-05-27},
+  abstract = {Within the context of hybrid quantum-classical optimization, gradient descent based optimizers typically require the evaluation of expectation values with respect to the outcome of parameterized quantum circuits. In this work, we explore the consequences of the prior observation that estimation of these quantities on quantum hardware results in a form of stochastic gradient descent optimization. We formalize this notion, which allows us to show that in many relevant cases, including VQE, QAOA and certain quantum classifiers, estimating expectation values with \$k\$ measurement outcomes results in optimization algorithms whose convergence properties can be rigorously well understood, for any value of \$k\$. In fact, even using single measurement outcomes for the estimation of expectation values is sufficient. Moreover, in many settings the required gradients can be expressed as linear combinations of expectation values -- originating, e.g., from a sum over local terms of a Hamiltonian, a parameter shift rule, or a sum over data-set instances -- and we show that in these cases \$k\$-shot expectation value estimation can be combined with sampling over terms of the linear combination, to obtain "doubly stochastic" gradient descent optimizers. For all algorithms we prove convergence guarantees, providing a framework for the derivation of rigorous optimization results in the context of near-term quantum devices. Additionally, we explore numerically these methods on benchmark VQE, QAOA and quantum-enhanced machine learning tasks and show that treating the stochastic settings as hyper-parameters allows for state-of-the-art results with significantly fewer circuit executions and measurements.},
+  archiveprefix = {arXiv},
+  langid = {english},
+  keywords = {Computer Science - Machine Learning,Quantum Physics},
+  file = {/home/nuno/Zotero/storage/6RLFVFJK/pdf.pdf}
+}
+
 @article{tanakaRecentAdvancesPhysical2019,
   title = {Recent Advances in Physical Reservoir Computing: {{A}} Review},
   shorttitle = {Recent Advances in Physical Reservoir Computing},
@@ -188,6 +229,25 @@
   abstract = {Reservoir computing is a computational framework suited for temporal/sequential data processing. It is derived from several recurrent neural network models, including echo state networks and liquid state machines. A reservoir computing system consists of a reservoir for mapping inputs into a high-dimensional space and a readout for pattern analysis from the high-dimensional states in the reservoir. The reservoir is fixed and only the readout is trained with a simple method such as linear regression and classification. Thus, the major advantage of reservoir computing compared to other recurrent neural networks is fast learning, resulting in low training cost. Another advantage is that the reservoir without adaptive updating is amenable to hardware implementation using a variety of physical systems, substrates, and devices. In fact, such physical reservoir computing has attracted increasing attention in diverse fields of research. The purpose of this review is to provide an overview of recent advances in physical reservoir computing by classifying them according to the type of the reservoir. We discuss the current issues and perspectives related to physical reservoir computing, in order to further expand its practical applications and develop next-generation machine learning systems.},
   langid = {english},
   file = {/home/nuno/Zotero/storage/ZFKF5FDQ/Tanaka et al. - 2019 - Recent advances in physical reservoir computing A review.pdf}
+}
+
+@misc{xieQuantumSurrogateDrivenImage2025b,
+  title = {Quantum {{Surrogate-Driven Image Classifier}}: {{A Gradient-Free Approach}} to {{Avoid Barren Plateaus}}},
+  shorttitle = {Quantum {{Surrogate-Driven Image Classifier}}},
+  author = {Xie, Yichen},
+  year = {2025},
+  month = may,
+  number = {arXiv:2505.05249},
+  eprint = {2505.05249},
+  primaryclass = {quant-ph},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.2505.05249},
+  urldate = {2025-05-27},
+  abstract = {Training deep quantum neural networks (QNNs) for image classification is notoriously difficult due to vanishing gradients (barren plateaus) and limited nonlinearity in purely unitary circuits. We propose a novel gradient-free surrogatedriven framework combined with mid-circuit measurement and reset of ancillary qubits to induce effective nonunitarity. Our approach uses a classical neural surrogate to predict measurement outcomes from circuit parameters to avoid direct gradients. Theoretical results prove that bypassing quantum gradients mitigates plateau issues. Experiments on MNIST, CIFAR-10, and CIFAR-100 with 15-qubit, 6-layer circuits using four resettable ancillas demonstrate superior accuracy compared to directgradient QNNs and classical baselines. Our method also serves as a potential for a generalized training framework applicable to various QNN architectures beyond image classification.},
+  archiveprefix = {arXiv},
+  langid = {english},
+  keywords = {Quantum Physics},
+  file = {/home/nuno/Zotero/storage/C346988K/Xie - 2025 - Quantum Surrogate-Driven Image Classifier A Gradient-Free Approach to Avoid Barren Plateaus.pdf}
 }
 
 @misc{zamparoDeepAutoencodersDimensionality2015,
