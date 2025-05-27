@@ -1,0 +1,43 @@
+\begin{figure}[!t]
+    \centering
+    \resizebox{\columnwidth}{!}{%
+        \begin{circuitikz}
+            \tikzstyle{every node}=[font=\LARGE]
+            \draw[ fill={rgb,255:red,246; green,245; blue,244} ] (4.25,11.75) rectangle (5.5,10.5);
+            \draw[ fill={rgb,255:red,246; green,245; blue,244} ] (4.75,11.25) rectangle (6,10);
+            \node[font=\LARGE] at (5,12.25) {x};
+            \draw[->, >=Stealth] (6,11) -- (8,11);
+            \draw(8,12.25) rectangle  node {\Huge $f_{\theta}(x)$} (10.5,9.75);
+            \node[font=\large] at (9.5,11.25) {};
+            \node[font=\large] at (9,10.5) {};
+            \node[font=\large] at (10.5,11.25) {};
+            \draw[short] (13.75,11.5) -- (10.5,12.25);
+            \draw[short] (10.5,9.75) -- (13.75,10.5);
+            \draw(13.75,11.75) rectangle  node {\LARGE z} (14.5,10);
+            \draw(17.75,12.25) rectangle  node {\Huge $g_{\phi}(z)$} (20.25,9.75);
+            \draw[short] (17.75,12.25) -- (14.5,11.5);
+            \draw[short] (14.5,10.5) -- (17.75,9.75);
+            \node[font=\Large] at (14,13.75) {Autoencoder};
+            \node[font=\large] at (10,12.75) {Encoder Network};
+            \node[font=\large] at (18.25,12.75) {Decoder Network};
+            \draw[->, >=Stealth] (20.25,11) -- (22.25,11);
+            \draw[ fill={rgb,255:red,154; green,153; blue,150} ] (22.75,11.75) rectangle (24,10.5);
+            \draw[ fill={rgb,255:red,154; green,153; blue,150} ] (22.25,11.25) rectangle (23.5,10);
+            \node[font=\LARGE] at (23,12.25) {$\hat{x}$};
+            \draw[<->, >=Stealth, dashed] (5.25,11.75) .. controls (7.5,16.25) and (21.75,15.75) .. (23,11.75)node[pos=0.5, fill=white]{$\mathcal{L}$};
+            \node[font=\huge] at (17.75,51.5) {};
+            \node[font=\Large] at (14,12.25) {Latent};
+        \end{circuitikz}
+    }%
+    
+\caption{
+    Autoencoder architecture. The encoder network $f_{\theta}(x)$ 
+    compresses the input $x$ into a latent representation $z$, while the decoder 
+    network $g_{\phi}(z)$ reconstructs the input from the latent representation, 
+    producing $\hat{x}$. The reconstruction loss $\mathcal{L}$ measures the 
+    compresses the input $x$ into a latent representation $z$, while the decoder 
+    network $g_{\phi}(z)$ reconstructs the input from the latent representation, 
+    producing $\hat{x}$.
+}
+\label{fig:autoencoder_architecture}
+\end{figure}

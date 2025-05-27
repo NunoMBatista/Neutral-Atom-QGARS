@@ -12,6 +12,7 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{physics}
 
 % Add TikZ package and necessary libraries
 \usepackage{tikz}
@@ -37,7 +38,7 @@
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{Quantum-Guided Autoencoding for Enhanced Neutral Atom Reservoir Computing in Medical Image Classification\\
+\title{Medical Imaging Classification with Cold-Atom Reservoir Computing using Auto-Encoders and Surrogate-Driven Training\\
 {\footnotesize \textsuperscript{*}Note: Sub-titles are not captured for https://ieeexplore.ieee.org  and
 should not be used}
 }
@@ -105,18 +106,17 @@ Medical Image Classification, Quantum Surrogate Models
 Advances in medical imaging have significantly improved 
 disease diagnosis and treatment planning. For conditions 
 like colorectal cancer, early detection of polyps through 
-colonoscopy image analysis is critical for reducing mortality \cite{estevaGuideDeepLearning2019a}. 
+colonoscopy image analysis is critical for reducing mortality~\cite{estevaGuideDeepLearning2019a}. 
 Deep learning techniques, especially autoencoders, are widely 
 used to extract compressed, informative features from 
 high-dimensional images for classification and segmentation 
-tasks \cite{bengioLearningDeepArchitecturesa}. However, classical neural networks may struggle 
+tasks~\cite{bengioLearningDeepArchitecturesa}. However, classical neural networks may struggle 
 to capture intricate correlations in complex medical data.
 
 Quantum computing offers novel opportunities 
 for machine learning, particularly through quantum reservoir 
 computing (QRC), where a physical quantum system processes 
-classical inputs into high-dimensional nonlinear embeddings 
-\cite{tanakaRecentAdvancesPhysical2019,fujiiHarnessingDisorderedQuantum2017}. Recent works show that analog quantum systems, 
+classical inputs into high-dimensional nonlinear embeddings~\cite{tanakaRecentAdvancesPhysical2019,fujiiHarnessingDisorderedQuantum2017}. Recent works show that analog quantum systems, 
 such as neutral-atom platforms, can serve as untrained 
 reservoirs with rich dynamics for temporal and pattern 
 recognition tasks \cite{domingoOptimalQuantumReservoir2022,kornjavcaLargescaleQuantumReservoir2024}. 
@@ -189,9 +189,10 @@ Where \( f \) is a nonlinear activation function,
 \( W_{in} \) and \( W_{res} \) are fixed input and reservoir weight matrices, 
 and \( W_{out} \) is the trained output weight matrix.
 
+A diagram of a typical reservoir computing architecture is shown in `Fig.-\ref{fig:reservoir_architecture}'.
 
-% import figure from reservoir_architecture.tex
 \input{reservoir_architecture.tex}
+
 
 \subsection{Quantum Reservoir Computing}
 Quantum Reservoir Computing (QRC) extends the reservoir 
@@ -201,8 +202,8 @@ to enhance computational capabilities. Implementations using quantum
 oscillators have shown promise in solving complex learning tasks, 
 offering advantages over classical counterparts. Notably, large-scale 
 experiments utilizing neutral-atom analog quantum computers have demonstrated 
-the scalability and effectiveness of QRC in various machine learning applications 
-\cite{kornjavcaLargescaleQuantumReservoir2024}
+the scalability and effectiveness of QRC in various machine learning applications~\cite{kornjavcaLargescaleQuantumReservoir2024}
+
 
 In QRC, classical input data \( u(t) \) is encoded into quantum states \( |\psi(t)\rangle \),
 which evolve under a fixed Hamiltonian \( H \):
@@ -215,24 +216,237 @@ where \( U \) is the unitary evolution operator. Measurements of observables \( 
 \end{equation}
 The output weights are trained classically, while the quantum reservoir remains fixed.
 
-\subsection{Quantum Computing with Neutral Atoms}
+\subsection{Reservoir Computing with Neutral Atoms}
+As quantum Reservoir Computing (QRC) leverages the complex 
+dynamics of quantum systems to process information, 
+extending the classical reservoir computing 
+paradigm into the quantum domain. Neutral atom platforms, 
+particularly those utilizing Rydberg states, 
+have emerged as promising candidates for implementing 
+QRC due to their scalability and controllable interactions.
 
-% TALK ABOUT HAMILTONIAN
+In the work by M. Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024}, 
+a large-scale, gradient-free QRC algorithm was 
+developed and experimentally implemented on a 
+neutral-atom analog quantum computer. 
+This system achieved competitive performance across 
+various machine learning tasks, 
+including classification and time-series prediction, 
+demonstrating effective learning with increasing system 
+sizes up to 108 qubits.
+
+The dynamics of such neutral atom systems can be 
+described by the Rydberg Hamiltonian, which captures 
+the essential physics of laser-driven interactions 
+among atoms in Rydberg states. Following Kornjača et al.~\cite{kornjavcaLargescaleQuantumReservoir2024}
+The Hamiltonian for a system of neutral-atoms is given by:
+
+\begin{equation}
+    \begin{aligned}
+        H(t) &= \dfrac{\Omega(t)}{2}\sum_j \left(\ket{g_j}\bra{r_j}+\ket{r_j}\bra{g_j}\right) \\
+             &{{\quad}} + \sum_{j<k}V_{jk}n_jn_k - \sum_j \left[\Delta_{\mathrm{g}}(t) + \alpha_j\Delta_{\mathrm{l}}(t)\right] n_j,
+    \end{aligned}
+\end{equation}
+
+where \( \Omega(t) \) is the global Rabi drive amplitude between a 
+ground state \( |g_j\rangle \) and a highly-excited Rydberg state 
+\( |r_j\rangle \) of an atom,
+\( n_j = |r_j\rangle \langle r_j| \), 
+\( V_{jk} = C/\|r_j - r_k\|^6 \) describes the van der Waals interactions
+between atoms, and the detuning is split into a global term 
+\( \Delta_{\mathrm{g}}(t) \)
+and a site-dependent term \( \Delta_{\mathrm{l}}(t) \), with site 
+modulation \( \alpha_j \in [0, 1] \).
+
+By initializing the system in a specific state and allowing 
+it to evolve under this Hamiltonian, the resulting quantum 
+state encodes information about the input data. Measurements 
+of observables on this state yield outputs that can be used 
+for tasks such as classification or prediction, with only the 
+final readout layer requiring training.
 
 
 \subsection{Dimensionality Reduction for Image Data}
+Dimensionality reduction is a crucial preprocessing step in 
+machine learning and data analysis, aiming to reduce the 
+number of input variables in a dataset while preserving as 
+much information as possible. This process enhances 
+computational efficiency, mitigates the curse of 
+dimensionality, and facilitates data visualization
+
+
 \subsubsection{Principal Component Analysis}
+Principal Component Analysis (PCA)~\cite{shlensTutorialPrincipalComponent2014} is a linear dimensionality 
+reduction technique that transforms a set of correlated 
+variables into a set of uncorrelated variables called 
+principal components. The goal is to capture the maximum 
+variance in the data with the fewest number of components.
+
+PCA is effective for datasets where the principal components 
+align with the directions of maximum variance, but it may not 
+capture complex, nonlinear relationships in the data~\cite{jolliffePrincipalComponentAnalysis2016}.
+
 \subsubsection{Autoencoder Architectures}
-\subsection{Quantum-Guided Autoencoding}
+Autoencoders are a class of artificial neural networks 
+designed to learn efficient codings of input data in an 
+unsupervised manner. They consist of two main parts: an 
+encoder that compresses the input into a latent-space 
+representation, and a decoder that reconstructs the input 
+from this representation.
+
+Given an input \( x \in \mathbb{R}^d \), the encoder maps 
+\( x \) to a latent representation \( z \in \mathbb{R}^k \) 
+(where \( k < d \)):
+
+\begin{equation}
+    z = f_\theta(x)
+\end{equation}
+
+The decoder then reconstructs the input:
+\begin{equation}
+    \hat{x} = g_\phi(z)
+\end{equation}
+The network is trained to minimize the reconstruction loss:
+\begin{equation}
+    \mathcal{L}(x, \hat{x}) = \| x - \hat{x} \|^2
+\end{equation}
+
+This typical architecture of an autoencoder is illustrated in 
+`Fig.-\ref{fig:autoencoder_architecture}'.
+\input{autoencoder_architecture.tex}
+
+
+Autoencoders can capture complex, nonlinear 
+relationships in the data, making them suitable for tasks 
+like image compression, denoising, and anomaly 
+detection~\cite{hintonReducingDimensionalityData2006, estevaGuideDeepLearning2019a}.
+
+\subsubsection{Quantum-Guided Autoencoding}
+Quantum-Guided Autoencoders integrate quantum 
+computing principles into the autoencoder framework 
+to leverage quantum advantages in processing and 
+representing data. These models aim to perform 
+dimensionality reduction and classification within a 
+single architecture, enhancing performance on complex 
+datasets.
+
+In the Quantum-Guided Autoencoder (QGAE) model, a 
+classical encoder first reduced the dimensionality
+of the input data. The compressed data is then processed 
+by a parametrized quantum circuit, which acts as the decoder
+and classifier. The quantum circuit transforms the 
+input state \( |\psi_{\text{in}}\rangle \) into an
+output state \( |\psi_{\text{out}}\rangle \) using a unitary operation
+\begin{equation}
+    |\psi_{\text{out}}\rangle = U(\theta) |\psi_{\text{in}}\rangle
+\end{equation}
+Measurements on \( |\psi_{\text{out}}\rangle \) yield the final
+classification result. The parameters \( \theta \) are
+optimized to minimize a loss function that combines
+reconstruction error and classification accuracy.
+
+
+This approach has demonstrated improved performance 
+over traditional methods in tasks such as identifying 
+the Higgs boson in particle collision data, 
+showcasing the potential of quantum-guided models in 
+handling high-dimensional, complex datasets~\cite{belisGuidedQuantumCompression2024}.
 
 %============================================
 % METHODOLOGY
 %============================================
 \section{Methodology}
 \subsection{System Architecture Overview}
+Our proposed pipeline integrates classical and quantum 
+components to perform dimensionality reduction and
+classification. 
+A classical autoencoder compresses
+high-dimensional image data into a lower-dimensional
+latent space. 
+This compressed representation is 
+encoded into a Rydberg Atom chain, which serves as 
+the input to a quantum reservoir. 
+The reservoir will then produce quantum embeddings
+by measuring quantum observables, which capture the
+dynamics of the quantum system in response to the input data.
+
+These quantum embeddings will be used to train a
+surrogate model that aims to 
+approximates the quantum reservoir's behaviour.
+
+The surrogate model's outputs will then pass 
+through a linear classifier, which is trained
+to map the approximated quantume embeddings to class labels.
+
+The autoencoder is trained to minimize in interpolation
+between the data reconstruction's loss function as well 
+as the classification task loss function.
+
+Our approach, allows the model to learn representations that are not only
+compact and informative for the reconstruction of the input data,
+but also well-suited for quantum reservoir computing.
+
+When autoencoder model is trained,
+we can use the trained encoder to compress the train
+data into the latent space, and then pass the 
+compressed data through the real quantum reservoir.
+The obtained embeddings are then used to train a linear
+classifier that maps the quantum embeddings to class labels.
+
+The overall architecture is illustrated in `Fig.-\ref{fig:qgars_pipeline}'.
+
+
+% input pdf image
+\begin{figure*}[!b]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+        \includegraphics{qgars_pipeline_cropped.pdf}
+    }
+    \label{fig:qgars_pipeline}
+    \caption{Overview of the Quantum-Guided Autoencoder Reservoir Computing System.}
+\end{figure*}
+
 \subsection{Quantum Guided Autoencoder}
+The Quantum Guided Autoencoder (QGA) combines classical 
+preprocessing with quantum processing to leverage 
+the strengths of both paradigms. The classical encoder 
+reduces the dimensionality of the input data, facilitating 
+efficient quantum processing. The quantum circuit 
+then processes the compressed data, aiming to reconstruct 
+the original input and perform classification simultaneously.
+
 \subsubsection{Loss Function Design}
+% Loss Function Design
+
+% The QGA is trained to minimize a composite loss function that balances reconstruction fidelity and classification accuracy:
+% L=λrec⋅Lrec+λcls⋅Lcls,
+% L=λrec​⋅Lrec​+λcls​⋅Lcls​,
+
+% where:
+
+%     Lrec=∥x−x^∥2Lrec​=∥x−x^∥2 is the reconstruction loss, measuring the mean squared error between the input xx and its reconstruction x^x^.
+
+%     Lcls=−∑iyilog⁡(y^i)Lcls​=−∑i​yi​log(y^​i​) is the classification loss, computed as the cross-entropy between the true labels yiyi​ and the predicted probabilities y^iy^​i​.
+
+%     λrecλrec​ and λclsλcls​ are hyperparameters that control the trade-off between reconstruction and classification objectives [2].
+
+The QGA is trained to minimize a composite loss 
+function that balances reconstruction fidelity and 
+classification accuracy:
+
+\begin{equation}
+    \mathcal{L} = (1-\lambda) \cdot \mathcal{L}_R + \lambda \cdot \mathcal{L}_{C},
+\end{equation}
+where:
+\begin{itemize}
+    \item \( \mathcal{L}_R = \| x - \hat{x} \|^2 \) is the reconstruction loss, measuring the mean squared error between the input \( x \) and its reconstruction \( \hat{x} \).
+    \item \( \mathcal{L}_C = -\sum_i y_i \log(\hat{y}_i) \) is the classification loss, computed as the cross-entropy between the true labels \( y_i \) and the predicted probabilities \( \hat{y}_i \).
+    \item \( 0 < \lambda < 1 \) is a hyperparameter that controls the trade-off between reconstruction and classification objectives.
+\end{itemize}    
+
 \subsubsection{Balancing Reconstruction and Classification}
+
+
 \subsection{The Gradient Barrier Problem}
 \subsection{Surrogate Modeling for Quantum Layers}
 \subsubsection{Architecture and Training}
