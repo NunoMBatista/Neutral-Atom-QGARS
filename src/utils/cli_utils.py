@@ -8,14 +8,14 @@ from src.utils.config_manager import ConfigManager
 AVAILABLE_GEOMETRIES = ["chain"] 
 AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
 AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder", "guided_autoencoder"]
-AVAILABLE_DATASET_TYPES = ["mnist", "binary_mnist", "fashion_mnist", "image_folder"]
+#AVAILABLE_DATASET_TYPES = ["mnist", "binary_mnist", "fashion_mnist", "image_folder"]
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="Quantum Reservoir Computing for Image Classification")
     
     # Dataset parameters
-    parser.add_argument("--dataset-type", type=str, default=None, choices=AVAILABLE_DATASET_TYPES,
+    parser.add_argument("--dataset-type", type=str, default=None,
                        help="Type of dataset to use")
     parser.add_argument("--data-dir", type=str, default=None, 
                        help="Path to dataset directory containing class subfolders")

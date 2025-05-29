@@ -47,10 +47,11 @@ def print_results(results_dict: Dict[str, Tuple[List[float], List[float], List[f
     """
     print("\nResults Summary:")
     print("-" * 50)
-    for name, (_, _, accs_test, _, _, confusion_matrix_test) in results_dict.items():
+    for name, (_, _, accs_test, _, confusion_matrix_train, confusion_matrix_test) in results_dict.items():
         print(f"{name} test accuracy = {accs_test[-1]*100:.2f}%")
 
         print(f"Confusion Matrix for {name} (Test Set):")
         print(confusion_matrix_test)
+
         
     print("-" * 50)

@@ -15,7 +15,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 
 from main import main
 from utils.config_manager import ConfigManager
-from utils.statistics_tracking import save_all_statistics  # Add this import
+from utils.statistics_tracking import save_all_statistics, extract_metrics  # Import the functions directly
 
 class ParameterSweep:
     """
@@ -177,30 +177,34 @@ class ParameterSweep:
             exp_dir = os.path.join(sweep_dir, exp_id)
             os.makedirs(exp_dir, exist_ok=True)
             
-            # Run main function with args - now unpacking both return values
+            # Run main function with args
             results, guided_losses = main(args, results_dir=exp_dir)
             
-            # Save statistics in the experiment directory - no need to check __main__
-            #save_all_statistics(results, guided_losses, exp_dir)
+            # Save all statistics using the same function as main.py
+            save_all_statistics(results, guided_losses, exp_dir, args)
             
-            # Extract metrics
-            metrics = self._extract_metrics(results)
+            # Extract metrics using the common function
+            metrics = extract_metrics(results)
             
-            # Add configuration parameters to metrics
+            # Add configuration parameters to metrics for the DataFrame
             for key, value in config.items():
                 # Skip large configurations
                 if key not in ['autoencoder_hidden_dims', 'target_size']:
                     metrics[key] = value
-                    
-            # Save configuration
-            with open(os.path.join(exp_dir, "config.json"), "w") as f:
-                config_serializable = {k: str(v) if isinstance(v, np.ndarray) else v 
-                                     for k, v in config.items()}
-                json.dump(config_serializable, f, indent=4)
+            
+            # Add guided_autoencoder metrics if available
+            if guided_losses is not None:
+                metrics["guided_autoencoder_final_total_loss"] = float(guided_losses["total_loss"][-1])
+                metrics["guided_autoencoder_final_recon_loss"] = float(guided_losses["recon_loss"][-1])
+                metrics["guided_autoencoder_final_class_loss"] = float(guided_losses["class_loss"][-1])
                 
-            # Save metrics
-            with open(os.path.join(exp_dir, "metrics.json"), "w") as f:
-                json.dump(metrics, f, indent=4)
+                # Add surrogate metrics if available
+                if 'surrogate_loss' in guided_losses and any(x is not None for x in guided_losses['surrogate_loss']):
+                    # Get the last valid surrogate loss
+                    valid_surrogate_losses = [x for x in guided_losses['surrogate_loss'] if x is not None]
+                    if valid_surrogate_losses:
+                        metrics["surrogate_final_loss"] = float(valid_surrogate_losses[-1])
+                        metrics["surrogate_min_loss"] = float(min(valid_surrogate_losses))
             
             return metrics
             
@@ -212,35 +216,3 @@ class ParameterSweep:
                 "status": "failed",
                 **{k: v for k, v in config.items() if k not in ['autoencoder_hidden_dims', 'target_size']}
             }
-    
-    def _extract_metrics(self, results: Dict[str, Tuple]) -> Dict[str, Any]:
-        """
-        Extract metrics from experiment results.
-        
-        Parameters
-        ----------
-        results : Dict[str, Tuple]
-            Results dictionary from main function
-            
-        Returns
-        -------
-        Dict[str, Any]
-            Dictionary of metrics
-        """
-        metrics = {
-            "status": "success",
-            "timestamp": datetime.datetime.now().isoformat()
-        }
-        
-        # Extract final metrics from each model
-        for model_name, (losses, accs_train, accs_test, _) in results.items():
-            metrics[f"{model_name}_final_train_acc"] = float(accs_train[-1])
-            metrics[f"{model_name}_final_test_acc"] = float(accs_test[-1])
-            metrics[f"{model_name}_final_loss"] = float(losses[-1])
-            
-            # Calculate stability (std dev of last 10% of training)
-            if len(accs_test) > 5:
-                stability_window = max(1, int(len(accs_test) * 0.1))
-                metrics[f"{model_name}_stability"] = float(np.std(accs_test[-stability_window:]))
-        
-        return metrics

@@ -224,7 +224,7 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
                              device: str,
                              batch_size_qe: int = 50,
                              detuning_max: float = 6.0,
-                             verbose: bool = True) -> QuantumSurrogate:
+                             verbose: bool = True) -> Tuple[QuantumSurrogate, float]:
     """
     Update quantum embeddings and train surrogate model.
     
@@ -249,8 +249,8 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
         
     Returns
     -------
-    QuantumSurrogate
-        Trained surrogate model
+    Tuple[QuantumSurrogate, float]
+        Trained surrogate model and final surrogate loss
     """
     model.clear_cache()
     n_samples = X.shape[0]
@@ -311,9 +311,11 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
         if verbose:
             tqdm.write("Training surrogate model with current quantum embeddings...")
         
+        surrogate_loss = None
+        
         if model.surrogate is None:
             # Create and train new surrogate
-            surrogate = create_and_train_surrogate(
+            surrogate, loss_history = create_and_train_surrogate(
                 quantum_layer=quantum_layer,
                 encodings=all_encodings_tensor,
                 quantum_embeddings=all_quantum_embs_tensor,
@@ -321,9 +323,10 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
                 verbose=verbose,
                 n_shots=n_shots
             )
+            surrogate_loss = loss_history[-1] if loss_history else None
         else:
             # Update existing surrogate
-            surrogate = train_surrogate(
+            surrogate, loss_history = train_surrogate(
                 surrogate_model=model.surrogate,
                 quantum_layer=quantum_layer,
                 input_data=all_encodings_tensor,
@@ -335,12 +338,13 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
                 verbose=verbose,
                 n_shots=n_shots
             )
+            surrogate_loss = loss_history[-1] if loss_history else None
         
         # Set surrogate in model
         model.initialize_surrogate(surrogate)
         
     model.autoencoder.train()
-    return surrogate
+    return surrogate, surrogate_loss
 
 def train_guided_epoch(model: GuidedAutoencoder,
                       dataloader: torch.utils.data.DataLoader,
@@ -446,7 +450,7 @@ def train_guided_epoch(model: GuidedAutoencoder,
     return avg_recon_loss, avg_class_loss, avg_total_loss
 
 def train_guided_autoencoder(
-    data: np.ndarray, 
+    data: np.ndarray,
     labels: np.ndarray,
     quantum_layer: DetuningLayer,
     encoding_dim: int,
@@ -479,8 +483,6 @@ def train_guided_autoencoder(
         Quantum reservoir layer to generate embeddings
     encoding_dim : int
         Dimension of the encoded representation
-    hidden_dims : Optional[List[int]], optional
-        Dimensions of hidden layers, by default None
     guided_lambda : float, optional
         Weight for classification loss (0-1), by default 0.3
         Loss = (1-lambda)*reconstruction_loss + lambda*classification_loss
@@ -489,7 +491,7 @@ def train_guided_autoencoder(
     epochs : int, optional
         Number of training epochs, by default 50
     learning_rate : float, optional
-        Learning rate, by default 0.001
+        Learning rate for training, by default 0.001
     device : str, optional
         Device to use ('cpu' or 'cuda'), by default 'cpu'
     quantum_update_frequency : int, optional
@@ -519,61 +521,48 @@ def train_guided_autoencoder(
     Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]
         Trained guided autoencoder, maximum absolute value for scaling, and loss history dictionary
     """
-    
     # Prepare data
     input_dim = data.shape[0]
     output_dim = len(np.unique(labels))
     X, y, dataloader = prepare_guided_autoencoder_data(data, labels, batch_size, device, verbose)
     
     # Initialize model
-    # model = initialize_guided_autoencoder(
-    #     input_dim=input_dim,
-    #     encoding_dim=encoding_dim,
-    #     output_dim=output_dim,
-    #     guided_lambda=guided_lambda,
-    #     use_batch_norm=use_batch_norm,
-    #     dropout=dropout,
-    #     device=device
-    # )
-    
     model = GuidedAutoencoder(
-                    input_dim=input_dim, 
-                    encoding_dim=encoding_dim, 
-                    output_dim=output_dim, 
-                    guided_lambda=guided_lambda,
-                    use_batch_norm=use_batch_norm,
-                    dropout=dropout,
-                    autoencoder_type=autoencoder_type
-            ).to(device)    
+        input_dim=input_dim, 
+        encoding_dim=encoding_dim, 
+        output_dim=output_dim, 
+        guided_lambda=guided_lambda,
+        use_batch_norm=use_batch_norm,
+        dropout=dropout,
+        autoencoder_type=autoencoder_type
+    ).to(device)
     
     # Process one quantum embedding to determine dimension
     model.autoencoder.eval()
     with torch.no_grad():
         initial_encoding = model.autoencoder.encode(X[:1]).cpu().numpy()
-        
         spectral = max(abs(initial_encoding.max()), abs(initial_encoding.min()))
         initial_encoding_scaled = initial_encoding.T / spectral * detuning_max
         
         if verbose:
             print(f"Getting initial quantum embeddings to determine dimension...")
-        
+            
         # Get quantum embeddings to determine dimension
         initial_quantum_embs = quantum_layer.apply_layer(
-                    x=initial_encoding_scaled, 
-                    n_shots=n_shots, 
-                    show_progress=True
-                )
-        
+            x=initial_encoding_scaled,
+            n_shots=n_shots, 
+            show_progress=True
+        )
+                
         quantum_dim = initial_quantum_embs.shape[0]
-        
         if verbose:
             tqdm.write(f"Quantum embedding dimension detected: {quantum_dim}")
-        
+            
         # Initialize classifier with correct dimension
         model.initialize_classifier(quantum_dim)
         model.classifier = model.classifier.to(device)
-    
-    # Setup training components
+        
+    # Setup training components with correct dimension
     recon_criterion, class_criterion, optimizer, scheduler = setup_guided_training(
         model=model,
         learning_rate=learning_rate,
@@ -584,7 +573,7 @@ def train_guided_autoencoder(
     current_lr = learning_rate
     
     # For early stopping
-    best_loss = float('inf') 
+    best_loss = float('inf')
     patience_counter = 0
     patience = 10
     best_model_state = None
@@ -593,7 +582,8 @@ def train_guided_autoencoder(
     loss_history = {
         "recon_loss": [],
         "class_loss": [],
-        "total_loss": []
+        "total_loss": [],
+        "surrogate_loss": []  # Add surrogate loss tracking
     }
     
     # Training loop
@@ -610,7 +600,7 @@ def train_guided_autoencoder(
             if verbose:
                 tqdm.write(f"Epoch {epoch+1}: Updating quantum embeddings and surrogate model...")
             
-            surrogate = update_quantum_embeddings(
+            surrogate, surrogate_loss = update_quantum_embeddings(
                 model=model,
                 X=X,
                 quantum_layer=quantum_layer,
@@ -620,6 +610,11 @@ def train_guided_autoencoder(
                 detuning_max=detuning_max,
                 verbose=verbose
             )
+            # Add surrogate loss to history
+            loss_history["surrogate_loss"].append(surrogate_loss)
+        else:
+            # Add None for epochs when surrogate is not updated
+            loss_history["surrogate_loss"].append(None)
         
         # Train for one epoch
         avg_recon_loss, avg_class_loss, avg_total_loss = train_guided_epoch(
@@ -642,6 +637,7 @@ def train_guided_autoencoder(
         # Update learning rate scheduler
         prev_lr = current_lr
         scheduler.step(avg_total_loss)
+        
         # Check if learning rate changed
         current_lr = optimizer.param_groups[0]['lr']
         if verbose and current_lr != prev_lr:
@@ -680,6 +676,7 @@ def train_guided_autoencoder(
     model.autoencoder.eval()
     encodings = []
     batch_size_eval = 256  # Larger batch size for evaluation
+    
     with torch.no_grad():
         for i in range(0, X.shape[0], batch_size_eval):
             batch_X = X[i:i+batch_size_eval]
@@ -694,7 +691,6 @@ def train_guided_autoencoder(
         spectral = 1.0
     
     return model, spectral, loss_history
-
 
 def encode_data_guided(model: GuidedAutoencoder, data: np.ndarray, device: str = 'cpu', 
                       verbose: bool = True, batch_size: int = 256) -> np.ndarray:

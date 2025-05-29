@@ -116,7 +116,7 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
     Parameters
     ----------
     losses : Dict[str, List[float]]
-        Dictionary with keys 'total_loss', 'recon_loss', 'class_loss' mapping to loss histories
+        Dictionary with keys 'total_loss', 'recon_loss', 'class_loss', 'surrogate_loss' mapping to loss histories
     output_dir : str
         Directory to save the plot
     """
@@ -166,7 +166,16 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
         plt.savefig(surrogate_plot_path, dpi=300, bbox_inches='tight')
         plt.close()
         
+        # Also save surrogate loss to a separate JSON file for easier access
+        surrogate_json_path = os.path.join(output_dir, "surrogate_loss.json")
+        with open(surrogate_json_path, 'w') as f:
+            json.dump({
+                "epochs": surrogate_epochs,
+                "loss_values": surrogate_values
+            }, f, indent=4)
+        
         logging.info(f"Saved surrogate model loss plot to {surrogate_plot_path}")
+        logging.info(f"Saved surrogate model loss data to {surrogate_json_path}")
 
 def get_f1_score(confusion_matrix: Dict[str, int]) -> float:
     tp = confusion_matrix['true_positive']
@@ -230,6 +239,7 @@ def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: str
     
     logging.info(f"Saved guided autoencoder metrics to {log_path}")
 
+# Rename the internal function to be exported
 def extract_metrics(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> Dict[str, Any]:
     """
     Extract key metrics from results dictionary.
@@ -365,7 +375,7 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
         save_guided_autoencoder_losses(guided_losses, output_dir)
         save_guided_autoencoder_logs(guided_losses, output_dir)
     
-    # Extract and save metrics in JSON format (similar to parameter_sweep)
+    # Extract and save metrics in JSON format (using the common function)
     metrics = extract_metrics(results_dict)
     
     # Add guided autoencoder metrics if available

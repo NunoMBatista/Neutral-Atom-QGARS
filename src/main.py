@@ -331,7 +331,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         y_train=ys, 
         x_test=test_features, 
         y_test=test_targets, 
-        regularization=args.classifier_regularization,  # Use classifier regularization 
+        regularization=args.classifier_regularization,  
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
         learning_rate=args.learning_rate,
@@ -353,7 +353,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     
     loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc, confusion_matrix_train, confusion_matrix_test = train(
         embeddings, ys, test_embeddings, test_targets, 
-        regularization=args.classifier_regularization,  # Use classifier regularization
+        regularization=args.classifier_regularization, 
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
         learning_rate=args.learning_rate,
@@ -374,7 +374,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         """)
     loss_nn, accs_train_nn, accs_test_nn, model_nn, confusion_matrix_train, confusion_matrix_test = train(
         xs, ys, test_features, test_targets, 
-        regularization=args.classifier_regularization,  # Use classifier regularization 
+        regularization=args.classifier_regularization,
         nepochs=args.nepochs, 
         batchsize=args.batchsize, 
         learning_rate=args.learning_rate,

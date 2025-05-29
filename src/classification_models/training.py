@@ -6,6 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional, Union
+from sklearn.metrics import confusion_matrix
 
 from src.classification_models.models import LinearClassifier, NeuralNetwork
 
@@ -137,35 +138,23 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
             train_targets = torch.argmax(y_train_tensor, dim=1)
             train_acc = (train_pred == train_targets).sum().item() / train_targets.size(0)
             # Update confusion matrix for training
-            for i in range(len(train_pred)):
-                if train_pred[i] == train_targets[i]:
-                    if train_pred[i] == 1:
-                        confusion_matrix_train["true_positive"] += 1
-                    else:
-                        confusion_matrix_train["true_negative"] += 1
-                else:
-                    if train_pred[i] == 1:
-                        confusion_matrix_train["false_positive"] += 1
-                    else:
-                        confusion_matrix_train["false_negative"] += 1            
+            confusion_matrix_train = confusion_matrix(
+                train_targets.numpy(), 
+                train_pred.numpy(), 
+                labels=range(output_dim)
+            )          
             
             # Test accuracy
             test_outputs = model(x_test_tensor)
             _, test_pred = torch.max(test_outputs, 1)
             test_acc = (test_pred == y_test_tensor).sum().item() / y_test_tensor.size(0)
             # Update confusion matrix for testing
-            for i in range(len(test_pred)):
-                if test_pred[i] == y_test_tensor[i]:
-                    if test_pred[i] == 1:
-                        confusion_matrix_test["true_positive"] += 1
-                    else:
-                        confusion_matrix_test["true_negative"] += 1
-                else:
-                    if test_pred[i] == 1:
-                        confusion_matrix_test["false_positive"] += 1
-                    else:
-                        confusion_matrix_test["false_negative"] += 1
-                        
+            confusion_matrix_test = confusion_matrix(
+                y_test_tensor.numpy(), 
+                test_pred.numpy(), 
+                labels=range(output_dim)
+            )
+            
         
         losses.append(epoch_loss / len(train_loader))
         accs_train.append(train_acc)
@@ -175,4 +164,4 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
         if verbose:
             tqdm.write(f"Epoch {epoch+1}/{nepochs} - Loss: {losses[-1]:.4f} - Train Acc: {train_acc:.4f} - Test Acc: {test_acc:.4f}")
     
-    return losses, accs_train, accs_test, model, confusion_matrix_test, confusion_matrix_train
+    return losses, accs_train, accs_test, model, confusion_matrix_train, confusion_matrix_test
