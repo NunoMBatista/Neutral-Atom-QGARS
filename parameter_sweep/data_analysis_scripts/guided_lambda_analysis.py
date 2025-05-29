@@ -187,8 +187,26 @@ def plot_guided_mu_effect(df: pd.DataFrame, output_path: Optional[str] = None):
             y_offset = 10
             x_offset = 0
             
+            # Special case for lambda = 0.4
+            if abs(lambda_val - 0.4) < 0.001:  # Use a small tolerance for floating point precision
+                x_offset = -20  # Move label to the left
+                y_offset = 0    # Keep at same height
+            if abs(lambda_val - 0.999999) < 0.001:
+                x_offset = -2
+                y_offset = 0
+            if abs(lambda_val - 0.9999) < 0.001:
+                x_offset = -2
+                y_offset = 0
+                
+            if abs(lambda_val - 1) < 0.001:
+                x_offset = -3
+                y_offset = 0
+            if abs(lambda_val - 0.2) < 0.001:
+                x_offset = -4
+                y_offset = 0
+                
             # For points very close to y-axis, offset to the right
-            if x < 0.05:  # Adjust threshold as needed
+            elif x < 0.05:  # Adjust threshold as needed
                 x_offset = 15
                 y_offset = 0
             
@@ -282,7 +300,7 @@ def plot_guided_mu_effect(df: pd.DataFrame, output_path: Optional[str] = None):
         plt.xlim(0.001, 100)  # Upper limit to 10^2
     
     # Set y-axis limits to 0-100%
-    plt.ylim(70, 95)
+    plt.ylim(70, 90)
     
     # Add secondary x-axis with lambda values
     ax1 = plt.gca()
