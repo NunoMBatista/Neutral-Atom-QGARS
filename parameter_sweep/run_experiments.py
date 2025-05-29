@@ -140,7 +140,7 @@ EXPERIMENT_PROFILES = {
     },
     
     # MOST IMPORTANT FOR THE PAPER
-    "general_test": {
+    "ae_pca_qgars_5_runs": {
         "description": "Run a general test with fixed parameters",
         "param_grid": {
             "seed": [42, 43, 44, 45, 46],
@@ -152,7 +152,6 @@ EXPERIMENT_PROFILES = {
         }
     },
     
-    # MOST IMPORTANT FOR THE PAPER
     "test": {
         "description": "asdf",
         "param_grid": {
