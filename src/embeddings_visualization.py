@@ -6,6 +6,7 @@ import umap
 from sklearn.metrics import silhouette_score
 import seaborn as sns
 import os
+import json
 from typing import Dict, List, Tuple, Any, Optional
 
 from src.data_processing.data_processing import load_dataset, select_random_samples
@@ -177,6 +178,31 @@ def calculate_metrics(
     plt.savefig(f"{output_dir}/quantum_embeddings_metrics.png", dpi=300)
     plt.show()
 
+def save_embeddings_to_json(
+    results: Dict[str, Dict[str, np.ndarray]],
+    output_dir: str
+):
+    """Save embeddings and their labels to a JSON file"""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Prepare data for JSON serialization (convert numpy arrays to lists)
+    json_data = {}
+    for method_name, data in results.items():
+        embeddings = data["embeddings"].tolist()  # Convert to Python list
+        labels = data["labels"].tolist()  # Convert to Python list
+        
+        json_data[method_name] = {
+            "embeddings": embeddings,
+            "labels": labels
+        }
+    
+    # Save to JSON file
+    json_path = os.path.join(output_dir, "quantum_embeddings.json")
+    with open(json_path, 'w') as f:
+        json.dump(json_data, f)
+    
+    print(f"Saved embeddings to {json_path}")
+
 def main():
     global N_FEATURES 
 
@@ -217,6 +243,12 @@ def main():
             "embeddings": embeddings,
             "labels": labels
         }
+    
+    # Save embeddings to JSON
+    save_embeddings_to_json(
+        results,
+        output_dir="/home/nbatista/GIC-quAI-QRC/results/embeddings"
+    )
     
     # Visualize embeddings
     visualize_embeddings(
