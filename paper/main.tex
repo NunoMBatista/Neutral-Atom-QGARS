@@ -16,6 +16,9 @@
 \usepackage{physics}
 \usepackage{float}
 \usepackage{inputenc}
+\usepackage{bm}
+%\usepackage{amsmath}
+
 
 % Add TikZ package and necessary libraries
 \usepackage{tikz}
@@ -54,12 +57,12 @@
 % Coimbra, Portugal \\
 % \href{mailto:nunomarquesbatista@gmail.com}{nunomarquesbatista@gmail.com}}
 
-% \and
-% \IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
-% \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-% \textit{name of organization (of Aff.)}\\
-% City, Country \\
-% email address or ORCID}
+% % \and
+% % \IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
+% % \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+% % \textit{name of organization (of Aff.)}\\
+% % City, Country \\
+% % email address or ORCID}
 % }
 
 \maketitle
@@ -68,30 +71,8 @@
 
 \begin{abstract}
 We introduce a quantum-classical hybrid
-architecture for medical image classification based on neutral-atom quantum processors. 
-This approach is designed to address the challenges of
-medical imaging, with a particular focus on tasks such
-as polyp detection and classification.
-By integrating an autoencoder guided by a quantum 
-reservoir, the pipeline learns compact and discriminative 
-representations of image data that are also well-suited for quantum reservoir 
-computing. To overcome the non-differentiability of quantum 
-measurements, we circumvent this `gradient barrier' 
-by incorporating a differentiable surrogate model that simulates the 
-behaviour of the quantum layer, enabling end-to-end backpropagation. 
-The guided training process jointly optimizes for both image 
-reconstruction and classification accuracy, ensuring that the latent 
-representations are both meaningful and effective for quantum processing. 
-In our implementation, image data is encoded as atom detuning parameters 
-in a Rydberg Hamiltonian, and quantum embeddings are obtained through expectation 
-values. These embeddings are then passed to a linear classifier, 
-enabling faster training and inference compared to deep classical networks.
-Our experiments show that this method outperforms traditional 
-approaches using PCA or unguided autoencoders. We also conduct 
-ablation studies to evaluate the impact of quantum and training 
-parameters, demonstrating the robustness and flexibility of the 
-proposed pipeline for real-world medical imaging applications, 
-even in the NISQ era.
+architecture for medical image classification based on neutral-atom quantum processors. This approach is designed to address the challenges of medical imaging, with a particular focus on tasks such as polyp detection and classification. By integrating an autoencoder guided by a quantum reservoir, the pipeline learns compact and discriminative representations of image data that are also well-suited for quantum reservoir computing. To overcome the non-differentiability of quantum measurements, we circumvent this `gradient barrier' by incorporating a differentiable surrogate model that simulates the behaviour of the quantum layer, enabling end-to-end backpropagation. The guided training process jointly optimizes for both image reconstruction and classification accuracy, ensuring that the latent representations are both meaningful and effective for quantum processing. In our implementation, image data is encoded as atom detuning parameters in a Rydberg Hamiltonian, and quantum embeddings are obtained through expectation values. These embeddings are then passed to a linear classifier, enabling faster training and inference compared to deep classical networks. Our experiments show that this method outperforms traditional approaches using PCA or unguided autoencoders. We also conduct ablation studies to evaluate the impact of quantum and training parameters, demonstrating the robustness and flexibility of the proposed pipeline for real-world medical imaging applications, even in the NISQ era.
+
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -324,13 +305,11 @@ handling high-dimensional, complex datasets~\cite{belisGuidedQuantumCompression2
 % METHODOLOGY
 %============================================
 \section{Methodology}
-\subsection{System Architecture Overview}
+\subsection{Proposed System Architecture}
 Our proposed pipeline is a Quantum-Guided Autoencoder with a 
 Reservoir Surrogate (QGARS). It is a hybrid architecture that 
-synergizes classical autoencoding techniques with quantum 
-reservoir processing to achieve efficient learning of features
-that work well with the reservoir computing layer whose embeddings
-will be used to perferm a classification task.
+synergizes classical autoencoding techniques with quantum reservoir processing to achieve efficient learning of features. These are expected to better match with the reservoir computing layer, whose embeddings are used to perform a classification task.
+
 The system is designed to overcome the inherent non-differentiability of quantum operations, which traditionally impede gradient-based training methods.
 The overall architecture is illustrated in `Fig.-\ref{fig:qgars_pipeline}'.
 
@@ -339,14 +318,14 @@ In a higher level, the \textbf{architectural components} are the following:
     \item \textbf{Classical Autoencoder:}
         \begin{itemize}
             \item \textbf{Encoder:}
-            The encoder network \(\varepsilon_\omega(x)\)
+            The encoder network \(\varepsilon_\omega(\mathbf{x})\)
             transforms high-dimensional input data \(\mathbf{x} \in \mathbb{R}^{n}\) into 
             a lower-dimensional latent representation \(\mathbf{z} \in \mathbb{R}^m\), 
             where \(m < n\).
             \item \textbf{Decoder:}
-            The decoder network \(\mathcal{D}_\rho(z)\)
-            Reconstructs the input data from the latent representation, producing
-            \(\mathbf{\hat{x}} \in \mathbb{R}\).
+            The decoder network \(\mathcal{D}_\rho(\mathbf{z})\)
+            reconstructs the input data from the latent representation, producing
+            \(\mathbf{\hat{x}} \in \mathbb{R}^{n}\).
         \end{itemize}
 
     \item \textbf{Quantum Reservoir Layer:}
@@ -355,16 +334,16 @@ In a higher level, the \textbf{architectural components} are the following:
             \(g(\mathbf{z})\) maps the latent representation \(\mathbf{z}\) to the local detuning frequencies
             \(\Delta_{\mathrm{i}}\) of the Rydberg Atoms.
             \item \textbf{Quantum Evolution:}
-            Evolves the system under a Hamiltonian \(H(\Delta)\), resulting in a quantum 
-            state \(|\psi(\Delta)\rangle\).
+            Evolves the system under a Hamiltonian \(H(\mathbf{\Delta)}\), resulting in a quantum 
+            state \(|\psi(\mathbf{\Delta})\rangle\).
             \item \textbf{Measurement:}
             Performs measurements on the quantum state to obtain embeddings \(\mathbf{q} \in \mathbb{R}^k\), which serve as training targets for the Surrogate Model or as 
             inputs for the classification task later on.
         \end{itemize}
 
     \item \textbf{Surrogate Model:}
-    A differentiable classical neural network \( f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) \)
-    where \(\theta_{\text{sur}}\), which are it's parameters, are tuned to approximate the 
+    A differentiable classical neural network \( f_{\text{sur}}(\mathbf{z}; \bm{\theta}_{\text{sur}}) \),
+    where \(\bm{\theta}_{\text{sur}}\) are parameters tuned to approximate the 
     mapping from \(\mathbf{z}\) to \(\mathbf{q}\), effectively emulating
     the quantum layer's behaviour.
 
@@ -376,13 +355,15 @@ In a higher level, the \textbf{architectural components} are the following:
 The following sections will give a more detailed explanation of each 
 component.
 
-\begin{figure*}[!ht]
+\begin{figure*}[!t]
     \centering
     \resizebox{0.9\textwidth}{!}{
         \includegraphics{images/diagrams/qgars_pipeline_cropped.pdf}
     }
     \label{fig:qgars_pipeline}
-    \caption{Overview of the Quantum-Guided Autoencoder Reservoir Computing System.}
+    \caption{
+    Overview of the QGARS pipeline. (a) Classical autoencoder: $\varepsilon_{\omega}(\mathbf{x})$ is the encoder network that maps input $\mathbf{x}$ to latent code $\mathbf{z}$, and $\mathcal{D}_{\rho}(\mathbf{z})$ is the decoder network reconstructing $\hat{\mathbf{x}}$. (b) Rydberg atom quantum reservoir: the latent code $\mathbf{z}$ is mapped to detuning parameters $\Delta_i$, the system evolves under the Hamiltonian in Eq.~\eqref{eq:rydberg_hamiltonian}, and measurements of observables $\langle Z_i\rangle,\langle Z_iZ_j\rangle,\langle Z_iZ_jZ_k\rangle$ yield quantum embeddings. (c) Surrogate model: a feedforward neural network $f_{\mathrm{sur}}(\mathbf{z};\theta_{\mathrm{sur}})$ trained every $N$ epochs to approximate the quantum embeddings. (d) Linear classifier: maps surrogate outputs $\mathbf{q}'$ to class predictions, closing the loop with total loss $\mathcal{L}=(1-\lambda)\mathcal{L}_R+\lambda\mathcal{L}_C$.
+    }
 \end{figure*}
 
 \subsection{Quantum Guided Autoencoder}
@@ -393,10 +374,10 @@ the strengths of both paradigms.
 Ideally, the latent space representation created by the encoder \(\varepsilon_\omega(x)\)
 would be passed through two sections of the model:
 \begin{itemize}
-    \item \textbf{The Decoder Network \(\mathcal{D}_\rho(z)\):}
-    that tries to reconstruct the original input data.
-    \item \textbf{The Quantum Reservoir:}
-    that extracts highly dimensional quantum embeddings and
+    \item \textbf{The Decoder Network \(\mathcal{D}_\rho(z)\),}
+    which tries to reconstruct the original input data.
+    \item \textbf{The Quantum Reservoir,}
+    which extracts highly dimensional quantum embeddings and
     passes them to a linear classifier to perform a classification
     task and map the embeddings to the image labels.
 \end{itemize}
@@ -471,11 +452,7 @@ advantages~\cite{xieQuantumSurrogateDrivenImage2025b}
 
 
 \subsubsection{Surrogate Model Architecture}
-In our pipeline, the surrogate model \( f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) \) 
-is implemented as a feedforward neural network 
-designed to learn the mapping 
-from the autoencoder's latent space to the quantum 
-embeddings produced by the quantum reservoir. 
+In our pipeline, the surrogate model \( f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) \) is implemented as a feedforward neural network designed to learn the mapping from the autoencoder's latent space to the quantum embeddings produced by the quantum reservoir. 
 \begin{equation}
     f_{\text{sur}}(\mathbf{z}; \theta_{\text{sur}}) = \mathbf{q}' \approx \mathbf{q} = \mathrm{Measure}(|\psi(g(\mathbf{z})\rangle)
 \end{equation}
@@ -526,6 +503,8 @@ hybrid model but also makes it computationally efficient,
 as we reduce the need for frequent quantum measurements.
 
 \subsection{Rydberg Hamiltonian and Quantum Dynamics}
+Although it can seem that the surrogate model is enough to cover the job of the quantum reservoir, that is far from the truth. while a fixed classical reservoir can nonlinearly mix inputs, its capacity is polynomially bounded. In contrast, our neutral-atom reservoir leverages many-body quantum dynamics to encode data in a space whose dimension grows exponentially with atom number, unlocking patterns that classical reservoirs would need unreasonably complex architectures to approximate. This means that the quantum reservoir is a crucial part of our pipeline and that the surrogate is just an approximation to aid in the autoencoder training process.
+
 The quantum reservoir in our architecture is implemented
 using a neutral-atom system, specifically utilizing
 Rydberg atoms to create a programmable quantum reservoir.
@@ -761,7 +740,7 @@ To evaluate how well the quantum reservoir embeddings separate classes, we proje
   \includegraphics[width=0.32\textwidth]{pca_qrc_tsne.pdf}
   \includegraphics[width=0.32\textwidth]{ae_qrc_tsne.pdf}
   \includegraphics[width=0.32\textwidth]{qgars_qrc_tsne.pdf}
-  \caption{t-SNE projections of the 4 700-D QRC embeddings for (left) PCA + QRC, (center) AE + QRC, (right) QGARS + QRC.}
+  \caption{3-dimensional t-SNE projections of the 4768-dimensional QRC embeddings for (left) PCA + QRC, (center) AE + QRC, (right) QGARS + QRC}
   \label{fig:embeddings_tsne}
 \end{figure*}
 
@@ -790,7 +769,7 @@ We vary the guidance weighting $\lambda$ in Eq.~\ref{eq:composed_loss_function} 
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=1\linewidth]{paper/images/results/generated_polyp_dataset/guided_lambda_log_effect.pdf}
+  \includegraphics[width=1\linewidth]{paper/images/results/generated_polyp_dataset/guided_lambda_log_mu_effect.pdf}
   \caption{Accuracy as a function of the reconstruction/classification trade-off parameter $\lambda$.}
   \label{fig:lambda_sweep}
 \end{figure}
@@ -832,6 +811,7 @@ for the different methods.
     \hline
     PCA + Linear      &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
     AE + Linear       &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
+    PCA + NN          &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
     AE + NN           &  0.0 ± 0.0     &  0.0 ± 0.0   &  0.0 ± 0.0    \\
     \hline
   \end{tabular}
@@ -911,6 +891,8 @@ Bringing QGARS to physical hardware entails additional challenges:
 \section{Conclusion}
 
 We have presented QGARS, a hybrid quantum-classical architecture that integrates a classical autoencoder with a neutral-atom quantum reservoir and a differentiable surrogate model to enable end‐to‐end training. By jointly optimizing reconstruction and classification losses, QGARS learns compact and discriminative features tailored for quantum reservoir computing. Our experiments on synthetic polyp, CVC-ClinicDB, and binary MNIST datasets demonstrate that QGARS outperforms classical PCA‐ and autoencoder‐based baselines. Ablation studies highlight the importance of the guidance weight \(\lambda\), surrogate update frequency, and reservoir parameters. While challenges remain—particularly regarding high‐dimensional embeddings, surrogate fidelity, and classical overhead, our proposed extensions and hardware considerations chart a clear path toward robust, scalable quantum‐enhanced medical imaging pipelines in the NISQ era.
+
+% ADICIONAR COMENTÁRIO SOBRE COMO É MELHOR ESTUDAR MAIS O PARÂMETRO DE LAMBDA
 
 
 %============================================
