@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional, Union
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 
 from src.classification_models.models import LinearClassifier, NeuralNetwork
 
@@ -123,14 +123,6 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
         
         # Evaluate
         model.eval() # Set the model to evaluation mode
-        confusion_matrix_train = {
-            "true_positive": 0,
-            "true_negative": 0,
-            "false_positive": 0,
-            "false_negative": 0
-        }
-        confusion_matrix_test = confusion_matrix_train.copy() 
-
         with torch.no_grad():
             # Training accuracy
             train_outputs = model(x_train_tensor)
@@ -154,7 +146,6 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
                 test_pred.numpy(), 
                 labels=range(output_dim)
             )
-            
         
         losses.append(epoch_loss / len(train_loader))
         accs_train.append(train_acc)
@@ -164,4 +155,24 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
         if verbose:
             tqdm.write(f"Epoch {epoch+1}/{nepochs} - Loss: {losses[-1]:.4f} - Train Acc: {train_acc:.4f} - Test Acc: {test_acc:.4f}")
     
-    return losses, accs_train, accs_test, model, confusion_matrix_train, confusion_matrix_test
+    # Calculate final F1 scores
+    if output_dim == 2:
+        average_type = 'binary'
+    else:
+        average_type = 'weighted'
+
+    f1_train = f1_score(
+        train_targets.numpy(),
+        train_pred.numpy(),
+        labels=range(output_dim),
+        average=average_type
+    )
+    f1_test = f1_score(
+        y_test_tensor.numpy(),
+        test_pred.numpy(),
+        labels=range(output_dim),
+        average=average_type
+    )
+    
+    
+    return losses, accs_train, accs_test, model, confusion_matrix_train, confusion_matrix_test, f1_train, f1_test
