@@ -4,7 +4,9 @@ import argparse
 import numpy as np
 from typing import Dict, Any, Optional
 
-DEFAULT_RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "results")
+from src.globals import DEFAULT_RESULTS_DIR
+
+#DEFAULT_RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "results")
 
 class ConfigManager:
     """

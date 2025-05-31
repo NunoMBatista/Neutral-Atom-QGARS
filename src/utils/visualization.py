@@ -1,7 +1,11 @@
 import matplotlib.pyplot as plt
 from typing import Dict, Tuple, List, Any
+import numpy as np
+import torch.nn as nn
+from src.globals import ResultsDict
 
-def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> None:
+def plot_training_results(
+    results_dict: ResultsDict) -> None:
     """
     Plot training results for multiple models.
     
@@ -36,7 +40,7 @@ def plot_training_results(results_dict: Dict[str, Tuple[List[float], List[float]
     plt.tight_layout()
     plt.show()
 
-def print_results(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> None:
+def print_results(results_dict: ResultsDict) -> None:
     """
     Print the final test accuracies for each model.
     

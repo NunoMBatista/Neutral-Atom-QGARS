@@ -6,7 +6,10 @@ import json
 import datetime
 import logging
 
-def ensure_directory_exists(directory: str) -> None:
+from pathlib import Path
+from src.globals import ResultsDict
+
+def ensure_directory_exists(directory: Path) -> None:
     """
     Ensure the specified directory exists, creating it if necessary.
     
@@ -15,10 +18,13 @@ def ensure_directory_exists(directory: str) -> None:
     directory : str
         Directory path to check/create
     """
-    if not os.path.exists(directory):
-        os.makedirs(directory, exist_ok=True)
+    # if not os.path.exists(directory):
+    #     os.makedirs(directory, exist_ok=True)
+    if not directory.exists():
+        directory.mkdir(parents=True, exist_ok=True)
 
-def setup_stats_directory(base_dir: str = "run_stats") -> str:
+
+def setup_stats_directory(base_dir: Path) -> Path:
     """
     Set up a directory for saving run statistics.
     
@@ -29,12 +35,15 @@ def setup_stats_directory(base_dir: str = "run_stats") -> str:
         
     Returns
     -------
-    str
-        Path to the created directory
+    Path
+        Path to the created statistics directory
+
     """
     # Create a timestamped directory
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    stats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), base_dir, timestamp)
+    #stats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), base_dir, timestamp)
+    stats_dir = Path(base_dir) / timestamp
+    
     ensure_directory_exists(stats_dir)
     
     # Set up logging
@@ -46,7 +55,7 @@ def setup_stats_directory(base_dir: str = "run_stats") -> str:
     
     return stats_dir
 
-def save_classifier_loss_plot(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
+def save_classifier_loss_plot(results_dict: ResultsDict, 
                              output_dir: str) -> None:
     """
     Plot and save training losses for each classifier.
@@ -77,7 +86,7 @@ def save_classifier_loss_plot(results_dict: Dict[str, Tuple[List[float], List[fl
     
     logging.info(f"Saved classifier loss plot to {plot_path}")
 
-def save_classifier_accuracy_plot(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
+def save_classifier_accuracy_plot(results_dict: ResultsDict, 
                                 output_dir: str) -> None:
     """
     Plot and save training and test accuracies for each classifier.
@@ -177,7 +186,7 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
         logging.info(f"Saved surrogate model loss plot to {surrogate_plot_path}")
         logging.info(f"Saved surrogate model loss data to {surrogate_json_path}")
 
-def save_loss_logs(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
+def save_loss_logs(results_dict: ResultsDict, 
                   output_dir: str) -> None:
     """
     Save loss and accuracy logs for each classifier.
@@ -224,7 +233,7 @@ def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: str
     logging.info(f"Saved guided autoencoder metrics to {log_path}")
 
 # Rename the internal function to be exported
-def extract_metrics(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]]) -> Dict[str, Any]:
+def extract_metrics(results_dict: ResultsDict) -> Dict[str, Any]:
     """
     Extract key metrics from results dictionary.
     
@@ -245,22 +254,22 @@ def extract_metrics(results_dict: Dict[str, Tuple[List[float], List[float], List
     
     # Extract final metrics from each model
     for model_name, (losses, accs_train, accs_test, _, confusion_matrix_train, confusion_matrix_test, f1_train, f1_test) in results_dict.items():
-        metrics[f"{model_name}_final_train_acc"] = float(accs_train[-1])
-        metrics[f"{model_name}_final_test_acc"] = float(accs_test[-1])
-        metrics[f"{model_name}_final_loss"] = float(losses[-1])
-        metrics[f"{model_name}_confusion_matrix_train"] = confusion_matrix_train
-        metrics[f"{model_name}_confusion_matrix_test"] = confusion_matrix_test
-        metrics[f"{model_name}_f1_train"] = float(f1_train)
-        metrics[f"{model_name}_f1_test"] = float(f1_test)
+        metrics[f"{model_name}_final_train_acc"] = str(accs_train[-1])
+        metrics[f"{model_name}_final_test_acc"] = str(accs_test[-1])
+        metrics[f"{model_name}_final_loss"] = str(losses[-1])
+        metrics[f"{model_name}_confusion_matrix_train"] = str(confusion_matrix_train)
+        metrics[f"{model_name}_confusion_matrix_test"] = str(confusion_matrix_test)
+        metrics[f"{model_name}_f1_train"] = str(f1_train)
+        metrics[f"{model_name}_f1_test"] = str(f1_test)
         
         # Add mean metrics for the last 10% of training (stability)
         if len(accs_test) > 5:
             stability_window = max(1, int(len(accs_test) * 0.1))
-            metrics[f"{model_name}_stability"] = float(np.std(accs_test[-stability_window:]))
+            metrics[f"{model_name}_stability"] = str(np.std(accs_test[-stability_window:]))
         
         # Additional metrics
-        metrics[f"{model_name}_max_test_acc"] = float(max(accs_test))
-        metrics[f"{model_name}_convergence_epoch"] = int(np.argmax(accs_test))
+        metrics[f"{model_name}_max_test_acc"] = str(max(accs_test))
+        metrics[f"{model_name}_convergence_epoch"] = str(np.argmax(accs_test))
     
     return metrics
 
@@ -288,7 +297,7 @@ def save_metrics_json(metrics: Dict[str, Any], output_dir: str) -> None:
     
     logging.info(f"Saved metrics to {metrics_path}")
 
-def save_config_file(args: Any, output_dir: str) -> None:
+def save_config_file(args: Any, output_dir: Path) -> None:
     """
     Save the configuration as a JSON file.
     
@@ -323,9 +332,9 @@ def save_config_file(args: Any, output_dir: str) -> None:
     
     logging.info(f"Saved configuration to {config_path}")
 
-def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], List[float], Any]], 
+def save_all_statistics(results_dict: ResultsDict, 
+                       output_dir: Path,
                        guided_losses: Optional[Dict[str, List[float]]] = None,
-                       output_dir: Optional[str] = None,
                        args: Optional[Any] = None) -> str:
     """
     Save all statistics including plots and logs.
@@ -347,10 +356,7 @@ def save_all_statistics(results_dict: Dict[str, Tuple[List[float], List[float], 
         Path to the statistics directory
     """
     # Create stats directory if not provided
-    if output_dir is None:
-        output_dir = setup_stats_directory()
-    else:
-        ensure_directory_exists(output_dir)
+    ensure_directory_exists(output_dir)
     
     # Save configuration if provided
     if args is not None:

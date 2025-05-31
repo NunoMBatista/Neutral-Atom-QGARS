@@ -8,8 +8,9 @@ import torch
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Tuple, Optional, List
 import time
+from pathlib import Path
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+#sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
 from src.feature_reduction.autoencoder.autoencoder import Autoencoder
@@ -27,10 +28,12 @@ from src.quantum_layer.qrc_layer import DetuningLayer
 from src.classification_models.training import train
 from src.utils.visualization import plot_training_results, print_results
 
-from utils.cli_utils import get_args
+from src.utils.cli_utils import get_args
 import argparse
 
-def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]:
+from src.globals import ROOT_DIR, DEFAULT_DATA_DIR, DEFAULT_RESULTS_DIR
+
+def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_RESULTS_DIR) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]:
     """
     Main function to run the quantum reservoir computing pipeline.
     
@@ -66,21 +69,28 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
           """)
     
 
-    DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
+    #DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
+    # first, declare the DATA_DIR variable as a string
+    data_dir: Path
+    if args.data_dir is None:
+        data_dir = DEFAULT_DATA_DIR
+    else:
+        data_dir = Path(args.data_dir)
 
     # Load dataset based on the specified dataset type
     if args.dataset_type in ["mnist", "fashion_mnist", "binary_mnist"]:
         # Define the path to MNIST dataset
         data_train, data_test = load_dataset(
             args.dataset_type,
-            data_dir=DATA_DIR,
+            data_dir=data_dir,
             target_size=tuple(args.target_size),
             num_examples=args.num_examples,
             num_test_examples=args.num_test_examples
         )
         
     else:            
-        DATASET_DIR = os.path.join(DATA_DIR, args.dataset_type)
+        #DATASET_DIR = os.path.join(data_dir, args.dataset_type)
+        DATASET_DIR = Path(data_dir) / args.dataset_type
         if not os.path.exists(DATASET_DIR):
             raise ValueError(f"Dataset directory does not exist: {DATASET_DIR}")
         
@@ -131,6 +141,8 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     # Clean memory between runs to avoid cache issues
     import gc
     gc.collect()
+    
+    quantum_layer: Optional[DetuningLayer] = None
     
     if method_name == "pca":
         # Apply PCA reduction
@@ -275,9 +287,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     print(f"Scaled test feature range: {test_features.min()} to {test_features.max()}")
 
     # Create quantum layer (reuse if we already created one for guided autoencoder)
-    if method_name == "guided_autoencoder" and 'quantum_layer' in locals():
-        print("Reusing quantum layer from guided autoencoder...")
-    else:
+    if quantum_layer is None:
         quantum_layer = DetuningLayer(
             geometry=args.geometry,
             n_atoms=dim_reduction,
@@ -326,7 +336,10 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     # Train different models
     results = {}
     
-    loss_lin, accs_train_lin, accs_test_lin, model_lin, confusion_matrix_train, confusion_matrix_test, f1_train, f1_test = train(
+    (loss_lin, accs_train_lin, accs_test_lin, 
+    model_lin,
+    confusion_matrix_train, confusion_matrix_test, 
+    f1_train, f1_test) = train(
         x_train=xs, 
         y_train=ys, 
         x_test=test_features, 
@@ -351,7 +364,10 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         
         """)
     
-    loss_qrc, accs_train_qrc, accs_test_qrc, model_qrc, confusion_matrix_train, confusion_matrix_test, f1_train, f1_test = train(
+    (loss_qrc, accs_train_qrc, accs_test_qrc, 
+     model_qrc, 
+     confusion_matrix_train, confusion_matrix_test, 
+     f1_train, f1_test) = train(
         embeddings, ys, test_embeddings, test_targets, 
         regularization=args.classifier_regularization, 
         nepochs=args.nepochs, 
@@ -372,7 +388,10 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
         =========================================
         
         """)
-    loss_nn, accs_train_nn, accs_test_nn, model_nn, confusion_matrix_train, confusion_matrix_test, f1_train, f1_test = train(
+    (loss_nn, accs_train_nn, accs_test_nn, 
+     model_nn, 
+     confusion_matrix_train, confusion_matrix_test, 
+     f1_train, f1_test) = train(
         xs, ys, test_features, test_targets, 
         regularization=args.classifier_regularization,
         nepochs=args.nepochs, 
@@ -410,9 +429,11 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: str = None) -> 
     # Save statistics if running as main script (not as part of parameter sweep)
     #if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
     
-    if results_dir is None: 
+    if results_dir is DEFAULT_RESULTS_DIR: 
         results_dir = args.results_dir
-        results_dir = setup_stats_directory(results_dir)
+    
+    results_dir = setup_stats_directory(results_dir)
+    
     
     output_dir = save_all_statistics(
         results_dict=results, 

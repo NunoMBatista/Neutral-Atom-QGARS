@@ -7,14 +7,19 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional, Union
 from sklearn.metrics import confusion_matrix, f1_score
+from src.globals import ResultsDict
 
+from archive.benchmarking.parameter_testing import RESULTS_DIR
 from src.classification_models.models import LinearClassifier, NeuralNetwork
+
 
 def train(x_train: np.ndarray, y_train: np.ndarray, 
           x_test: np.ndarray, y_test: np.ndarray, 
           regularization: float = 0.0, nepochs: int = 100, 
           batchsize: int = 100, learning_rate: float = 0.01, 
-          verbose: bool = True, nonlinear: bool = False) -> Tuple[List[float], List[float], List[float], nn.Module]:
+          verbose: bool = True, nonlinear: bool = False
+          ) -> Tuple[List[float], List[float], List[float], nn.Module, 
+           np.ndarray, np.ndarray, float, float]:
     """
     Train a model on the given data.
     
@@ -43,11 +48,16 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     
     Returns
     -------
-    Tuple[List[float], List[float], List[float], nn.Module]
+    Tuple[List[float], List[float], List[float], nn.Module, 
+           np.ndarray, np.ndarray, float, float]
         - losses: Training losses per epoch
         - accs_train: Training accuracies per epoch
         - accs_test: Test accuracies per epoch
         - model: Trained model
+        - confusion_matrix_train: Confusion matrix for training set
+        - confusion_matrix_test: Confusion matrix for test set
+        - f1_train: F1 score for training set
+        - f1_test: F1 score for test set
     """
     # Convert numpy arrays to PyTorch tensors
     x_train_tensor = torch.FloatTensor(x_train.T)  # Transpose to match PyTorch's expected shape
@@ -98,6 +108,13 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     losses = []
     accs_train = []
     accs_test = []
+    train_targets: Optional[torch.Tensor] = None
+    train_pred: Optional[torch.Tensor] = None
+    test_pred: Optional[torch.Tensor] = None
+    confusion_matrix_train: Optional[np.ndarray] = None
+    confusion_matrix_test: Optional[np.ndarray] = None
+    f1_train: Optional[float] = None
+    f1_test: Optional[float] = None
     
     # Enhanced progress bar with description
     for epoch in tqdm(range(nepochs), desc="Training epochs", unit="epoch") if verbose else range(nepochs):
@@ -160,6 +177,9 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
         average_type = 'binary'
     else:
         average_type = 'weighted'
+
+
+    
 
     f1_train = f1_score(
         train_targets.numpy(),
