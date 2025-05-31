@@ -2,6 +2,7 @@
 
 \usepackage{circuitikz}
 \usepackage{geometry}
+\usepackage{bm}
 
 \geometry{paperwidth=22.6cm, paperheight=17cm}
 
@@ -13,16 +14,16 @@
     \draw [ dashed] (15.25,8.25) rectangle  (23.25,2.25);
     \draw [ fill={rgb,255:red,246; green,245; blue,244} ] (4.25,11.75) rectangle (5.5,10.5);
     \draw [ fill={rgb,255:red,246; green,245; blue,244} ] (4.75,11.25) rectangle (6,10);
-    \node [font=\large] at (5,12.25) {$\mathbf{x}$};
+    \node [font=\large] at (5,12.25) {$\bm{x}$};
     \draw [->, >=Stealth] (6,11) -- (8,11);
-    \draw  (8,12.25) rectangle  node {\Large $\varepsilon_{\omega}(\mathbf{x})$} (10.5,9.75);
+    \draw  (8,12.25) rectangle  node {\Large $\varepsilon_{\bm\omega}(\bm{x})$} (10.5,9.75);
     \node [font=\large] at (9.5,11.25) {};
     \node [font=\large] at (9,10.5) {};
     \node [font=\large] at (10.5,11.25) {};
     \draw [short] (13.75,11.5) -- (10.5,12.25);
     \draw [short] (10.5,9.75) -- (13.75,10.5);
-    \draw  (13.75,11.75) rectangle  node {\LARGE $\mathbf{z}$} (14.5,10);
-    \draw  (17.75,12.25) rectangle  node {\Large $\mathcal{D}_{\rho}(\mathbf{z})$} (20.25,9.75);
+    \draw  (13.75,11.75) rectangle  node {\LARGE $\bm{z}$} (14.5,10);
+    \draw  (17.75,12.25) rectangle  node {\Large $\mathcal{D}_{\bm\rho}(\bm{z})$} (20.25,9.75);
     \node [font=\large] at (19.5,7.25) {};
     \node [font=\large] at (19,6.5) {};
     \node [font=\large] at (20.5,7.75) {};
@@ -35,7 +36,7 @@
     \draw [->, >=Stealth] (20.25,11) -- (22.25,11);
     \draw [ fill={rgb,255:red,154; green,153; blue,150} ] (22.75,11.75) rectangle (24,10.5);
     \draw [ fill={rgb,255:red,154; green,153; blue,150} ] (22.25,11.25) rectangle (23.5,10);
-    \node [font=\large] at (23.5,12.25) {$\mathbf{\hat{x}}$};
+    \node [font=\large] at (23.5,12.25) {$\bm{\hat{x}}$};
     \draw [<->, >=Stealth, dashed] (5.25,11.75) .. controls (7.5,16.25) and (21.75,15.75) .. (23,11.75)node[pos=0.5, fill=white]{$\mathcal{L}_R$};
     \draw  (15.75,6.25) circle (0.25cm);
     \node [font=\huge] at (16,6.25) {};
@@ -154,8 +155,8 @@
     \draw [short] (26.25,6.25) -- (25.25,3.5);
     \draw [->, >=Stealth] (26.75,6.25) -- (28,5.5);
     \draw [->, >=Stealth] (26.75,4.75) -- (28,5.5);
-    \node [font=\large] at (29.25,5.5) {\normalsize Prediction};
-    \draw [->, >=Stealth, dashed] (29,6) -- (29,7.5);
+    \node [font=\large] at (28.5,5.5) {\Large $y_i$};
+    \draw [->, >=Stealth, dashed] (28.5,6) -- (29,7.5);
     \node [font=\Large] at (29,8) {$\mathcal{L}_C$};
     \node [font=\large] at (25.75,9) {(d)};
     \draw [->, >=Stealth, dashed] (29.75,8) .. controls (31.5,8.75) and (31.75,8.5) .. (32,10.75);
