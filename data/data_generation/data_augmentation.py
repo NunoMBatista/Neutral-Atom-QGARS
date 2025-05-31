@@ -56,7 +56,7 @@ def augment_dataset(input_dir, output_dir, target_size, img_ext=".jpg"):
     os.makedirs(output_dir, exist_ok=True)
     
     # Get all input image paths
-    image_files = [f for f in os.listdir(input_dir) if f.endswith(img_ext)]
+    image_files = [f for f in os.listdir(input_dir) if (f.endswith(img_ext) or f.endswith('png'))]
     current_size = len(image_files)
     
     if current_size >= target_size:

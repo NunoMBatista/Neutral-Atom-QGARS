@@ -103,74 +103,6 @@ def plot_qrc_performance_by_method(results_file, output_dir="../../results/figur
     # Show the plot
     plt.show()
 
-def analyze_performance_drops(results_file):
-    """
-    Analyze why performance sometimes drops when adding more qubits/features.
-    
-    Parameters
-    ----------
-    results_file : str
-        Path to the CSV file containing the results
-    """
-    print("\nAnalyzing Performance Fluctuations with Increasing Qubit Count")
-    print("=" * 70)
-    
-    # Read the CSV file
-    df = pd.read_csv(results_file)
-    
-    # Filter only successful runs
-    df = df[df['status'] == 'success']
-    
-    # For each reduction method, analyze performance patterns
-    methods = ['pca', 'autoencoder', 'guided_autoencoder']
-    
-    for method in methods:
-        # Filter for this reduction method
-        method_df = df[df['reduction_method'] == method]
-        
-        if method_df.empty:
-            continue
-            
-        # Sort by dimension
-        method_df = method_df.sort_values('dim_reduction')
-        
-        print(f"\nMethod: {method.upper()}")
-        print("-" * 30)
-        
-        # Print dimension vs performance
-        print(f"{'Qubits':<8} | {'Test Acc':<10} | {'Train Acc':<10} | {'Gap':<10} | {'Observation'}")
-        print("-" * 70)
-        
-        prev_acc = None
-        for _, row in method_df.iterrows():
-            qubits = row['dim_reduction']
-            test_acc = row['QRC_final_test_acc']
-            train_acc = row['QRC_final_train_acc']
-            gap = train_acc - test_acc
-            
-            observation = ""
-            if prev_acc is not None:
-                if test_acc < prev_acc:
-                    observation = "DECREASED - Likely overfitting or noise"
-                    if gap > 0.2:
-                        observation += " (large train-test gap suggests overfitting)"
-                elif test_acc > prev_acc + 0.05:
-                    observation = "IMPROVED significantly"
-                else:
-                    observation = "Small change"
-            
-            print(f"{qubits:<8} | {test_acc:<10.3f} | {train_acc:<10.3f} | {gap:<10.3f} | {observation}")
-            prev_acc = test_acc
-            
-    print("\nExplanations for Performance Drops:")
-    print("-" * 70)
-    print("1. Overfitting: As dimensionality increases, models may fit to noise rather than signal")
-    print("2. Curse of Dimensionality: Data becomes sparse in higher dimensions")
-    print("3. Quantum Complexity: More qubits create more complex quantum dynamics")
-    print("4. Signal-to-Noise Ratio: Additional dimensions may introduce more noise than signal")
-    print("5. Training Data Limitations: Fixed dataset size becomes insufficient for higher dimensions")
-    print("6. Optimization Challenges: Higher dimensions create more complex optimization landscapes")
-    print("7. Encoding Quality: Feature reduction quality may vary with dimension")
 
 def main():
     parser = argparse.ArgumentParser(description='Analyze QRC performance by reduction method and qubit count')
@@ -201,9 +133,6 @@ def main():
     
     plot_qrc_performance_by_method(args.results)
 
-    # After plotting
-    if args.results:
-        analyze_performance_drops(args.results)
 
 if __name__ == "__main__":
     main()

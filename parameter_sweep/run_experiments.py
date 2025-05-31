@@ -143,12 +143,12 @@ EXPERIMENT_PROFILES = {
     "ae_pca_qgars_5_runs": {
         "description": "Run a general test with fixed parameters",
         "param_grid": {
-            "seed": [42, 43, 44, 45, 46],
-            "dataset_type": ["binary_mnist", "generated_polyp_dataset", "cvc_clinic_db_patches"],
+            "dataset_type": ["cvc_clinic_db_patches"],
             "num_examples": [2000],
             "num_test_examples": [400],
             "reduction_method": ["guided_autoencoder", "autoencoder", "pca"],
-            "dim_reduction": [12]
+            "dim_reduction": [12],
+            "seed": [42, 43, 44, 45, 46]
         }
     },
     
