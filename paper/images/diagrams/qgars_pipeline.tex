@@ -155,8 +155,12 @@
     \draw [short] (26.25,6.25) -- (25.25,3.5);
     \draw [->, >=Stealth] (26.75,6.25) -- (28,5.5);
     \draw [->, >=Stealth] (26.75,4.75) -- (28,5.5);
-    \node [font=\large] at (28.5,5.5) {\Large $y_i$};
-    \draw [->, >=Stealth, dashed] (28.5,6) -- (29,7.5);
+    \node [font=\large] at (28.5,5.5) {\Large $\hat{y}_i$};
+    
+    \draw [->, >=Stealth, dashed] (29,7.5) -- (29.7,5.99);
+    \node [font=\large] at (30,5.4) {\Large $y_i$};
+
+    \draw [->, >=Stealth, dashed] (29,7.5) -- (28.5,6);
     \node [font=\Large] at (29,8) {$\mathcal{L}_C$};
     \node [font=\large] at (25.75,9) {(d)};
     \draw [->, >=Stealth, dashed] (29.75,8) .. controls (31.5,8.75) and (31.75,8.5) .. (32,10.75);

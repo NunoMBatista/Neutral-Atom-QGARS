@@ -152,7 +152,7 @@ In QRC, classical input data \( u(t) \) is encoded into quantum states \( |\psi(
 which evolve under a fixed Hamiltonian \( H \):
 \begin{equation}
     \ket{\psi(t+\Delta t)}
-    = U \let{\psi(t)}
+    = U \ket{\psi(t)}
     = e^{-iH\Delta t} \ket{\psi(t)},
 \end{equation}
 where \( U \) is the unitary evolution operator and \(\Delta t\) is the difference between consecutive timestamps. Measurements of observables \( \hat{O} \) yield the outputs
@@ -280,7 +280,7 @@ This approach has demonstrated improved performance over traditional methods in 
 \section{Methodology}
 \subsection{Proposed System Architecture}
 Our proposed pipeline is a Quantum-Guided Autoencoder with a 
-Reservoir Surrogate (QGARS). It is a hybrid architecture that 
+Reservoir Surrogate (QGARS). It is an hybrid architecture that 
 synergizes classical autoencoding techniques with quantum reservoir processing to achieve efficient learning of features. These are expected to better match with the reservoir computing layer, whose embeddings are used to perform a classification task.
 
 The system is designed to overcome the inherent non-differentiability of quantum operations, which traditionally impede gradient-based training methods.
@@ -304,7 +304,7 @@ The overall architecture is illustrated in Fig. 2 and the \textbf{architectural 
             Evolves the system under a Hamiltonian \(H(\bm{\Delta)}\), resulting in a quantum 
             state \(|\psi(\bm{\Delta})\rangle\).
             \item \textbf{Measurement:}
-            Performs measurements on the quantum state to obtain embeddings \(\bm{q} \in \mathbb{R}^k\), which serve as training targets for the Surrogate Model or as 
+            Performs measurements on the quantum state to obtain embeddings \(\bm{q} \in \mathbb{R}^k\), which serve as training targets for the surrogate model or as 
             inputs for the classification task later on.
         \end{itemize}
 
@@ -316,7 +316,7 @@ The overall architecture is illustrated in Fig. 2 and the \textbf{architectural 
 
     \item \textbf{Linear Classifier:}
     A classical neural network that maps the quantum embeddings \(\bm{q}\) to 
-    predicted class labels \(\hat{y}\).
+    predicted class labels \(\bm{\hat{y}}\).
 
 \end{itemize}
 The following sections give a more detailed explanation of each component.
@@ -469,7 +469,7 @@ such as $\langle Z_i \rangle$, $\langle Z_i \, Z_j\rangle$, and $\langle Z_i \, 
 
 This means that the dimensionality of the QRC embeddings generated in our pipeline is a direct consequence of the number of qubits ($N$) employed in the neutral-atom chain, the specific quantum mechanical observables measured, and the number of discrete time steps ($T$) over which these measurements are collected every \(\Delta t\).
 
-If we measure all of the $3$ proposed observables, the total count of the values measured at a single time step $O_N$ is the sum of the counts for each type of observable:
+If we measure all of the three proposed observables, the total count of the values measured at a single time step $O_N$ is the sum of the counts for each type of observable:
 \begin{equation}
     \begin{aligned}
     O_N &= N + \binom{N}{2} + \binom{N}{3}.
@@ -528,7 +528,7 @@ We introduced a quantum-guided autoencoder that incorporates feedback from the q
     \item A standard autoencoder architecture.
     \item A linear classifier that maps quantum embeddings to class labels.
     \item A classification loss computed on quantum embeddings.
-    \item A weighting parameter $\lambda$ to control the trade-off between reconstruction and classification objectives~\ref{eq:composed_loss_function}.
+    \item A weighting parameter $\lambda$ to control the trade-off between reconstruction and classification objectives~\eqref{eq:composed_loss_function}.
     \item A differentiable surrogate model that approximates the quantum reservoir's behavior, enabling end-to-end backpropagation through the entire pipeline. The frequency of quantum updates is controlled by a hyperparameter, allowing for flexible integration of quantum dynamics into the training process.
 \end{itemize}
 
@@ -553,12 +553,12 @@ Our quantum reservoir computing implementation uses a Rydberg Atom simulator wit
     The number of time steps where the reservoir will be probed.
 
     \item \textbf{Evolution Time:}
-    The time we let the quantum reservoir evolve under the Hamiltonian~\ref{eq:rydberg_hamiltonian}.
+    The time we let the quantum reservoir evolve under the Hamiltonian~\eqref{eq:rydberg_hamiltonian}.
 \end{itemize}
 
 Unless explicitly stated, the results that we show in the next section~\ref{results_and_discussion} were obtained with the following hyperparameter values: $12$ qubits, $10 \mu m$ between atoms, \(\langle Z_i\rangle\), \(\langle Z_iZ_j\rangle,\) and \(\langle Z_iZ_jZ_k\rangle\) observables, Rabi Frequency $\Omega = \ \pi$, $T = 16$ time steps and evolved over $4.0 \mu s$ (which means that the system was probed every $\frac{4.0}{T} = \Delta t = 0.25 \mu s$.
 
-We can use Eq.~\ref{eq:total_embedding_dimension} to determine the dimension of our quantum embeddings \(\lvert \bm q \rvert \) when using the mentioned parameters:
+We can use~\eqref{eq:total_embedding_dimension} to determine the dimension of our quantum embeddings \(\lvert \bm q \rvert \) when using the mentioned parameters:
 
 \begin{equation}
     \lvert \bm q \rvert = \frac{16 \times 12^3 + 5 \times 16 \times 12}{6} = 4768
@@ -578,7 +578,7 @@ The classifier is a simple feedforward neural network without hidden layers with
 In total, this linear classifier has \(9538\) parameters when the reservoir contains $12$ qubits.
 
 \subsection{Comparison Methods}
-We benchmarked our model against the following classical methods:
+We benchmarked the prediction accuracy of our model against the following classical methods:
 \begin{itemize}
     \item \textbf{PCA/Autoencoder + Linear Classifier:} 
     A linear classifier trained on the PCA-reduced features or the latent representations from the autoencoder. Essentially, this model is the same as the one used to classify the quantum embeddings described in section~\ref{linear_classifier_for_the_qrc_embeddings}, but it only receives the classically extracted features as input. 
@@ -591,7 +591,9 @@ We also benchmarked our QGARS encoding strategy
 against the performance of the Linear Mapping of
 QRC embeddings extracted from the latent representation 
 of data using other feature reduction methods, such as
-PCA and the Classical Autoencoder.
+PCA and the classical autoencoder.
+
+The accuracy results were measured with 2000 training images and 400 testing images over 5 different seeds. 
 
 % \subsection{Performance Metrics}
 % We evaluated the performance of our model using the following metrics:
@@ -615,7 +617,7 @@ To optimize the performance of our quantum-guided autoencoder,
 we conducted a systematic parameter sweep over the following hyperparameters:
 \begin{itemize}
     \item \textbf{Guided Lambda Parameter (\( \lambda \))}: 
-    To analyse the effect that the trade-off between reconstruction and classification objectives in the loss function~\ref{eq:composed_loss_function} affects
+    To analyse the effect that the trade-off between reconstruction and classification objectives in the loss function~\eqref{eq:composed_loss_function} affects
     the QRC
     
     \item \textbf{Quantum Update Frequency:} 
@@ -637,19 +639,19 @@ The results from these experiments are discussed in the next section~\ref{result
 \section{Results and Discussion} \label{results_and_discussion}
 
 \subsection{Dimensionality Reduction Method Comparison}
-We first compare classification accuracy of the Linear Classifier on the QRC embeddings across the different dimensionality reduction methods PCA, vanilla autoencoder, and our QGARS pipeline on each dataset. Table~\ref{tab:qrc_reduction_accuracy} summarizes mean accuracy and standard deviation over five runs, using 12 features/qubits. These results show that the QGARS pipeline is able to outperform traditional feature reduction methods commonly used as preprocessing steps on QRC pipelines.
+We first compare classification accuracy of the linear classifier on the QRC embeddings across the different dimensionality reduction methods PCA, vanilla autoencoder, and our QGARS pipeline on each dataset. Table~\ref{tab:qrc_reduction_accuracy} summarizes mean accuracy and standard deviation over five runs, using 12 features/qubits. These results show that the QGARS pipeline is able to outperform traditional feature reduction methods commonly used as preprocessing steps on QRC pipelines.
 
 \begin{table}[!b]
-  \caption{Classification accuracy (\%) on QRC with different dimensionality reduction methods (2000 training images and 400 testing images)}
-  \label{tab:qrc_reduction_accuracy}
+  \caption{Mean ± standard deviation of the classification accuracy (\%) QRC with different dimensionality reduction methods}
   \centering
+  \label{tab:qrc_reduction_accuracy}
   \begin{tabular}{lccc}
     \hline
     Method         & Synthetic  & CVC-ClinicDB & MNIST(0/1) \\
     \hline
-    PCA + QRC      &  00 ± 0.0  &  84.95 ± 2.44    &  97.70 ± 0.89 \\
-    AE + QRC       &  00 ± 0.0  &  73.75 ± 1.91    &  87.05 ± 1.85 \\
-    \textbf{QGARS + QRC}    &  \textbf{00 ± 0.0} &  \textbf{88.90 ± 1.47} &  \textbf{00 ± 0.0} \\
+    PCA + QRC      &  79.20 ± 2.53  &  84.95 ± 2.31   &  97.70 ± 0.97 \\
+    AE + QRC       &  77.50 ± 2.70  & 73.75 ± 1.90   &  87.05 ± 2.09 \\
+    \textbf{QGARS + QRC}    &  \textbf{89.45 ± 2.06} &  \textbf{88.90 ± 1.65} &  \textbf{97.00 ± 2.37} \\
     \hline
   \end{tabular}
 \end{table}
@@ -657,7 +659,7 @@ We first compare classification accuracy of the Linear Classifier on the QRC emb
 \begin{figure}[!t]
     \centering
     \includegraphics[width=\linewidth]{images/results/generated_polyp_dataset/n_qubit_qrc_performance_by_reduction_method.pdf} 
-    \caption{Accuracy of the different dimensionality reduction methods for QRC as a function of the number of qubits with the Synthetic Polyp Dataset. (green) QGARS, (blue) PCA and (red) Autoencoder. The dashed lines represent the training accuracy, while the whole lines are the test accuracies.}
+    \caption{Accuracy of the different dimensionality reduction methods for QRC as a function of the number of qubits with the synthetic polyp dataset. (green) QGARS, (blue) PCA and (red) Autoencoder. The dashed lines represent the training accuracy, while the whole lines are the test accuracies.}
     \label{fig:n_qubits_accuracy}
 \end{figure}
 
@@ -666,7 +668,7 @@ We first compare classification accuracy of the Linear Classifier on the QRC emb
   \includegraphics[width=0.32\textwidth]{images/results/generated_polyp_dataset/quantum_embeddings_2d_tsne_PCA.pdf}
   \includegraphics[width=0.32\textwidth]{images/results/generated_polyp_dataset/quantum_embeddings_2d_tsne_autoencoder.pdf}
   \includegraphics[width=0.32\textwidth]{images/results/generated_polyp_dataset/quantum_embeddings_2d_tsne_guided_autoencoder.pdf}
-  \caption{2-dimensional t-SNE projections of the 4768-dimensional QRC embeddings for (left) PCA + QRC, (center) AE + QRC, (right) QGARS + QRC}
+  \caption{two-dimensional t-SNE projections of the 4768-dimensional QRC embeddings for (left) PCA + QRC, (center) AE + QRC, (right) QGARS + QRC}
   \label{fig:embeddings_tsne}
 \end{figure*}
 
@@ -674,14 +676,14 @@ We also evaluate the effect of the number of qubits $N$ on the performance with 
 
 
 
-In order to have a visual demonstration of how well the quantum reservoir embeddings separate classes, we project the high-dimensional embeddings down to $3$ dimensions via t-distributed Stochastic Neighbour Embedding (t-SNE). Fig.~\ref{fig:embeddings_tsne} shows side-by-side plots for PCA → QRC, AE → QRC, and QGARS → QRC pipelines. The QGARS embeddings exhibit the tightest and most distinct clusters, indicating superior discriminative structure.
+In order to have a visual demonstration of how well the quantum reservoir embeddings separate classes, we project the high-dimensional embeddings down to three dimensions via t-distributed Stochastic Neighbour Embedding (t-SNE). Fig.~\ref{fig:embeddings_tsne} shows side-by-side plots for PCA → QRC, AE → QRC, and QGARS → QRC pipelines. The QGARS embeddings exhibit the tightest and most distinct clusters, indicating superior discriminative structure.
 
 
 
 \subsection{Ablation Studies}
 
 %\subsubsection{Impact of Guided Lambda Parameter}
-We verified that varying the guidance weighting $\lambda$ in Eq.~\ref{eq:composed_loss_function} has significant impact on the performance of our accuracy. To assess its influence, Fig.~\ref{fig:lambda_sweep} plots test accuracy vs.\ $\lambda$.
+We verified that varying the guidance weighting $\lambda$ in~\eqref{eq:composed_loss_function} has significant impact on the performance of our accuracy. To assess its influence, Fig.~\ref{fig:lambda_sweep} plots test accuracy vs.\ $\lambda$.
 
 \begin{figure}[tb]
   \centering
@@ -728,16 +730,16 @@ for the different methods.
     \hline
     Method            & Synthetic & CVC-ClinicDB & MNIST (0/1) \\
     \hline
-    PCA + Linear      &  82.0 ± 0.79    &  71.05 ± 1.35   &  99.90 ± 0.12    \\
-    AE + Linear       &  80.3 ± 3.01    &  68.25 ± 2.31   &  98.80 ± 0.29    \\
-    PCA + NN          &  85.85 ± 1.24   &  91.65 ± 1.38   &  99.80 ± 0.19    \\
-    AE + NN           &  83.75 ± 2.21   &  90.50 ± 1.72   &  99.90 ± 0.12    \\
+    PCA + Linear      &  82.00 ± 0.88    &  71.05 ± 1.51   &  99.90 ± 0.14   \\
+    AE + Linear       &  80.30 ± 3.37    &  68.25 ± 2.58   &  98.80 ± 0.33   \\
+    PCA + NN          &  85.85 ± 1.39   &  91.65 ± 1.55   &  99.80 ± 0.21    \\
+    AE + NN           &  83.75 ± 2.47    &  90.50 ± 1.93   &  99.90 ± 0.14    \\
     \hline
   \end{tabular}
 \end{table}
 
 \noindent
-In contrast, the QGARS pipeline achieves a maximum of $\mathbf{0.0\%}$ and $\mathbf{90.50\%}$, $\mathbf{0.0\%}$ on the same datasets (see Table~\ref{tab:qrc_reduction_accuracy}).
+In contrast, the QGARS pipeline achieves a maximum of $\mathbf{92.0\%}$ and $\mathbf{90.5\%}$, $\mathbf{99.0\%}$ on the same datasets (see Table~\ref{tab:qrc_reduction_accuracy}).
 
 \subsubsection{Training Loss Dynamics}
 
@@ -786,7 +788,7 @@ Several avenues can further enhance QGARS:
     As the surrogate model tries to replicate a highly complex system such as the quantum reservoir, it naturally has an extremely large amount of parameters. To keep the surrogate parameter count in check, we aim to explore alternative surrogate model architectures such as Physics-Informed Neural Networks (PINNs)~\cite{raissiPhysicsInformedDeep2017}, which incorporate known physical laws into the learning process, potentially improving the fidelity of the surrogate model.
 
     \item \textbf{Experiment on Real Quantum Hardware:}
-    Although the experiments we conducted on simulators showed promising results, to validate the usefulness of our pipeline in the NISQ era, we still need to run experiences on real QPUs with more qubits. 
+    Although the experiments we conducted on simulators showed promising results, to validate the usefulness of our pipeline in the NISQ era, we still need to run experiences on real quantum processing units (QPUs) with more qubits. 
 
 
 \end{itemize}
@@ -796,7 +798,7 @@ Several avenues can further enhance QGARS:
 %============================================
 \section{Conclusion}
 
-We have presented Quantum-Guided Autoencoder with Reservoir Surrogate (QGARS), a hybrid quantum-classical architecture that integrates a classical autoencoder with a neutral-atom quantum reservoir and a differentiable surrogate model to enable end‐to‐end training. By jointly optimizing reconstruction and classification losses, QGARS learns compact and discriminative features tailored for quantum reservoir computing. Our experiments on synthetic polyp, CVC-ClinicDB, and binary MNIST datasets demonstrate that QGARS outperforms classical PCA‐ and autoencoder‐based baselines that are commonly used for Quantum Reservoir Computing Pipelines. Ablation studies highlight the importance of guidance weight \(\lambda\), surrogate update frequency, and reservoir parameters. Although challenges remain—particularly regarding high‐dimensional embeddings, surrogate fidelity, and classical overhead, our proposed extensions and hardware considerations chart a clear path toward robust, scalable quantum‐enhanced medical imaging pipelines in the NISQ era.
+We have presented Quantum-Guided Autoencoder with Reservoir Surrogate (QGARS), a hybrid quantum-classical architecture that integrates a classical autoencoder with a neutral-atom quantum reservoir and a differentiable surrogate model to enable end‐to‐end training. By jointly optimizing reconstruction and classification losses, QGARS learns compact and discriminative features tailored for quantum reservoir computing. Our experiments on synthetic polyp, CVC-ClinicDB, and binary MNIST datasets demonstrate that QGARS outperforms classical PCA‐ and autoencoder‐based baselines that are commonly used for quantum reservoir computing pipelines. Ablation studies highlight the importance of guidance weight \(\lambda\), surrogate update frequency, and reservoir parameters. Although challenges remain—particularly regarding high‐dimensional embeddings, surrogate fidelity, and classical overhead, our proposed extensions and hardware considerations chart a clear path toward robust, scalable quantum‐enhanced medical imaging pipelines in the NISQ era.
 
 
 %============================================
