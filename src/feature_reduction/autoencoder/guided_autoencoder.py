@@ -344,6 +344,9 @@ def update_quantum_embeddings(model: GuidedAutoencoder,
         model.initialize_surrogate(surrogate)
         
     model.autoencoder.train()
+    
+    if surrogate_loss is None:
+        surrogate_loss = 99999 # Fallback if no loss was computed
     return surrogate, surrogate_loss
 
 def train_guided_epoch(model: GuidedAutoencoder,
@@ -464,7 +467,7 @@ def train_guided_autoencoder(
     verbose: bool = True,
     use_batch_norm: bool = True,
     dropout: float = 0.1,
-    autoencoder_regularization: float = 1e-5,
+    autoencoder_regularization: Optional[float] = 1e-5,
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
     class_scale: float = 1.0,

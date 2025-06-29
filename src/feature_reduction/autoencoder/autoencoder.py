@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from tqdm import tqdm
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any, Optional, Mapping
 
 from src.feature_reduction.autoencoder.autoencoder_architectures import create_default_architecture, create_convolutional_architecture
 from src.utils.cli_printing import print_sequential_model
@@ -37,16 +37,16 @@ class Autoencoder(nn.Module):
              encoding_dim: int, 
              use_batch_norm: bool = True,
              dropout: float = 0.1,
-             type: str = 'default'):
+             ae_type: str = 'default'):
         super(Autoencoder, self).__init__()
 
         self.input_dim = input_dim
         self.encoding_dim = encoding_dim
         self.use_batch_norm = use_batch_norm
         self.dropout = dropout
-        self.type = type
+        self.ae_type = ae_type
         
-        if self.type == 'default':
+        if self.ae_type == 'default':
             self.encoder, self.decoder = create_default_architecture(
                                             input_dim=input_dim,            
                                             encoding_dim=encoding_dim,
@@ -55,7 +55,7 @@ class Autoencoder(nn.Module):
                                             
                                         )
         else:
-            raise ValueError(f"Unknown architecture type: {self.type}. Supported types: {SUPPORTED_AUTOENCODER_TYPES}")
+            raise ValueError(f"Unknown architecture type: {self.ae_type}. Supported types: {SUPPORTED_AUTOENCODER_TYPES}")
 
     
     def __str__(self, use_colors: bool = True) -> str:
@@ -173,7 +173,9 @@ def prepare_autoencoder_data(data: np.ndarray, batch_size: int, verbose: bool = 
 #     return model.to(device)
 
 
-def setup_training(model: nn.Module, learning_rate: float, autoencoder_regularization: float = 1e-5) -> Tuple[nn.Module, optim.Optimizer, optim.lr_scheduler.ReduceLROnPlateau]:
+def setup_training(model: nn.Module, 
+                   learning_rate: float, 
+                   autoencoder_regularization: float = 1e-5) -> Tuple[nn.Module, optim.Optimizer, optim.lr_scheduler.ReduceLROnPlateau]:
     """
     Set up training components: loss function, optimizer, and scheduler.
     
@@ -183,7 +185,7 @@ def setup_training(model: nn.Module, learning_rate: float, autoencoder_regulariz
         The autoencoder model
     learning_rate : float
         Initial learning rate
-    autoencoder_regularization : float, optional
+    autoencoder_regularization : float
         Weight decay for regularization, by default 1e-5
         
     Returns
@@ -368,8 +370,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
     best_loss = float('inf')
     patience_counter = 0
     patience = 10  # Early stopping after 10 epochs without improvement
-    best_model_state = None
-    
+    best_model_state: Mapping[str, Any] = {}
+
     # Create progress bar for training
     progress_bar = tqdm(range(epochs), desc="Training autoencoder") if verbose else range(epochs)
     

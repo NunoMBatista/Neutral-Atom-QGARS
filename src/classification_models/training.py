@@ -9,7 +9,6 @@ from typing import Tuple, List, Dict, Any, Optional, Union
 from sklearn.metrics import confusion_matrix, f1_score
 from src.globals import ResultsDict
 
-from archive.benchmarking.parameter_testing import RESULTS_DIR
 from src.classification_models.models import LinearClassifier, NeuralNetwork
 
 

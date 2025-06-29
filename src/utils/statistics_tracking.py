@@ -56,7 +56,7 @@ def setup_stats_directory(base_dir: Path) -> Path:
     return stats_dir
 
 def save_classifier_loss_plot(results_dict: ResultsDict, 
-                             output_dir: str) -> None:
+                             output_dir: Path) -> None:
     """
     Plot and save training losses for each classifier.
     
@@ -64,7 +64,7 @@ def save_classifier_loss_plot(results_dict: ResultsDict,
     ----------
     results_dict : Dict[str, Tuple[List[float], List[float], List[float], Any]]
         Dictionary mapping model names to (losses, accs_train, accs_test, model) tuples
-    output_dir : str
+    output_dir : Path
         Directory to save the plot
     """
     plt.figure(figsize=(10, 6))
@@ -87,7 +87,7 @@ def save_classifier_loss_plot(results_dict: ResultsDict,
     logging.info(f"Saved classifier loss plot to {plot_path}")
 
 def save_classifier_accuracy_plot(results_dict: ResultsDict, 
-                                output_dir: str) -> None:
+                                output_dir: Path) -> None:
     """
     Plot and save training and test accuracies for each classifier.
     
@@ -95,7 +95,7 @@ def save_classifier_accuracy_plot(results_dict: ResultsDict,
     ----------
     results_dict : Dict[str, Tuple[List[float], List[float], List[float], Any]]
         Dictionary mapping model names to (losses, accs_train, accs_test, model) tuples
-    output_dir : str
+    output_dir : Path
         Directory to save the plot
     """
     plt.figure(figsize=(10, 6))
@@ -118,7 +118,7 @@ def save_classifier_accuracy_plot(results_dict: ResultsDict,
     
     logging.info(f"Saved classifier accuracy plot to {plot_path}")
 
-def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: str) -> None:
+def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: Path) -> None:
     """
     Plot and save guided autoencoder losses.
     
@@ -126,7 +126,7 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
     ----------
     losses : Dict[str, List[float]]
         Dictionary with keys 'total_loss', 'recon_loss', 'class_loss', 'surrogate_loss' mapping to loss histories
-    output_dir : str
+    output_dir : Path
         Directory to save the plot
     """
     # Plot main losses (reconstruction, classification, total)
@@ -187,7 +187,7 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: s
         logging.info(f"Saved surrogate model loss data to {surrogate_json_path}")
 
 def save_loss_logs(results_dict: ResultsDict, 
-                  output_dir: str) -> None:
+                  output_dir: Path) -> None:
     """
     Save loss and accuracy logs for each classifier.
     
@@ -195,7 +195,7 @@ def save_loss_logs(results_dict: ResultsDict,
     ----------
     results_dict : Dict[str, Tuple[List[float], List[float], List[float], Any]]
         Dictionary mapping model names to (losses, accs_train, accs_test, model) tuples
-    output_dir : str
+    output_dir : Path
         Directory to save the logs
     """
     log_data = {}
@@ -214,7 +214,7 @@ def save_loss_logs(results_dict: ResultsDict,
     
     logging.info(f"Saved classifier metrics to {log_path}")
 
-def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: str) -> None:
+def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: Path) -> None:
     """
     Save guided autoencoder loss logs.
     
@@ -222,7 +222,7 @@ def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: str
     ----------
     losses : Dict[str, List[float]]
         Dictionary with loss histories
-    output_dir : str
+    output_dir : Path
         Directory to save the logs
     """
     # Save as JSON
@@ -273,7 +273,7 @@ def extract_metrics(results_dict: ResultsDict) -> Dict[str, Any]:
     
     return metrics
 
-def save_metrics_json(metrics: Dict[str, Any], output_dir: str) -> None:
+def save_metrics_json(metrics: Dict[str, Any], output_dir: Path) -> None:
     """
     Save metrics to a JSON file.
     
@@ -281,7 +281,7 @@ def save_metrics_json(metrics: Dict[str, Any], output_dir: str) -> None:
     ----------
     metrics : Dict[str, Any]
         Dictionary of metrics to save
-    output_dir : str
+    output_dir : Path
         Directory to save the metrics
     """
     metrics_path = os.path.join(output_dir, "metrics.json")
@@ -335,7 +335,7 @@ def save_config_file(args: Any, output_dir: Path) -> None:
 def save_all_statistics(results_dict: ResultsDict, 
                        output_dir: Path,
                        guided_losses: Optional[Dict[str, List[float]]] = None,
-                       args: Optional[Any] = None) -> str:
+                       args: Optional[Any] = None) -> Path:
     """
     Save all statistics including plots and logs.
     

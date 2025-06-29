@@ -26,7 +26,11 @@ from src.feature_reduction.feature_reduction import (
 )
 from src.quantum_layer.qrc_layer import DetuningLayer
 from src.classification_models.training import train
+from src.classification_models.models import LinearClassifier, NeuralNetwork, QRCModel
 from src.utils.visualization import plot_training_results, print_results
+
+from src.feature_reduction.autoencoder import Autoencoder
+from sklearn.decomposition import PCA
 
 from src.utils.cli_utils import get_args
 import argparse
@@ -48,6 +52,8 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
         Dictionary of results for each model and guided autoencoder losses if available
     """
     
+    # We load the default config json and apply the command line arguments if they are provided
+    # The default config is hardcoded in the src/utils/config_manager.py file
     # Parse arguments if not provided
     if args is None:
         args = get_args()
@@ -58,8 +64,6 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     
-    # torch.manual_seed(int(time.time()))
-
     print("""
           
           =========================================
@@ -69,7 +73,6 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
           """)
     
 
-    #DATA_DIR = args.data_dir if args.data_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "datasets")
     # first, declare the DATA_DIR variable as a string
     data_dir: Path
     if args.data_dir is None:
@@ -142,7 +145,6 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
     import gc
     gc.collect()
     
-    quantum_layer: Optional[DetuningLayer] = None
     
     if method_name == "pca":
         # Apply PCA reduction
@@ -276,6 +278,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
         
         """)
 
+    quantum_layer: Optional[DetuningLayer] = None
     
     # Scale features to detuning range with more diagnostic info
     print(f"Scaling features with spectral value: {spectral}")
@@ -333,8 +336,9 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
         
         """)
     
-    # Train different models
+    
     results = {}
+   
     
     (loss_lin, accs_train_lin, accs_test_lin, 
     model_lin,
@@ -446,11 +450,15 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
     # Save model specification strings 
     with open(os.path.join(results_dir, "model_specifications.txt"), "w") as f:
         f.write(quantum_layer.__str__(use_colors=False))
-        if reduction_name != "PCA":
-            f.write(reduction_model.__str__(use_colors=False))
-        f.write(model_lin.__str__(use_colors=False))
-        f.write(model_qrc.__str__(use_colors=False))
-        f.write(model_nn.__str__(use_colors=False))
+        
+        try:
+            if reduction_name != "PCA":
+                f.write(reduction_model.__str__(use_colors=False)) # type: ignore
+            f.write(model_lin.__str__(use_colors=False)) # type: ignore
+            f.write(model_qrc.__str__(use_colors=False)) # type: ignore
+            f.write(model_nn.__str__(use_colors=False)) # type: ignore
+        except Exception as e: 
+            print("brauns")
         
     
     return results, guided_autoencoder_losses
