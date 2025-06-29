@@ -77,7 +77,7 @@ def apply_autoencoder(data: Dict[str, Any],
                     verbose: bool = True,
                     use_batch_norm: bool = True,
                     dropout: float = 0.1,
-                    autoencoder_regularization: Optional[float] = 1e-5,
+                    autoencoder_regularization: float = 1e-5,
                     selected_indices: Optional[np.ndarray] = None,
                     selected_features: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Autoencoder, float]:
     """
@@ -107,7 +107,7 @@ def apply_autoencoder(data: Dict[str, Any],
         Dropout probability, by default 0.1
     weight_decay : float, optional
         Weight decay for regularization, by default 1e-5
-    autoencoder_regularization : Optional[float], optional
+    autoencoder_regularization : float
         Regularization parameter for autoencoder, by default None
     selected_indices : Optional[np.ndarray], optional
         Indices of selected samples, by default None

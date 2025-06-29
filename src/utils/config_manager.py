@@ -4,11 +4,13 @@ import argparse
 import numpy as np
 from typing import Dict, Any, Optional
 
-DEFAULT_RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "results")
+from src.globals import DEFAULT_RESULTS_DIR
+
+#DEFAULT_RESULTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "results")
 
 class ConfigManager:
     """
-    Manages configuration settings for the QRC Polyp Python project.
+    Manages configuration settings
     Allows loading from JSON configs and converting to argparse Namespace.
     """
     
@@ -43,38 +45,7 @@ class ConfigManager:
             
         return config
     
-    @staticmethod
-    def save_config(config: Dict[str, Any], config_path: str) -> None:
-        """
-        Save configuration to a JSON file.
-        
-        Parameters
-        ----------
-        config : Dict[str, Any]
-            Configuration dictionary
-        config_path : str
-            Path to save config file
-        """
-        with open(config_path, 'w') as f:
-            json.dump(config, f, indent=4)
-            
-    @staticmethod
-    def args_to_config(args: argparse.Namespace) -> Dict[str, Any]:
-        """
-        Convert argparse Namespace to configuration dictionary.
-        
-        Parameters
-        ----------
-        args : argparse.Namespace
-            Command line arguments
-            
-        Returns
-        -------
-        Dict[str, Any]
-            Configuration dictionary
-        """
-        return vars(args)
-    
+
     @staticmethod
     def config_to_args(config: Dict[str, Any]) -> argparse.Namespace:
         """
@@ -142,33 +113,3 @@ class ConfigManager:
             "autoencoder_type": "default",
             "results_dir": DEFAULT_RESULTS_DIR,
         }
-
-
-def create_default_config_if_missing():
-    """
-    Create a default configuration file if it doesn't exist.
-    """
-    if not os.path.exists(ConfigManager.DEFAULT_CONFIG_PATH):
-        config = ConfigManager.get_default_config()
-        ConfigManager.save_config(config, ConfigManager.DEFAULT_CONFIG_PATH)
-        print(f"Created default configuration file: {ConfigManager.DEFAULT_CONFIG_PATH}")
-
-
-def get_config_args() -> argparse.Namespace:
-    """
-    Get configuration from config file.
-    
-    Returns
-    -------
-    argparse.Namespace
-        Configuration as argparse Namespace
-    """
-    # Try to load from config file
-    try:
-        config = ConfigManager.load_config()
-        return ConfigManager.config_to_args(config)
-    except FileNotFoundError:
-        # If config file doesn't exist, create it with defaults
-        create_default_config_if_missing()
-        config = ConfigManager.load_config()
-        return ConfigManager.config_to_args(config)

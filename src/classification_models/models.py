@@ -2,9 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from typing import Any, List, Optional, Union, Tuple
-import tqdm 
-
+from tqdm import tqdm 
 from src.utils.cli_printing import print_sequential_model
+from src.globals import TrainingResults
 
 class LinearClassifier(nn.Module):
     """
@@ -141,16 +141,30 @@ class QRCModel:
     classifier : nn.Module, optional
         Classical classifier, by default None
     """
+    # def __init__(self, quantum_layer: Any, classifier: Optional[nn.Module] = None):
+    #     self.quantum_layer = quantum_layer
+    #     self.classifier = classifier if classifier is not None else LinearClassifier
+      
     def __init__(self, quantum_layer: Any, classifier: Optional[nn.Module] = None):
         self.quantum_layer = quantum_layer
-        self.classifier = classifier if classifier is not None else LinearClassifier
-      
+        # Create an instance if classifier is None (with default parameters)
+        self.classifier = classifier  # Just store the provided classifier
+        
     def __str__(self, use_colors: bool = True) -> str:
-        return print_sequential_model(model=self.classifier, model_name="QRC Model", use_colors=use_colors)
+        if isinstance(self.classifier, nn.Module):
+            # If it's already a module instance
+            if isinstance(self.classifier, nn.Sequential):
+                return print_sequential_model(model=self.classifier, model_name="QRC Model", use_colors=use_colors)
+            else:
+                # Wrap non-Sequential modules in a Sequential container
+                return print_sequential_model(model=nn.Sequential(self.classifier), model_name="QRC Model", use_colors=use_colors)
+        else:
+            # If it's a class (not instantiated), just return a simple string
+            return f"QRC Model with the provided classifier (not instantiated)"
         
     def fit(self, x_train: np.ndarray, y_train: np.ndarray, 
             x_test: np.ndarray, y_test: np.ndarray, 
-            **kwargs) -> Tuple[List[float], List[float], List[float], nn.Module]:
+            **kwargs) -> TrainingResults:
         """
         Train the model end-to-end.
         
@@ -172,8 +186,8 @@ class QRCModel:
         Tuple[List[float], List[float], List[float], nn.Module]
             Training metrics and trained model
         """
-        from training import train
-        
+        from src.classification_models.training import train
+                
         # Get quantum embeddings
         tqdm.write("Computing quantum embeddings for training data...")
         train_embeddings = self.quantum_layer.apply_layer(x_train)

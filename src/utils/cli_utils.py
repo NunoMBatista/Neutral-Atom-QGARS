@@ -112,14 +112,6 @@ def get_args() -> argparse.Namespace:
     argparse.Namespace
         Parsed arguments
     """
-    # # Check if any arguments were provided (beyond script name)
-    # if len(sys.argv) == 1:
-    #     # No command line args, use config file
-    #     from src.utils.config_manager import get_config_args
-    #     return get_config_args()
-    # else:
-    #     # Command line args provided, use them
-    #     return parse_args()
 
     # Get the default config and replace the default values with the ones provided in the command line
     config = ConfigManager.get_default_config()

@@ -2,16 +2,11 @@ import torch.nn as nn
 from typing import Optional, Any
 import re
 
-# import all ANSI escape codes list
-
 
 USE_COLORS = True
 
-try:
-    import colorama
-    from colorama import Fore, Style
-except ImportError:
-    USE_COLORS = False
+import colorama
+from colorama import Fore, Style
 
 
 def print_sequential_model(model: nn.Sequential, model_name: Optional[str] = None, max_width: int = 80, use_colors: bool = USE_COLORS) -> str:

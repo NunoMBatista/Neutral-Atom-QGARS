@@ -47,7 +47,7 @@ class DetuningLayer:
         n_atoms_int = int(n_atoms)  # Convert numpy.int64 to Python int
         lattice_spacing_float = float(lattice_spacing)  # Convert any numpy float types
         
-        atom_geometry = Chain(n_atoms_int, lattice_spacing=lattice_spacing_float)
+        atom_geometry = Chain(n_atoms_int, lattice_spacing=lattice_spacing_float) # type: ignore
 
         # Define QRC parameters
         self.qrc_params = {
