@@ -13,16 +13,28 @@ DEFAULT_DATA_DIR = ROOT_DIR / 'data' / 'datasets'
 DEFAULT_RESULTS_DIR = ROOT_DIR / 'results' / 'default_results'
     
 # Define results dictionary typing
-ResultsDict = Dict[str, 
-                   Tuple[
-                        List[float],    # Training losses per epoch
-                        List[float],    # Training accuracies per epoch
-                        List[float],    # Test accuracies per epoch
-                        nn.Module,      # Trained model
-                        np.ndarray,     # Confusion matrix for training set
-                        np.ndarray,     # Confusion matrix for test set
-                        float,          # F1 score for training set
-                        float           # F1 score for test set
-                        ]
-                   ]
+# ResultsDict = Dict[str, 
+#                    Tuple[
+#                         List[float],    # Training losses per epoch
+#                         List[float],    # Training accuracies per epoch
+#                         List[float],    # Test accuracies per epoch
+#                         nn.Module,      # Trained model
+#                         np.ndarray,     # Confusion matrix for training set
+#                         np.ndarray,     # Confusion matrix for test set
+#                         float,          # F1 score for training set
+#                         float           # F1 score for test set
+#                         ]
+#                    ]
 
+TrainingResults = Tuple[
+     List[float],
+     List[float],
+     List[float],
+     nn.Module,
+     np.ndarray,
+     np.ndarray,
+     float,
+     float
+]
+
+ResultsDict = Dict[str, TrainingResults]

@@ -7,8 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 from typing import Tuple, List, Dict, Any, Optional, Union
 from sklearn.metrics import confusion_matrix, f1_score
-from src.globals import ResultsDict
-
+from src.globals import ResultsDict, TrainingResults
 from src.classification_models.models import LinearClassifier, NeuralNetwork
 
 
@@ -17,8 +16,7 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
           regularization: float = 0.0, nepochs: int = 100, 
           batchsize: int = 100, learning_rate: float = 0.01, 
           verbose: bool = True, nonlinear: bool = False
-          ) -> Tuple[List[float], List[float], List[float], nn.Module, 
-           np.ndarray, np.ndarray, float, float]:
+          ) -> TrainingResults:
     """
     Train a model on the given data.
     
@@ -177,8 +175,6 @@ def train(x_train: np.ndarray, y_train: np.ndarray,
     else:
         average_type = 'weighted'
 
-
-    
 
     f1_train = f1_score(
         train_targets.numpy(),
