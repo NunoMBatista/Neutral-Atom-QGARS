@@ -46,6 +46,6 @@
 
     "seed": 42,
     "no_plot": true,
-    "autoencoder_type": "default"
+    "ae_type": "default"
     
 }

@@ -35,7 +35,7 @@ class GuidedAutoencoder:
         Whether to use batch normalization, by default True
     dropout : float, optional
         Dropout probability, by default 0.1
-    autoencoder_type : str, optional
+    ae_type : str, optional
         Type of autoencoder architecture to use, by default 'default'
         Options: 'default', 'convolutional'
     """
@@ -47,18 +47,19 @@ class GuidedAutoencoder:
                  guided_lambda: float = 0.3,
                  use_batch_norm: bool = True,
                  dropout: float = 0.1,
-                 autoencoder_type: str = 'default'):
+                 ae_type: str = 'default'):
         self.autoencoder = Autoencoder(
                                     input_dim=input_dim, 
                                     encoding_dim=encoding_dim, 
                                     use_batch_norm=use_batch_norm, 
                                     dropout=dropout,
-                                    ae_type=autoencoder_type
+                                    ae_type=ae_type
                                 )
         self.guided_lambda = guided_lambda
         self.encoding_dim = encoding_dim
         self.output_dim = output_dim
         self.quantum_dim = quantum_dim
+
         
         # Classifier will be initialized when quantum_dim is known
         self.classifier: LinearClassifier
@@ -471,7 +472,7 @@ def train_guided_autoencoder(
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
     class_scale: float = 1.0,
-    autoencoder_type: str = 'default'
+    ae_type: str = 'default'
 ) -> Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Train a guided autoencoder jointly with quantum embeddings.
@@ -515,7 +516,7 @@ def train_guided_autoencoder(
         Scaling factor for reconstruction loss, by default 100.0
     class_scale : float, optional
         Scaling factor for classification loss, by default 1.0
-    autoencoder_type : str, optional
+    ae_type : str, optional
         Type of autoencoder architecture to use, by default 'default'
         Options: 'default', 'convolutional'
         
@@ -537,7 +538,7 @@ def train_guided_autoencoder(
         guided_lambda=guided_lambda,
         use_batch_norm=use_batch_norm,
         dropout=dropout,
-        autoencoder_type=autoencoder_type
+        ae_type=ae_type
     ).to(device)
     
     # Process one quantum embedding to determine dimension

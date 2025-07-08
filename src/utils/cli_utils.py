@@ -3,13 +3,12 @@ import numpy as np
 import sys
 
 from src.utils.config_manager import ConfigManager
+from src.globals import *
 
-# Define available atom geometries
-AVAILABLE_GEOMETRIES = ["chain"] 
-AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
-AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder", "guided_autoencoder"]
-#AVAILABLE_DATASET_TYPES = ["mnist", "binary_mnist", "fashion_mnist", "image_folder"]
 
+# ALWAYS SET THE DEFAULTS TO NONE
+# This allows the config file to override them
+# If the user does not provide a value, it will use the default from the config file
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="Quantum Reservoir Computing for Image Classification")
@@ -43,6 +42,8 @@ def parse_args() -> argparse.Namespace:
                       help="Batch size for guided autoencoder training")
     
     # Autoencoder parameters
+    parser.add_argument("--ae-type", type=str, default=None, choices=AVAILABLE_AUTOENCODER_TYPES,
+                          help="Type of autoencoder architecture to use (default, convolutional)")
     parser.add_argument("--autoencoder-epochs", type=int, default=None,
                        help="Number of epochs for autoencoder training")
     parser.add_argument("--autoencoder-batch-size", type=int, default=None,

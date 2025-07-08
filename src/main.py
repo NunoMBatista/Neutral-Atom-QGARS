@@ -58,6 +58,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
     if args is None:
         args = get_args()
         
+    print(f"Running with arguments: {args}")
 
     # Set random seed for reproducibility
     random.seed(args.seed)
@@ -184,7 +185,8 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
             use_batch_norm=True,
             dropout=0.1,
             autoencoder_regularization=args.autoencoder_regularization,
-            selected_features=train_features
+            selected_features=train_features,
+            ae_type=args.ae_type
         )
         
         # Log the spectral range to help diagnose scaling issues

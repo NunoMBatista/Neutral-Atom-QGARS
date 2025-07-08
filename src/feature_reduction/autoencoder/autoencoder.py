@@ -11,7 +11,9 @@ from typing import Tuple, List, Dict, Any, Optional, Mapping
 from src.feature_reduction.autoencoder.autoencoder_architectures import create_default_architecture, create_convolutional_architecture
 from src.utils.cli_printing import print_sequential_model
 
-SUPPORTED_AUTOENCODER_TYPES = ['default', 'convolutional']
+from src.globals import * 
+
+#SUPPORTED_AUTOENCODER_TYPES = ['default', 'convolutional']
 
 class Autoencoder(nn.Module):
     """
@@ -46,16 +48,24 @@ class Autoencoder(nn.Module):
         self.dropout = dropout
         self.ae_type = ae_type
         
+        
+        
         if self.ae_type == 'default':
+            print(f"Creating default autoencoder architecture with input_dim={input_dim}, encoding_dim={encoding_dim}, use_batch_norm={use_batch_norm}, dropout={dropout}")
             self.encoder, self.decoder = create_default_architecture(
                                             input_dim=input_dim,            
                                             encoding_dim=encoding_dim,
                                             use_batch_norm=use_batch_norm,
                                             dropout=dropout
-                                            
                                         )
+        elif self.ae_type == 'convolutional':
+            print(f"Creating convolutional autoencoder architecture with input_dim={input_dim}, encoding_dim={encoding_dim}, use_batch_norm={use_batch_norm}, dropout={dropout}")
+            # TODO: ADD SUPPORT FOR CONVOLUTIONAL AUTOENCODERS
+            exit(1)
+          
+        
         else:
-            raise ValueError(f"Unknown architecture type: {self.ae_type}. Supported types: {SUPPORTED_AUTOENCODER_TYPES}")
+            raise ValueError(f"Unknown architecture type: {self.ae_type}. Supported types: {AVAILABLE_AUTOENCODER_TYPES}")
 
     
     def __str__(self, use_colors: bool = True) -> str:
@@ -309,7 +319,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
                      verbose: bool = True,
                      use_batch_norm: bool = True,
                      dropout: float = 0.1,
-                     autoencoder_regularization: float = 1e-5) -> Tuple[Autoencoder, float]:
+                     autoencoder_regularization: float = 1e-5,
+                     ae_type: str = 'default') -> Tuple[Autoencoder, float]:
     """
     Train an autoencoder for dimensionality reduction with improved feature extraction.
     
@@ -354,6 +365,7 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         encoding_dim=encoding_dim,
         use_batch_norm=use_batch_norm,
         dropout=dropout,
+        ae_type=ae_type
     ).to(device)
     
     # Setup training components

@@ -11,6 +11,12 @@ DEFAULT_DATA_DIR = ROOT_DIR / 'data' / 'datasets'
 
 # Define the path to the default results directory
 DEFAULT_RESULTS_DIR = ROOT_DIR / 'results' / 'default_results'
+
+AVAILABLE_GEOMETRIES = ["chain"] 
+AVAILABLE_READOUT_TYPES = ["Z", "ZZ", "all"]
+AVAILABLE_REDUCTION_METHODS = ["pca", "autoencoder", "guided_autoencoder"]
+AVAILABLE_AUTOENCODER_TYPES = ["default", "convolutional"]
+    
     
 # Define results dictionary typing
 # ResultsDict = Dict[str, 

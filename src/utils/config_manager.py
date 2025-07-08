@@ -110,6 +110,6 @@ class ConfigManager:
             "seed": 42,
             "no_progress": False,
             "no_plot": False,
-            "autoencoder_type": "default",
+            "ae_type": "convolutional",
             "results_dir": DEFAULT_RESULTS_DIR,
         }

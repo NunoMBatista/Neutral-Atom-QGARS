@@ -79,7 +79,8 @@ def apply_autoencoder(data: Dict[str, Any],
                     dropout: float = 0.1,
                     autoencoder_regularization: float = 1e-5,
                     selected_indices: Optional[np.ndarray] = None,
-                    selected_features: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Autoencoder, float]:
+                    selected_features: Optional[np.ndarray] = None,
+                    ae_type: str = 'default') -> Tuple[np.ndarray, Autoencoder, float]:
     """
     Apply improved autoencoder to reduce image dimensions.
     
@@ -146,7 +147,8 @@ def apply_autoencoder(data: Dict[str, Any],
         verbose=verbose, 
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
-        autoencoder_regularization=autoencoder_regularization
+        autoencoder_regularization=autoencoder_regularization,
+        ae_type=ae_type
     )
     
     # Encode data
@@ -314,11 +316,11 @@ def apply_guided_autoencoder(data: Dict[str, Any],
                             verbose: bool = True,
                             use_batch_norm: bool = True,
                             dropout: float = 0.1,
-                            autoencoder_regularization: Optional[float] = 1e-5,
+                            autoencoder_regularization: float = 1e-5,
                             selected_indices: Optional[np.ndarray] = None,
                             selected_features: Optional[np.ndarray] = None,
                             selected_targets: Optional[np.ndarray] = None,
-                            autoencoder_type: str = "default") -> Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]:
+                            ae_type: str = "default") -> Tuple[np.ndarray, GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Apply guided autoencoder to reduce image dimensions with quantum guidance.
     
@@ -355,7 +357,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Dropout probability, by default 0.1
     weight_decay : float, optional
         Weight decay for regularization, by default 1e-5
-    autoencoder_regularization : Optional[float], optional
+    autoencoder_regularization : float, optional
         Regularization parameter for guided autoencoder, by default None
     selected_indices : Optional[np.ndarray], optional
         Indices of selected samples, by default None
@@ -363,7 +365,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         Pre-selected features to use, by default None
     selected_targets : Optional[np.ndarray], optional
         Pre-selected targets to use, by default None
-    autoencoder_type : str, optional
+    ae_type : str, optional
         Type of autoencoder to use ('default' or 'convolutional'), by default "default"
         
        
@@ -408,7 +410,7 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
         autoencoder_regularization=autoencoder_regularization,
-        autoencoder_type=autoencoder_type
+        ae_type=ae_type
     )
     
     # Encode data
