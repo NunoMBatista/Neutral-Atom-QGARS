@@ -329,7 +329,9 @@ def train_surrogate(surrogate_model: QuantumSurrogate,
             if patience_counter >= patience:
                 if verbose:
                     tqdm.write(f"Early stopping triggered after {epoch+1} epochs")
-                surrogate_model.load_state_dict(best_model_state)
+             
+                if best_model_state is not None:
+                    surrogate_model.load_state_dict(best_model_state)
                 break
     
     # Ensure model is in evaluation mode before returning

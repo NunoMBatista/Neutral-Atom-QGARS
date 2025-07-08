@@ -265,7 +265,7 @@ def train_epoch(model: nn.Module, dataloader: torch.utils.data.DataLoader,
     return avg_loss
 
 
-def encode_all_data(model: nn.Module, X: torch.Tensor, device: str = 'cpu', batch_size: int = 256) -> np.ndarray:
+def encode_all_data(model: Autoencoder, X: torch.Tensor, device: str = 'cpu', batch_size: int = 256) -> np.ndarray:
     """
     Encode all data using the trained autoencoder.
     

@@ -55,6 +55,7 @@ def setup_stats_directory(base_dir: Path) -> Path:
     
     return stats_dir
 
+
 def save_classifier_loss_plot(results_dict: ResultsDict, 
                              output_dir: Path) -> None:
     """
@@ -85,6 +86,7 @@ def save_classifier_loss_plot(results_dict: ResultsDict,
     plt.close()
     
     logging.info(f"Saved classifier loss plot to {plot_path}")
+
 
 def save_classifier_accuracy_plot(results_dict: ResultsDict, 
                                 output_dir: Path) -> None:
@@ -117,6 +119,7 @@ def save_classifier_accuracy_plot(results_dict: ResultsDict,
     plt.close()
     
     logging.info(f"Saved classifier accuracy plot to {plot_path}")
+
 
 def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: Path) -> None:
     """
@@ -186,6 +189,7 @@ def save_guided_autoencoder_losses(losses: Dict[str, List[float]], output_dir: P
         logging.info(f"Saved surrogate model loss plot to {surrogate_plot_path}")
         logging.info(f"Saved surrogate model loss data to {surrogate_json_path}")
 
+
 def save_loss_logs(results_dict: ResultsDict, 
                   output_dir: Path) -> None:
     """
@@ -214,6 +218,7 @@ def save_loss_logs(results_dict: ResultsDict,
     
     logging.info(f"Saved classifier metrics to {log_path}")
 
+
 def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: Path) -> None:
     """
     Save guided autoencoder loss logs.
@@ -231,6 +236,7 @@ def save_guided_autoencoder_logs(losses: Dict[str, List[float]], output_dir: Pat
         json.dump(losses, f, indent=4)
     
     logging.info(f"Saved guided autoencoder metrics to {log_path}")
+
 
 # Rename the internal function to be exported
 def extract_metrics(results_dict: ResultsDict) -> Dict[str, Any]:
@@ -273,6 +279,7 @@ def extract_metrics(results_dict: ResultsDict) -> Dict[str, Any]:
     
     return metrics
 
+
 def save_metrics_json(metrics: Dict[str, Any], output_dir: Path) -> None:
     """
     Save metrics to a JSON file.
@@ -296,6 +303,7 @@ def save_metrics_json(metrics: Dict[str, Any], output_dir: Path) -> None:
         json.dump(metrics, f, indent=4)
     
     logging.info(f"Saved metrics to {metrics_path}")
+
 
 def save_config_file(args: Any, output_dir: Path) -> None:
     """
@@ -331,6 +339,7 @@ def save_config_file(args: Any, output_dir: Path) -> None:
         json.dump(config_serializable, f, indent=4)
     
     logging.info(f"Saved configuration to {config_path}")
+
 
 def save_all_statistics(results_dict: ResultsDict, 
                        output_dir: Path,

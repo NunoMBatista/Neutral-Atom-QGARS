@@ -43,7 +43,7 @@ class GuidedAutoencoder:
                  input_dim: int,
                  encoding_dim: int, 
                  output_dim: int,
-                 quantum_dim: int = None,
+                 quantum_dim: int = 12,
                  guided_lambda: float = 0.3,
                  use_batch_norm: bool = True,
                  dropout: float = 0.1,
@@ -53,7 +53,7 @@ class GuidedAutoencoder:
                                     encoding_dim=encoding_dim, 
                                     use_batch_norm=use_batch_norm, 
                                     dropout=dropout,
-                                    type=autoencoder_type
+                                    ae_type=autoencoder_type
                                 )
         self.guided_lambda = guided_lambda
         self.encoding_dim = encoding_dim
@@ -61,7 +61,7 @@ class GuidedAutoencoder:
         self.quantum_dim = quantum_dim
         
         # Classifier will be initialized when quantum_dim is known
-        self.classifier = None
+        self.classifier: LinearClassifier
         
         # Quantum surrogate model (can only be initialized after quantum_dim is known)
         self.surrogate = None
@@ -467,7 +467,7 @@ def train_guided_autoencoder(
     verbose: bool = True,
     use_batch_norm: bool = True,
     dropout: float = 0.1,
-    autoencoder_regularization: Optional[float] = 1e-5,
+    autoencoder_regularization: float = 1e-5,
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
     class_scale: float = 1.0,
@@ -668,11 +668,13 @@ def train_guided_autoencoder(
             if patience_counter >= patience:
                 if verbose:
                     tqdm.write(f"Early stopping triggered after {epoch+1} epochs")
+                
                 # Restore best model state
-                model.autoencoder.load_state_dict(best_model_state['autoencoder'])
-                model.classifier.load_state_dict(best_model_state['classifier'])
-                if best_model_state['surrogate'] is not None and model.surrogate is not None:
-                    model.surrogate.load_state_dict(best_model_state['surrogate'])
+                if best_model_state is not None:
+                    model.autoencoder.load_state_dict(best_model_state['autoencoder'])
+                    model.classifier.load_state_dict(best_model_state['classifier'])
+                    if best_model_state['surrogate'] is not None and model.surrogate is not None:
+                        model.surrogate.load_state_dict(best_model_state['surrogate'])
                 break
     
     # Get final encoded representations for all data
