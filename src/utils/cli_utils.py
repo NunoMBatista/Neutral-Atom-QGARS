@@ -22,6 +22,8 @@ def parse_args() -> argparse.Namespace:
                        help="Size to resize images to")
     parser.add_argument("--split-ratio", type=float, default=None,
                        help="Train/test split ratio")
+    parser.add_argument("--keep-rgb", action="store_true", default=None,
+                       help="Keep RGB channels instead of converting to grayscale")
     
     # Feature reduction parameters
     parser.add_argument("--reduction-method", type=str, choices=AVAILABLE_REDUCTION_METHODS, default=None,

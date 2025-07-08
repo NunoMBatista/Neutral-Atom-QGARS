@@ -31,6 +31,11 @@ class Autoencoder(nn.Module):
         Whether to use batch normalization, by default True
     dropout : float, optional
         Dropout probability for regularization, by default 0.1
+    ae_type : str, optional
+        Type of autoencoder architecture ('default' or 'convolutional'), by default 'default'
+    image_shape : Optional[Tuple[int, int, int]], optional
+        Shape of the input image (height, width, channels), by default None
+        Only used for convolutional autoencoder
     """
 
     
@@ -39,7 +44,8 @@ class Autoencoder(nn.Module):
              encoding_dim: int, 
              use_batch_norm: bool = True,
              dropout: float = 0.1,
-             ae_type: str = 'default'):
+             ae_type: str = 'default',
+             image_shape: Optional[Tuple[int, int, int]] = None):
         super(Autoencoder, self).__init__()
 
         self.input_dim = input_dim
@@ -47,8 +53,7 @@ class Autoencoder(nn.Module):
         self.use_batch_norm = use_batch_norm
         self.dropout = dropout
         self.ae_type = ae_type
-        
-        
+        self.image_shape = image_shape
         
         if self.ae_type == 'default':
             print(f"Creating default autoencoder architecture with input_dim={input_dim}, encoding_dim={encoding_dim}, use_batch_norm={use_batch_norm}, dropout={dropout}")
@@ -60,10 +65,13 @@ class Autoencoder(nn.Module):
                                         )
         elif self.ae_type == 'convolutional':
             print(f"Creating convolutional autoencoder architecture with input_dim={input_dim}, encoding_dim={encoding_dim}, use_batch_norm={use_batch_norm}, dropout={dropout}")
-            # TODO: ADD SUPPORT FOR CONVOLUTIONAL AUTOENCODERS
-            exit(1)
-          
-        
+            self.encoder, self.decoder = create_convolutional_architecture(
+                                            input_dim=input_dim,
+                                            encoding_dim=encoding_dim,
+                                            image_shape=image_shape,
+                                            use_batch_norm=use_batch_norm,
+                                            dropout=dropout
+                                        )
         else:
             raise ValueError(f"Unknown architecture type: {self.ae_type}. Supported types: {AVAILABLE_AUTOENCODER_TYPES}")
 
@@ -320,7 +328,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
                      use_batch_norm: bool = True,
                      dropout: float = 0.1,
                      autoencoder_regularization: float = 1e-5,
-                     ae_type: str = 'default') -> Tuple[Autoencoder, float]:
+                     ae_type: str = 'default',
+                     image_shape: Optional[Tuple[int, int, int]] = None) -> Tuple[Autoencoder, float]:
     """
     Train an autoencoder for dimensionality reduction with improved feature extraction.
     
@@ -330,8 +339,6 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         Input data (flattened images) with shape (n_features, n_samples)
     encoding_dim : int
         Dimension of the encoded representation
-    hidden_dims : Optional[List[int]], optional
-        Dimensions of hidden layers, by default None
     batch_size : int, optional
         Batch size for training, by default 64
     epochs : int, optional
@@ -348,6 +355,11 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         Dropout probability, by default 0.1
     autoencoder_regularization : float, optional
         Regularization parameter for autoencoder, by default 1e-5
+    ae_type : str, optional
+        Type of autoencoder architecture ('default' or 'convolutional'), by default 'default'
+    image_shape : Optional[Tuple[int, int, int]], optional
+        Shape of the input image (height, width, channels), by default None
+        Only used for convolutional autoencoder
         
     Returns
     -------
@@ -365,7 +377,8 @@ def train_autoencoder(data: np.ndarray, encoding_dim: int,
         encoding_dim=encoding_dim,
         use_batch_norm=use_batch_norm,
         dropout=dropout,
-        ae_type=ae_type
+        ae_type=ae_type,
+        image_shape=image_shape
     ).to(device)
     
     # Setup training components

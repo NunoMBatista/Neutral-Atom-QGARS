@@ -15,7 +15,7 @@ class DatasetLoader:
     """
     Base class for dataset loaders.
     """
-    def preprocess_image(self, image: Image.Image, target_size: Tuple[int, int]) -> np.ndarray:
+    def preprocess_image(self, image: Image.Image, target_size: Tuple[int, int], keep_rgb: bool = False) -> np.ndarray:
         """
         Preprocess a single image.
         
@@ -25,21 +25,33 @@ class DatasetLoader:
             The image to preprocess
         target_size : Tuple[int, int]
             Target size to resize image to
+        keep_rgb : bool, optional
+            Whether to keep RGB channels or convert to grayscale, by default False
             
         Returns
         -------
         np.ndarray
             Preprocessed image as numpy array
         """
-        # Convert to grayscale if it's not already
-        if image.mode != 'L':
+        # Convert to grayscale if specified, otherwise maintain RGB
+        if not keep_rgb and image.mode != 'L':
             image = image.convert('L')
+        elif keep_rgb and image.mode != 'RGB':
+            # Convert to RGB if it's not already
+            image = image.convert('RGB')
             
         # Resize to target size
         img_resized = image.resize(target_size)
         
         # Convert to numpy array and normalize
-        return np.array(img_resized) / 255.0
+        img_array = np.array(img_resized) / 255.0
+        
+        # Make sure single channel images have the right shape
+        if not keep_rgb and len(img_array.shape) == 2:
+            # Single channel images should have shape (height, width, 1)
+            img_array = img_array[:, :, np.newaxis]
+            
+        return img_array
 
     def create_dataset_dict(self, features: np.ndarray, targets: np.ndarray, 
                            n_classes: int, split: str, **metadata) -> Dict[str, Any]:
@@ -65,8 +77,10 @@ class DatasetLoader:
             Dataset dictionary
         """
         # Create metadata dictionary
+        #print("\n\n\n\n" + str(features.shape) + "\n\n\n\n")
+        
         meta_dict = {
-            "n_samples": features.shape[2] if len(features.shape) > 2 else len(features),
+            "n_samples": features.shape[-1],
             "n_classes": n_classes
         }
         
@@ -81,7 +95,7 @@ class DatasetLoader:
             "targets": targets
         }
 
-    def process_images(self, files: List[str], target_size: Tuple[int, int]) -> np.ndarray:
+    def process_images(self, files: List[str], target_size: Tuple[int, int], keep_rgb: bool = False) -> np.ndarray:
         """
         Process images and resize them to the target size.
         
@@ -91,23 +105,43 @@ class DatasetLoader:
             List of file paths to images
         target_size : Tuple[int, int]
             Target size to resize images to
-        
+        keep_rgb : bool, optional
+            Whether to keep RGB channels, by default False
+    
         Returns
         -------
         np.ndarray
             Array of processed images
         """
         n_samples = len(files)
-        features = np.zeros((target_size[0], target_size[1], n_samples), dtype=np.float32)
-        
+    
+        # Determine channels - 3 for RGB, 1 for grayscale
+        channels = 3 if keep_rgb else 1
+    
+        # Initialize features array with correct shape (height, width, channels, n_samples)
+        features = np.zeros((target_size[0], target_size[1], channels, n_samples), dtype=np.float32)
+    
         for i, file in enumerate(tqdm(files, desc="Processing images") if SHOW_PROGRESS_BAR else files):
             try:
                 img = Image.open(file)
-                features[:, :, i] = self.preprocess_image(img, target_size)
+                img_array = self.preprocess_image(img, target_size, keep_rgb)
+            
+                # Check if the image has the expected number of channels
+                if img_array.shape[2] != channels:
+                    print(f"Warning: Image {file} has unexpected channel count {img_array.shape[2]}, expected {channels}")
+                    # Convert if needed
+                    if channels == 1 and img_array.shape[2] == 3:
+                        # Convert RGB to grayscale
+                        img_array = np.mean(img_array, axis=2, keepdims=True)
+                    elif channels == 3 and img_array.shape[2] == 1:
+                        # Expand grayscale to RGB
+                        img_array = np.repeat(img_array, 3, axis=2)
+            
+                features[:, :, :, i] = img_array
             except Exception as e:
                 print(f"Error processing image {file}: {e}")
                 # If image fails to load, use zeros
-                features[:, :, i] = np.zeros(target_size, dtype=np.float32)
+                features[:, :, :, i] = np.zeros((target_size[0], target_size[1], channels), dtype=np.float32)
                 
         return features
 
@@ -116,6 +150,7 @@ class DatasetLoader:
                                  split_ratio: float = 0.8,
                                  num_examples: Optional[int] = None,
                                  num_test_examples: Optional[int] = None,
+                                 keep_rgb: bool = False,
                                  **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Load a dataset from a directory with class subfolders.
@@ -132,6 +167,8 @@ class DatasetLoader:
             Maximum number of training examples to load, by default None (load all)
         num_test_examples : Optional[int], optional
             Maximum number of test examples to load, by default None (load all)
+        keep_rgb : bool, optional
+            Whether to keep RGB channels, by default False
             
         Returns
         -------
@@ -185,8 +222,8 @@ class DatasetLoader:
         test_targets = [targets[i] for i in test_indices]
         
         # Process images
-        train_features = self.process_images(train_files, target_size)
-        test_features = self.process_images(test_files, target_size)
+        train_features = self.process_images(train_files, target_size, keep_rgb)
+        test_features = self.process_images(test_files, target_size, keep_rgb)
         
         # Count samples per class
         train_class_counts = {}
@@ -268,6 +305,9 @@ class DatasetLoader:
             print("Loading Fashion MNIST dataset...")
             dataset = torchvision.datasets.FashionMNIST
         
+        if dataset is None:
+            raise ValueError(f"Unknown MNIST type: {mnist_type}. "
+                             "Available types: 'mnist', 'binary_mnist', 'fashion_mnist'")
         
         # Load MNIST dataset
         full_train_data = dataset(
@@ -286,6 +326,7 @@ class DatasetLoader:
         
         # Filter for binary MNIST if needed
         if is_binary:
+            
             # Get indices of classes 0 and 1
             train_indices = [i for i, (_, label) in enumerate(full_train_data) if label in [0, 1]]
             test_indices = [i for i, (_, label) in enumerate(full_test_data) if label in [0, 1]]
@@ -374,27 +415,42 @@ def load_dataset(name: str = 'image_folder', **kwargs) -> Tuple[Dict[str, Any], 
 # Utility functions
 def flatten_images(data: np.ndarray, desc: str = "Flattening images") -> np.ndarray:
     """
-    Flatten 3D image data into 2D matrix.
+    Flatten 3D or 4D image data into 2D matrix, dynamically handling different image sizes.
     
     Parameters
     ----------
     data : np.ndarray
-        Image data tensor of shape (height, width, n_samples)
+        Image data tensor, can be:
+        - (height, width, n_samples) for grayscale
+        - (height, width, channels, n_samples) for RGB
     desc : str, optional
         Description for progress bar, by default "Flattening images"
         
     Returns
     -------
     np.ndarray
-        Flattened data matrix of shape (height*width, n_samples)
+        Flattened data matrix of shape (flattened_image_size, n_samples)
     """
-    dataset_length = data.shape[2]
-    image_size = data.shape[0] * data.shape[1]
+    # Determine number of samples (always the last dimension)
+    n_samples = data.shape[-1]
     
-    flat_iterator = tqdm(range(dataset_length), desc=desc)
-    data_flat = np.zeros((image_size, dataset_length))
+    # Calculate the flattened size (product of all dimensions except the last one)
+    flattened_size = int(np.prod(data.shape[:-1]))
+    
+    print(f"Flattening images with shape {data.shape} to size ({flattened_size}, {n_samples})")
+    
+    # Create the output array with the correct dimensions
+    data_flat = np.zeros((flattened_size, n_samples))
+    
+    # Process each sample
+    flat_iterator = tqdm(range(n_samples), desc=desc)
     for i in flat_iterator:
-        data_flat[:, i] = data[:, :, i].flatten()
+        if len(data.shape) == 3:  # Grayscale: (H, W, N)
+            data_flat[:, i] = data[:, :, i].flatten()
+        elif len(data.shape) == 4:  # RGB: (H, W, C, N)
+            data_flat[:, i] = data[:, :, :, i].flatten()
+        else:
+            raise ValueError(f"Unexpected data shape: {data.shape}. Expected 3D or 4D array.")
     
     return data_flat
 

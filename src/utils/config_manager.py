@@ -112,4 +112,5 @@ class ConfigManager:
             "no_plot": False,
             "ae_type": "convolutional",
             "results_dir": DEFAULT_RESULTS_DIR,
+            "keep_rgb": True,
         }

@@ -38,6 +38,9 @@ class GuidedAutoencoder:
     ae_type : str, optional
         Type of autoencoder architecture to use, by default 'default'
         Options: 'default', 'convolutional'
+    image_shape : Optional[Tuple[int, int, int]], optional
+        Shape of the input image (height, width, channels), by default None
+        Only used for convolutional autoencoder
     """
     def __init__(self, 
                  input_dim: int,
@@ -47,13 +50,15 @@ class GuidedAutoencoder:
                  guided_lambda: float = 0.3,
                  use_batch_norm: bool = True,
                  dropout: float = 0.1,
-                 ae_type: str = 'default'):
+                 ae_type: str = 'default',
+                 image_shape: Optional[Tuple[int, int, int]] = None):
         self.autoencoder = Autoencoder(
                                     input_dim=input_dim, 
                                     encoding_dim=encoding_dim, 
                                     use_batch_norm=use_batch_norm, 
                                     dropout=dropout,
-                                    ae_type=ae_type
+                                    ae_type=ae_type,
+                                    image_shape=image_shape
                                 )
         self.guided_lambda = guided_lambda
         self.encoding_dim = encoding_dim
@@ -61,8 +66,8 @@ class GuidedAutoencoder:
         self.quantum_dim = quantum_dim
 
         
-        # Classifier will be initialized when quantum_dim is known
-        self.classifier: LinearClassifier
+        # Initialize classifier to None - will be set later
+        self.classifier = None
         
         # Quantum surrogate model (can only be initialized after quantum_dim is known)
         self.surrogate = None
@@ -148,7 +153,14 @@ def prepare_guided_autoencoder_data(data: np.ndarray, labels: np.ndarray,
     """
     # Get number of samples and output classes
     n_samples = data.shape[1]
-    output_dim = len(np.unique(labels))
+    
+    # Determine the maximum class index to ensure proper one-hot encoding
+    # Use max+1 instead of len(unique) to handle cases where not all classes are present
+    max_label = int(np.max(labels)) if len(labels) > 0 else 0
+    output_dim = max(max_label + 1, 2)  # Ensure at least 2 dimensions for binary classification
+    
+    if verbose:
+        print(f"Preparing data with {n_samples} samples and {output_dim} output dimensions")
     
     # Convert to PyTorch tensors
     X = torch.tensor(data.T, dtype=torch.float32).to(device)
@@ -163,7 +175,14 @@ def prepare_guided_autoencoder_data(data: np.ndarray, labels: np.ndarray,
 
     # One-hot encode labels
     y_one_hot = np.zeros((n_samples, output_dim))
-    y_one_hot[np.arange(n_samples), labels] = 1
+    for i, label in enumerate(labels):
+        if label < output_dim:
+            y_one_hot[i, label] = 1
+        else:
+            print(f"Warning: Label {label} is out of bounds for output dimension {output_dim}")
+            # Default to first class as fallback
+            y_one_hot[i, 0] = 1
+    
     y = torch.tensor(y_one_hot, dtype=torch.float32).to(device)
     
     # Create dataset and dataloader
@@ -416,10 +435,23 @@ def train_guided_epoch(model: GuidedAutoencoder,
             surrogate_quantum_embs = model.surrogate(batch_encoding)
             
             # Forward pass through classifier
+            if model.classifier is None:
+                raise ValueError("Classifier is not initialized. Call initialize_classifier() first.")
             batch_output = model.classifier(surrogate_quantum_embs)
             
-            # Compute classification loss
-            class_loss = class_criterion(batch_output, torch.argmax(batch_y, dim=1))
+            # Get target indices
+            target_indices = torch.argmax(batch_y, dim=1)
+            
+            # Check if target indices are within bounds
+            if torch.max(target_indices) >= batch_output.size(1):
+                if verbose:
+                    tqdm.write(f"Warning: Target index {torch.max(target_indices)} is out of bounds for output dimension {batch_output.size(1)}.")
+                    tqdm.write(f"Setting class loss to zero for this batch.")
+                # Use dummy loss that will be zero but maintains gradient path
+                class_loss = batch_output.sum() * 0.0
+            else:
+                # Compute classification loss safely
+                class_loss = class_criterion(batch_output, target_indices)
             
             # Scale the losses
             recon_loss_scaled = recon_loss * recon_scale
@@ -472,7 +504,8 @@ def train_guided_autoencoder(
     detuning_max: float = 6.0,
     recon_scale: float = 100.0,
     class_scale: float = 1.0,
-    ae_type: str = 'default'
+    ae_type: str = 'default',
+    image_shape: Optional[Tuple[int, int, int]] = None
 ) -> Tuple[GuidedAutoencoder, float, Dict[str, List[float]]]:
     """
     Train a guided autoencoder jointly with quantum embeddings.
@@ -519,6 +552,9 @@ def train_guided_autoencoder(
     ae_type : str, optional
         Type of autoencoder architecture to use, by default 'default'
         Options: 'default', 'convolutional'
+    image_shape : Optional[Tuple[int, int, int]], optional
+        Shape of the input image (height, width, channels), by default None
+        Only used for convolutional autoencoder
         
     Returns
     -------
@@ -538,7 +574,8 @@ def train_guided_autoencoder(
         guided_lambda=guided_lambda,
         use_batch_norm=use_batch_norm,
         dropout=dropout,
-        ae_type=ae_type
+        ae_type=ae_type,
+        image_shape=image_shape
     ).to(device)
     
     # Process one quantum embedding to determine dimension
@@ -564,6 +601,8 @@ def train_guided_autoencoder(
             
         # Initialize classifier with correct dimension
         model.initialize_classifier(quantum_dim)
+        if model.classifier is None:
+            raise ValueError("Classifier could not be initialized. Check quantum embedding dimension.")
         model.classifier = model.classifier.to(device)
         
     # Setup training components with correct dimension

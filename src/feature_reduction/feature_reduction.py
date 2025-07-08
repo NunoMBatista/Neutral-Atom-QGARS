@@ -135,6 +135,23 @@ def apply_autoencoder(data: Dict[str, Any],
     print("Flattening images...")
     data_flat = flatten_images(data_to_use)
     
+    # Determine image shape for convolutional autoencoder
+    image_shape = None
+    if ae_type == 'convolutional':
+        # Get original image shape
+        height, width = data_to_use.shape[0:2]
+        
+        # Determine number of channels
+        # Check if RGB by comparing input_dim with height*width*3
+        if data_flat.shape[0] == height * width * 3:
+            channels = 3
+        else:
+            # Otherwise assume grayscale
+            channels = 1
+            
+        image_shape = (height, width, channels)
+        print(f"Detected image shape for convolutional autoencoder: {image_shape}")
+    
     # Train autoencoder
     print("Training autoencoder...")
     model, spectral = train_autoencoder(
@@ -148,7 +165,8 @@ def apply_autoencoder(data: Dict[str, Any],
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
         autoencoder_regularization=autoencoder_regularization,
-        ae_type=ae_type
+        ae_type=ae_type,
+        image_shape=image_shape
     )
     
     # Encode data
@@ -392,6 +410,23 @@ def apply_guided_autoencoder(data: Dict[str, Any],
     print("Flattening images...")
     data_flat = flatten_images(data_to_use)
     
+    # Determine image shape for convolutional autoencoder
+    image_shape = None
+    if ae_type == 'convolutional':
+        # Get original image shape
+        height, width = data_to_use.shape[0:2]
+        
+        # Determine number of channels
+        # Check if RGB by comparing input_dim with height*width*3
+        if data_flat.shape[0] == height * width * 3:
+            channels = 3
+        else:
+            # Otherwise assume grayscale
+            channels = 1
+            
+        image_shape = (height, width, channels)
+        print(f"Detected image shape for guided convolutional autoencoder: {image_shape}")
+    
     # Train guided autoencoder
     print("Training guided autoencoder with quantum feedback...")
     model, spectral, loss_history = train_guided_autoencoder(
@@ -410,7 +445,8 @@ def apply_guided_autoencoder(data: Dict[str, Any],
         use_batch_norm=use_batch_norm, 
         dropout=dropout, 
         autoencoder_regularization=autoencoder_regularization,
-        ae_type=ae_type
+        ae_type=ae_type,
+        image_shape=image_shape
     )
     
     # Encode data
