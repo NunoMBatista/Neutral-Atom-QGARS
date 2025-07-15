@@ -144,6 +144,8 @@ def create_default_architecture(
     return encoder, decoder
 
 
+
+
 def create_convolutional_architecture(
                     input_dim: int,
                     encoding_dim: int,
@@ -216,6 +218,7 @@ def create_convolutional_architecture(
     encoder_layers = []
     
     # Initial reshape layer to convert from flat to 4D tensor
+    # Convolutional layers expect input in (batch_size, channels, height, width) format
     class Reshape(nn.Module):
         def __init__(self, height, width, channels):
             super(Reshape, self).__init__()
@@ -224,7 +227,9 @@ def create_convolutional_architecture(
             self.channels = channels
             
         def forward(self, x):
+            # -1 infers batch size automatically
             return x.view(-1, self.channels, self.height, self.width)
+        
     
     encoder_layers.append(Reshape(height, width, channels))
     
@@ -250,6 +255,7 @@ def create_convolutional_architecture(
         
         # Calculate actual flattened dimension
         flat_dim = int(np.prod(x.shape[1:]))  # This is c3 * h3 * w3
+        
     
     print(f"""
         Calculated actual dimensions:
