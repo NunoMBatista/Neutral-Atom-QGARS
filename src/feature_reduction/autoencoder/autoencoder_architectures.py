@@ -202,9 +202,9 @@ def create_convolutional_architecture(
         height, width, channels = image_shape
     
     print(f"""
-        **************************
+        ********************************
          Creating Convolutional Encoder
-        **************************
+        ********************************
         Input image shape: {height}x{width}x{channels}
         Encoding dimension: {encoding_dim}
     """)
@@ -336,9 +336,9 @@ def create_convolutional_architecture(
     encoder = nn.Sequential(*encoder_layers)
     
     print("""
-        **************************
+        ********************************
          Creating Convolutional Decoder
-        **************************    
+        ********************************    
     
     """)
     

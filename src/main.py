@@ -242,7 +242,8 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
             dropout=0.1,  # Add dropout for regularization
             autoencoder_regularization=args.autoencoder_regularization,  # Use autoencoder regularization
             selected_features=train_features,
-            selected_targets=train_targets
+            selected_targets=train_targets,
+            ae_type=args.ae_type
         )
         
         print(reduction_model)

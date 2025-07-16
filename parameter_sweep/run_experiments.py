@@ -155,14 +155,14 @@ EXPERIMENT_PROFILES = {
     "convolutional_ae": {
         "description": "Run a general test with fixed parameters",
         "param_grid": {
+            "seed": [42, 43, 44, 45, 46],
             "dataset_type": ["cvc_clinic_db_patches"],
             "num_examples": [2000],
             "num_test_examples": [400],
             "reduction_method": ["guided_autoencoder", "autoencoder"],
             "ae_type": ["convolutional", "default"],
             "quantum_update_frequency": [5],
-            "dim_reduction": [12],
-            "seed": [42, 43, 44, 45, 46]
+            "dim_reduction": [12]
         }
     },
     
