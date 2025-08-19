@@ -107,7 +107,7 @@ EXPERIMENT_PROFILES = {
     "time_steps_evolution_time": {
         "description": "Sweep over quantum evolution time and steps",
         "param_grid": {
-            "evolution_time": [2.0, 4.0, 6.0],
+            "evolution_time": [0.001, 0.01, 0.1, 1.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 40.0],
             "time_steps": [8, 12, 16], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
             "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12]
