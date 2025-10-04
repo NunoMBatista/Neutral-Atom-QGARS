@@ -127,4 +127,4 @@ The richness of these quantum correlations provides a high-dimensional feature s
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENCE](LICENCE) file for details.
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENCE](LICENCE) file for details.  
