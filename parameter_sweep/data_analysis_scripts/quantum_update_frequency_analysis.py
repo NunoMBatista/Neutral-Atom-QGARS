@@ -136,14 +136,14 @@ def main():
     """Main function to analyze quantum update frequency results"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Analyze quantum update frequency effect on QRC performance')
-    parser.add_argument('--results', type=str, 
-                      default="/home/nbatista/GIC-quAI-QRC/results/generated/guided_autoencoder_update_frequency/guided_autoencoder_update_frequency_20250520_160624_20250520_160624/all_results.csv",
-                      help='Path to the results CSV file')
-    parser.add_argument('--output', type=str, 
-                      default="/home/nbatista/GIC-quAI-QRC/results/figures/generated/quantum_update_frequency_effect.pdf",
-                      help='Path to save the output figure (PDF)')
+    parser.add_argument('results',
+                      help='all_results.csv written by the guided_autoencoder_update_frequency profile')
+    parser.add_argument('--output', type=str, default=None,
+                      help='Output PDF (default: next to the results file)')
     
     args = parser.parse_args()
+    output_path = args.output or os.path.join(os.path.dirname(args.results), "quantum_update_frequency_effect.pdf")
+    output_path = os.path.abspath(output_path)
     
     # Load results
     df = load_sweep_results(args.results)
@@ -154,7 +154,7 @@ def main():
     print(df[['quantum_update_frequency', 'QRC_final_test_acc', 'QRC_final_train_acc']].describe())
     
     # Plot results
-    plot_quantum_update_frequency_effect(df, args.output)
+    plot_quantum_update_frequency_effect(df, output_path)
     
     # Analyze effect
     analyze_quantum_update_effect(df)

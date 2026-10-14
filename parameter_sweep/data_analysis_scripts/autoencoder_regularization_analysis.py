@@ -1,4 +1,5 @@
 import os
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -109,11 +110,14 @@ def plot_autoencoder_regularization_effect(df: pd.DataFrame, output_path: Option
 
 def main():
     """Main function to analyze autoencoder regularization results"""
-    # Define file path
-    results_file = "../results/generated/ae_regularization/autoencoder_regularization_20250519_032530_20250519_032530/all_results.csv"
-    
+    parser = argparse.ArgumentParser(description='Analyze the autoencoder regularization sweep')
+    parser.add_argument('results', help='all_results.csv written by the autoencoder_regularization profile')
+    parser.add_argument('--output', default=None,
+                        help='Output PDF (default: next to the results file)')
+    args = parser.parse_args()
+
     # Load results
-    df = load_sweep_results(results_file)
+    df = load_sweep_results(args.results)
     
     # Print data overview
     print("\nData Overview:")
@@ -121,7 +125,8 @@ def main():
     print(df[['autoencoder_regularization', 'QRC_final_test_acc']].describe())
     
     # Plot results
-    output_path = "../results/figures/autoencoder_regularization_effect.pdf"
+    output_path = args.output or os.path.join(os.path.dirname(args.results), "autoencoder_regularization_effect.pdf")
+    output_path = os.path.abspath(output_path)
     
     # Create plot
     plot_autoencoder_regularization_effect(df, output_path)

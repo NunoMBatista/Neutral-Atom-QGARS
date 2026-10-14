@@ -19,8 +19,7 @@ class LinearClassifier(nn.Module):
     def __init__(self, input_dim: int, output_dim: int, bias: bool = True):
         super(LinearClassifier, self).__init__()
         self.linear = nn.Linear(input_dim, output_dim, bias=bias)
-        #self.softmax = nn.Softmax(dim=1)
-        # No need for softmax, as it's applies in the CrossEntropyLoss function
+        # No softmax: CrossEntropyLoss applies it
     
     def __str__(self, use_colors: bool = True) -> str:
         iterable = nn.Sequential(self.linear)
@@ -40,7 +39,6 @@ class LinearClassifier(nn.Module):
         torch.Tensor
             Output probabilities
         """
-        #return self.softmax(self.linear(x))
         return self.linear(x)  # Softmax is applied in the loss function
         
 class NeuralNetwork(nn.Module):

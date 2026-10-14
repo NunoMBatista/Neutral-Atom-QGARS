@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import argparse
 
-def plot_qrc_performance_by_method(results_file, output_dir="../../results/figures/generated"):
+def plot_qrc_performance_by_method(results_file, output_dir):
     """
     Plot QRC performance (train and test accuracy) for different reduction methods
     across varying number of qubits.
@@ -12,14 +12,9 @@ def plot_qrc_performance_by_method(results_file, output_dir="../../results/figur
     ----------
     results_file : str
         Path to the CSV file containing the results
-    output_dir : str, optional
-        Directory to save the plot, by default creates a 'figures/generated' directory
+    output_dir : str
+        Directory to save the plot
     """
-    # Create output directory if it doesn't exist
-    if output_dir is None:
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(results_file))), 
-                                 "figures", "generated")
-    
     os.makedirs(output_dir, exist_ok=True)
     
     # Read the CSV file
@@ -105,32 +100,14 @@ def plot_qrc_performance_by_method(results_file, output_dir="../../results/figur
 
 def main():
     parser = argparse.ArgumentParser(description='Analyze QRC performance by reduction method and qubit count')
-    parser.add_argument('--results', type=str, default=None, help='Path to the results CSV file')
-    parser.add_argument('--output-dir', type=str, default=None, help='Directory to save the output figure')
+    parser.add_argument('results', help='all_results.csv written by the encoding_dimensions profile')
+    parser.add_argument('--output-dir', type=str, default=None,
+                        help='Directory to save the output figure (default: next to the results file)')
     
     args = parser.parse_args()
+    output_dir = os.path.abspath(args.output_dir or os.path.dirname(args.results))
     
-    # If no results file specified, use default path
-    if args.results is None:
-        # Try to find the most recent results file in the default location
-        default_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                  "..", "results", "generated", "n_qubits")
-
-        if os.path.exists(default_dir):
-            folders = [f for f in os.listdir(default_dir) if "encoding_dimensions" in f]
-            if folders:
-                # Sort folders by name (timestamp) to get the most recent
-                folders.sort(reverse=True)
-                latest_folder = folders[0]
-                results_file = os.path.join(default_dir, latest_folder, "all_results.csv")
-                if os.path.exists(results_file):
-                    args.results = results_file
-        
-        if args.results is None:
-            print("No results file specified and couldn't find a default file.")
-            return
-    
-    plot_qrc_performance_by_method(args.results)
+    plot_qrc_performance_by_method(args.results, output_dir)
 
 
 if __name__ == "__main__":

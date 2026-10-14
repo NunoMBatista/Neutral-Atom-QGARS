@@ -133,6 +133,10 @@ python -m src.main --dataset-type binary_mnist --reduction-method guided_autoenc
 
 ## Reproducing the paper
 
+**Note.** The IEEE version of the paper (and arXiv v1) lists the Rabi
+frequency as $\Omega = \pi$. The reported runs used the code default,
+$\Omega = 2\pi$ rad/µs (`--rabi-freq`).
+
 Sweeps are defined as profiles in `parameter_sweep/run_experiments.py`:
 
 ```bash
@@ -149,7 +153,15 @@ python parameter_sweep/run_experiments.py profile ae_pca_qgars_5_runs
 | Surrogate update frequency | `guided_autoencoder_update_frequency` | `quantum_update_frequency_analysis.py` |
 | Choice of autoencoder weight decay | `autoencoder_regularization` | `autoencoder_regularization_analysis.py` |
 
-The plot scripts are in `parameter_sweep/data_analysis_scripts/`.
+A sweep writes `results/sweep/<profile>/<profile>_<timestamp>/all_results.csv`.
+The plot scripts are in `parameter_sweep/data_analysis_scripts/`; each takes
+that file (the losses plotter takes a run's `classifier_metrics.json`) and
+saves the figure next to it, e.g.
+
+```bash
+python parameter_sweep/data_analysis_scripts/guided_lambda_analysis.py \
+    results/sweep/guided_autoencoder_lambda/<run>/all_results.csv
+```
 
 ## Layout
 

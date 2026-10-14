@@ -198,7 +198,7 @@ def plot_losses(metrics: Dict[str, Any],
     png_path = os.path.join(output_dir, f"{filename_prefix}_losses.png")
     plt.savefig(png_path, format="png", dpi=dpi, bbox_inches="tight")
     
-    print(f"Plots saved to:")
+    print("Plots saved to:")
     print(f"  - PDF: {pdf_path}")
     print(f"  - PNG: {png_path}")
     
@@ -208,9 +208,8 @@ def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Plot classifier losses from metrics JSON file.')
     
-    parser.add_argument('--input', '-i', type=str, required=False,
-                        default="",
-                        help='Path to the classifier_metrics.json file')
+    parser.add_argument('input',
+                        help='classifier_metrics.json saved in a run directory')
     
     parser.add_argument('--output-dir', '-o', type=str, required=False,
                         default="",
@@ -234,14 +233,7 @@ def main():
     """Main function to load data and create plots."""
     args = parse_arguments()
     
-    # Get input file path
-    if args.input:
-        file_path = args.input
-    else:
-        default_path = "/home/nbatista/GIC-quAI-QRC/results/generated/guided_autoencoder_update_frequency/guided_autoencoder_update_frequency_20250520_160624_20250520_160624/exp_0/classifier_metrics.json"
-        file_path = input(f"Enter path to classifier_metrics.json file (default: {default_path}): ").strip()
-        if not file_path:
-            file_path = default_path
+    file_path = args.input
     
     # Check if file exists
     if not os.path.exists(file_path):

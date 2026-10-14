@@ -76,8 +76,6 @@ class QuantumSurrogate(nn.Module):
         Dimension of input features
     output_dim : int
         Dimension of quantum embeddings
-    hidden_dims : List[int], optional
-        Dimensions of hidden layers, by default [256, 512, 256]
     activation : str, optional
         Activation function to use, by default 'relu'
     dropout : float, optional
@@ -93,11 +91,7 @@ class QuantumSurrogate(nn.Module):
                  use_batch_norm: bool = True):
         super(QuantumSurrogate, self).__init__()
         
-        # TODO: MAKE THIS A FUNCTION OF THE QUANTUM EMBEDDINGS SIZE
-        #if hidden_dims is None:
-            # Default architecture
-            #hidden_dims = [256, 512, 256]
-            # For high-dimensional quantum embeddings
+        # Hidden widths grow with the embedding size; wider still for large embeddings
         if output_dim > 1000:
             scaling_factor = 2
         else:

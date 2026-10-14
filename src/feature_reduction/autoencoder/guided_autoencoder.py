@@ -544,7 +544,7 @@ def train_guided_autoencoder(
         initial_encoding_scaled = initial_encoding.T / spectral * detuning_max
         
         if verbose:
-            print(f"Getting initial quantum embeddings to determine dimension...")
+            print("Getting initial quantum embeddings to determine dimension...")
             
         # Get quantum embeddings to determine dimension
         initial_quantum_embs = quantum_layer.apply_layer(

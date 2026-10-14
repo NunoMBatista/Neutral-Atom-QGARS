@@ -23,8 +23,6 @@ def load_sweep_results(filepath: str) -> pd.DataFrame:
 def transform_lambda_to_mu(lambda_val):
     """Transform lambda to mu using mu = sqrt(lambda/(1-lambda))."""
     # Handle edge cases
-    # if lambda_val >= 0.999999:  # Treat values very close to 1 as a large finite number
-        # return 1000.0  # Use: a large value instead of infinity
     if lambda_val == 0.999:
         return 15
     if lambda_val == 0.9999:
@@ -169,7 +167,6 @@ def plot_guided_mu_effect(df: pd.DataFrame, output_path: Optional[str] = None):
         # Keep track of used label positions
         used_positions = []
         min_y_distance = 3.0  # Minimum vertical distance between labels in data units
-        min_x_distance = 0.2  # Minimum horizontal distance factor (relative to x value)
         
         # First, identify dense regions to alternate labels
         # Process points from left to right (easier to avoid collisions)
@@ -392,15 +389,15 @@ def main():
     """Main function to analyze guided_lambda results"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Analyze guided lambda parameter sweep results')
+    parser.add_argument('results', help='all_results.csv written by the guided_autoencoder_lambda profile')
+    parser.add_argument('--output', default=None,
+                        help='Output PDF (default: next to the results file)')
     parser.add_argument('--use-mu', action='store_true', 
                         help='Use mu transformation (sqrt(lambda/(1-lambda)) instead of lambda')
     args = parser.parse_args()
     
-    # Define file path
-    results_file = "/home/nbatista/GIC-quAI-QRC/results/generated/guided_lambda/log_scale_lambda_all/guided_autoencoder_lambda_20250527_135753/all_results.csv"
-    
     # Load results
-    df = load_sweep_results(results_file)
+    df = load_sweep_results(args.results)
     
     # Print data overview
     print("\nData Overview:")
@@ -408,13 +405,14 @@ def main():
     print(df[['guided_lambda', 'QRC_final_test_acc']].describe())
     
     # Plot results
-    base_output_path = "/home/nbatista/GIC-quAI-QRC/results/figures/guided_lambda_log_all_effect.pdf"
+    base_output_path = args.output or os.path.join(os.path.dirname(args.results), "guided_lambda_effect.pdf")
+    base_output_path = os.path.abspath(base_output_path)
     
     # Choose plot function based on command line argument
     if args.use_mu:
-        fig = plot_guided_mu_effect(df, base_output_path)
+        plot_guided_mu_effect(df, base_output_path)
     else:
-        fig = plot_guided_lambda_effect(df, base_output_path)
+        plot_guided_lambda_effect(df, base_output_path)
     
     # Print optimal guided_lambda value
     optimal_idx = df['QRC_final_test_acc'].idxmax()

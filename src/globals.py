@@ -12,20 +12,9 @@ DEFAULT_DATA_DIR = ROOT_DIR / 'data' / 'datasets'
 # Define the path to the default results directory
 DEFAULT_RESULTS_DIR = ROOT_DIR / 'results' / 'default_results'
     
-# Define results dictionary typing
-# ResultsDict = Dict[str, 
-#                    Tuple[
-#                         List[float],    # Training losses per epoch
-#                         List[float],    # Training accuracies per epoch
-#                         List[float],    # Test accuracies per epoch
-#                         nn.Module,      # Trained model
-#                         np.ndarray,     # Confusion matrix for training set
-#                         np.ndarray,     # Confusion matrix for test set
-#                         float,          # F1 score for training set
-#                         float           # F1 score for test set
-#                         ]
-#                    ]
-
+# Training results of one classifier, in this order: train losses, train
+# accuracies and test accuracies per epoch, trained model, train and test
+# confusion matrices, train and test F1 scores
 TrainingResults = Tuple[
      List[float],
      List[float],

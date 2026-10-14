@@ -420,9 +420,7 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
     if not args.no_plot:
         plot_training_results(results)
     
-    # Save statistics if running as main script (not as part of parameter sweep)
-    #if not hasattr(args, '_parameter_sweep') or not args._parameter_sweep:
-    
+    # Save statistics
     if results_dir is DEFAULT_RESULTS_DIR: 
         results_dir = args.results_dir
     
@@ -447,8 +445,8 @@ def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_
             f.write(model_lin.__str__(use_colors=False)) # type: ignore
             f.write(model_qrc.__str__(use_colors=False)) # type: ignore
             f.write(model_nn.__str__(use_colors=False)) # type: ignore
-        except Exception as e: 
-            print("brauns")
+        except Exception as e:
+            print(f"Could not write the model summaries: {e}")
         
     
     return results, guided_autoencoder_losses

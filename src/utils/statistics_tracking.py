@@ -18,8 +18,6 @@ def ensure_directory_exists(directory: Path) -> None:
     directory : str
         Directory path to check/create
     """
-    # if not os.path.exists(directory):
-    #     os.makedirs(directory, exist_ok=True)
     if not directory.exists():
         directory.mkdir(parents=True, exist_ok=True)
 
@@ -41,7 +39,6 @@ def setup_stats_directory(base_dir: Path) -> Path:
     """
     # Create a timestamped directory
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    #stats_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), base_dir, timestamp)
     stats_dir = Path(base_dir) / timestamp
     
     ensure_directory_exists(stats_dir)
