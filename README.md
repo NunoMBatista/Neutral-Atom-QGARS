@@ -3,7 +3,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2605.06727-b31b1b)](https://arxiv.org/abs/2605.06727)
 [![Paper DOI](https://img.shields.io/badge/DOI-10.1109%2FQAI63978.2025.00064-blue)](https://doi.org/10.1109/QAI63978.2025.00064)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](requirements.txt)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](LICENCE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 Code for the paper *Medical Imaging Classification with Cold-Atom Reservoir
 Computing using Auto-Encoders and Surrogate-Driven Training* (IEEE QAI 2025;
@@ -180,4 +180,4 @@ parameter_sweep/            sweep profiles and analysis scripts
 
 ## License
 
-GPL-3.0 (see `LICENCE`).
+MIT (see `LICENSE`).

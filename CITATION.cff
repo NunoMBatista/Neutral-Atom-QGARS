@@ -7,7 +7,7 @@ authors:
   - family-names: "Batista"
     given-names: "Nuno"
 repository-code: "https://github.com/NunoMBatista/Neutral-Atom-QGARS"
-license: GPL-3.0
+license: MIT
 preferred-citation:
   type: conference-paper
   title: "Medical Imaging Classification with Cold-Atom Reservoir Computing Using Auto-Encoders and Surrogate-Driven Training"
