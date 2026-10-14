@@ -3,7 +3,6 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import random
-import matplotlib.pyplot as plt
 from typing import Tuple, Dict, Any, List, Optional
 from sklearn.preprocessing import OneHotEncoder
 from torch.utils.data import Subset
@@ -398,40 +397,6 @@ def flatten_images(data: np.ndarray, desc: str = "Flattening images") -> np.ndar
     
     return data_flat
 
-def show_sample_image(data: Dict[str, Any], index: Optional[int] = None) -> int:
-    """
-    Display a sample image from the dataset.
-    
-    Parameters
-    ----------
-    data : Dict[str, Any]
-        Dataset containing 'features' and 'targets'
-    index : Optional[int], optional
-        Index of image to display (random if None), by default None
-    
-    Returns
-    -------
-    int
-        Index of the displayed image
-    """
-    if index is None:
-        index = random.randint(0, data["features"].shape[2] - 1)
-    
-    img = data["features"][:, :, index]
-    plt.imshow(img, cmap='gray')
-    
-    # Get class name if available
-    if 'class_names' in data['metadata'] and isinstance(data['targets'][index], (int, np.integer)):
-        class_idx = data['targets'][index]
-        class_name = data['metadata']['class_names'][class_idx]
-        plt.title(f"Class: {class_name} (Label: {class_idx})")
-    else:
-        plt.title(f"Label: {data['targets'][index]}")
-    
-    plt.show()
-    
-    return index
-
 
 def one_hot_encode(targets: np.ndarray, n_classes: int) -> Tuple[np.ndarray, OneHotEncoder]:
     """
@@ -459,47 +424,3 @@ def one_hot_encode(targets: np.ndarray, n_classes: int) -> Tuple[np.ndarray, One
     print(f"Encoded {len(targets)} targets into {n_classes} classes")
     
     return encoded_targets, encoder
-
-def select_random_samples(data: Dict[str, Any], num_samples: int, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Select random samples from a dataset.
-    
-    Parameters
-    ----------
-    data : Dict[str, Any]
-        Dataset containing 'features' and 'targets'
-    num_samples : int
-        Number of samples to select
-    seed : Optional[int], optional
-        Random seed for reproducibility, by default None
-        
-    Returns
-    -------
-    Tuple[np.ndarray, np.ndarray, np.ndarray]
-        selected_indices, selected_features, selected_targets
-    """
-    # Get total number of samples
-    n_samples = data["features"].shape[2] if len(data["features"].shape) > 2 else len(data["features"])
-    
-    # Cap num_samples to available samples
-    num_samples = min(num_samples, n_samples)
-    
-    # Set random seed if provided
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Select random indices
-    selected_indices = np.random.choice(n_samples, size=num_samples, replace=False)
-    
-    # Get corresponding features
-    if len(data["features"].shape) > 2:
-        # For image data with shape (height, width, n_samples)
-        selected_features = data["features"][:, :, selected_indices]
-    else:
-        # For flattened data
-        selected_features = data["features"][selected_indices]
-    
-    # Get corresponding targets
-    selected_targets = data["targets"][selected_indices]
-    
-    return selected_indices, selected_features, selected_targets

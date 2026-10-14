@@ -1,10 +1,7 @@
-import numpy as np 
 import torch
 import torch.nn as nn
-from typing import Any, List, Optional, Union
-from tqdm import tqdm 
+from typing import List, Union
 from src.utils.cli_printing import print_sequential_model
-from src.globals import TrainingResults
 
 class LinearClassifier(nn.Module):
     """
@@ -129,72 +126,3 @@ class NeuralNetwork(nn.Module):
             Output probabilities
         """
         return self.layers(x)
-
-class QRCModel:
-    """
-    Full QRC model combining quantum embedding and classical training.
-    
-    Parameters
-    ----------
-    quantum_layer : Any
-        Quantum embedding layer
-    classifier : nn.Module, optional
-        Classical classifier, by default None
-    """
-    # def __init__(self, quantum_layer: Any, classifier: Optional[nn.Module] = None):
-    #     self.quantum_layer = quantum_layer
-    #     self.classifier = classifier if classifier is not None else LinearClassifier
-      
-    def __init__(self, quantum_layer: Any, classifier: Optional[nn.Module] = None):
-        self.quantum_layer = quantum_layer
-        # Create an instance if classifier is None (with default parameters)
-        self.classifier = classifier  # Just store the provided classifier
-        
-    def __str__(self, use_colors: bool = True) -> str:
-        if isinstance(self.classifier, nn.Module):
-            # If it's already a module instance
-            if isinstance(self.classifier, nn.Sequential):
-                return print_sequential_model(model=self.classifier, model_name="QRC Model", use_colors=use_colors)
-            else:
-                # Wrap non-Sequential modules in a Sequential container
-                return print_sequential_model(model=nn.Sequential(self.classifier), model_name="QRC Model", use_colors=use_colors)
-        else:
-            # If it's a class (not instantiated), just return a simple string
-            return f"QRC Model with the provided classifier (not instantiated)"
-        
-    def fit(self, x_train: np.ndarray, y_train: np.ndarray, 
-            x_test: np.ndarray, y_test: np.ndarray, 
-            **kwargs) -> TrainingResults:
-        """
-        Train the model end-to-end.
-        
-        Parameters
-        ----------
-        x_train : np.ndarray
-            Training features
-        y_train : np.ndarray
-            Training labels
-        x_test : np.ndarray
-            Test features
-        y_test : np.ndarray
-            Test labels
-        **kwargs
-            Additional arguments for the training function
-            
-        Returns
-        -------
-        Tuple[List[float], List[float], List[float], nn.Module]
-            Training metrics and trained model
-        """
-        from src.classification_models.training import train
-                
-        # Get quantum embeddings
-        tqdm.write("Computing quantum embeddings for training data...")
-        train_embeddings = self.quantum_layer.apply_layer(x_train)
-        
-        tqdm.write("Computing quantum embeddings for test data...")
-        test_embeddings = self.quantum_layer.apply_layer(x_test)
-        
-        # Train classical model
-        return train(train_embeddings, y_train, test_embeddings, y_test, **kwargs)
-

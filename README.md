@@ -1,11 +1,13 @@
 # QGARS: neutral-atom reservoir computing with a guided autoencoder
 
+[![arXiv](https://img.shields.io/badge/arXiv-2605.06727-b31b1b)](https://arxiv.org/abs/2605.06727)
 [![Paper DOI](https://img.shields.io/badge/DOI-10.1109%2FQAI63978.2025.00064-blue)](https://doi.org/10.1109/QAI63978.2025.00064)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](requirements.txt)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](LICENCE)
 
 Code for the paper *Medical Imaging Classification with Cold-Atom Reservoir
-Computing using Auto-Encoders and Surrogate-Driven Training* (IEEE QAI 2025).
+Computing using Auto-Encoders and Surrogate-Driven Training* (IEEE QAI 2025;
+free on [arXiv](https://arxiv.org/abs/2605.06727)).
 
 QGARS (Quantum Guided Autoencoder with Reservoir Surrogate) compresses each
 image with an autoencoder, writes the latent code into the local detunings of
@@ -171,7 +173,9 @@ parameter_sweep/            sweep profiles and analysis scripts
   booktitle = {2025 IEEE International Conference on Quantum Artificial Intelligence (QAI)},
   pages     = {373--380},
   year      = {2025},
-  doi       = {10.1109/QAI63978.2025.00064}
+  doi       = {10.1109/QAI63978.2025.00064},
+  eprint    = {2605.06727},
+  archivePrefix = {arXiv}
 }
 ```
 

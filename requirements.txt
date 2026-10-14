@@ -12,7 +12,6 @@ seaborn==0.13.2
 tqdm==4.70.1
 pillow==12.3.0
 colorama==0.4.6
-joblib==1.6.0
 # Only for the dataset scripts in data/data_generation/
 opencv-python==5.0.0.93
 albumentations==2.0.8

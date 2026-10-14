@@ -135,6 +135,3 @@ def create_default_architecture(
     decoder = nn.Sequential(*decoder_layers)
     
     return encoder, decoder
-
-def create_convolutional_architecture():
-    pass
