@@ -97,9 +97,6 @@ class GuidedAutoencoder:
         return self
     
 
-    def get_encoder(self):
-        """Get the encoder part of the autoencoder"""
-        return self.autoencoder.encoder
 
     
     def clear_cache(self):

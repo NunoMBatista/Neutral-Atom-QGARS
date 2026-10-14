@@ -11,9 +11,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from parameter_sweep import ParameterSweep
 from src.utils.config_manager import ConfigManager
 
-# Define experiment profiles with parameter ranges
+# Sweep profiles behind the paper's results. Each grid entry overrides the
+# defaults in src/utils/config_manager.py; every combination is one run.
 EXPERIMENT_PROFILES = {
-    # DONE, 1e-5 and 1-e3 yielded the best results
+    # Picked the autoencoder weight decay used everywhere else (1e-5)
     "autoencoder_regularization": {
         "description": "Sweep over autoencoder regularization parameters",
         "param_grid": {
@@ -23,125 +24,48 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [12]
         }
     },
-    
-    # DONE, 0.7 yielded the best results
+
+    # Paper figure: accuracy against lambda, log-spaced near 0 and 1 (picked 0.7)
     "guided_autoencoder_lambda": {
         "description": "Sweep over guided autoencoder lambda parameter",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-           # "guided_lambda": [1, 0.95, 0.9, 0.8, 0.7, 0.5, 0.3, 0.1, 0.05, 0], # SWEEP IN LOG SCALE!
-           
-           
-           # ADD SYMETRIC
             "guided_lambda": [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.0,
-                              0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                              0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
                               1-0.01, 1-0.001, 1-0.0001, 1-0.00001, 1-0.000001, 1],
             "quantum_update_frequency": [5],
             "dim_reduction": [12]
         }
     },
-    
-    # DONE
-    # SHOULD SHOW THAT USING MORE QUBITS IS BETTER
+
+    # Paper figure: accuracy against the number of atoms (= latent dimension)
     "encoding_dimensions": {
         "description": "Sweep over encoding dimensions and methods",
         "param_grid": {
             "dim_reduction": [4, 6, 8, 10, 12],
             "reduction_method": ["pca", "autoencoder", "guided_autoencoder"],
             "n_shots": [1000],
-            "autoencoder_regularization": [1e-5], # FIXED FROM THE PREVIOUS STEPS
-            "guided_lambda": [0.7], # FIXED FROM THE PREVIOUS STEPS
-            "quantum_update_frequency": [1] # SHOWS QUANTUM GUIDED AUTOENCODER PEAK PERFORMANCE
+            "autoencoder_regularization": [1e-5],
+            "guided_lambda": [0.7],
+            "quantum_update_frequency": [1]
         }
     },
-    
-    # DONE 
+
+    # How often the surrogate is refreshed from the reservoir (0 = never, a plain autoencoder)
     "guided_autoencoder_update_frequency": {
         "description": "Sweep over guided autoencoder update frequency",
         "param_grid": {
             "reduction_method": ["guided_autoencoder"],
-            "guided_lambda": [0.7], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
+            "guided_lambda": [0.7],
             "quantum_update_frequency": [1, 3, 5, 7, 10, 15, 25, 0],
-            "dim_reduction": [12], # PEAK PERFORMANCE
-            "autoencoder_regularization": [1e-5] # FIXED FROM THE PREVIOUS STEPS
-        }
-    },
-    
-    # NOT DONE
-    "quantum_readouts": {
-        "description": "Sweep over quantum readout types and time steps",
-        "param_grid": {
-            "readout_type": ["Z", "ZZ", "all"],
-            "time_steps": [4, 8, 12, 16],
-            "reduction_method": ["guided_autoencoder"],
-            "dim_reduction": [12]
-        }
-    },
-    
-    # NOT DONE
-    "encoding_scale": {
-        "description": "Sweep over encoding scale parameter",
-        "param_grid": {
-            "encoding_scale": [3.0, 6.0, 9.0, 12.0],
-            "detuning_max": [3.0, 6.0, 9.0],
-            "reduction_method": ["guided_autoencoder"],
-            "dim_reduction": [12]
-        }
-    },
-    
-    # RUNNING ON CRAY-4
-    "shot_noise": {
-        "description": "Sweep over number of quantum shots",
-        "param_grid": {
-            "n_shots": [100, 500, 1000, 2000],
-            "readout_type": ["all"],
-            "reduction_method": ["guided_autoencoder"],
-            "quantum_update_frequency": [5],
-            "guided_lambda": [0.7], 
-            "dim_reduction": [12]
-        }
-    },
-    
-    
-    # RUNNING ON CRAY-4
-    "time_steps_evolution_time": {
-        "description": "Sweep over quantum evolution time and steps",
-        "param_grid": {
-            "evolution_time": [2.0, 4.0, 6.0],
-            "time_steps": [8, 12, 16], # FIX WITH THE ONE THAT WORKED BEST IN THE PREVIOUS SWEEP
-            "reduction_method": ["guided_autoencoder"],
-            "dim_reduction": [12]
-        }
-    },
-    
-    
-    # NOT DONE
-    "full_dataset": {
-        "description": "Compare performance with different dataset sizes",
-        "param_grid": {
-            "num_examples": [1000, 2000, 5000, 10000],
-            "num_test_examples": [200, 400, 1000],
-            "reduction_method": ["guided_autoencoder"],
-            "dim_reduction": [12]
-        }
-    },
-    
-    # NOT DONE
-    # RUN THIS ONE NEXT TO FIND THE LEARNING RATE AND REGULARIZATION
-    "training_parameters": {
-        "description": "Sweep over training hyperparameters",
-        "param_grid": {
-            "nepochs": [50, 100, 200],
-            "learning_rate": [0.001, 0.01, 0.05],
-            "regularization": [0.0, 0.0001, 0.001, 0.01],
-            "reduction_method": ["guided_autoencoder"],
             "dim_reduction": [12],
+            "autoencoder_regularization": [1e-5]
         }
     },
-    
-    # MOST IMPORTANT FOR THE PAPER
+
+    # Paper tables I and II: five seeds per method (set dataset_type for each dataset)
     "ae_pca_qgars_5_runs": {
-        "description": "Run a general test with fixed parameters",
+        "description": "Five seeds of PCA, autoencoder and QGARS",
         "param_grid": {
             "dataset_type": ["cvc_clinic_db_patches"],
             "num_examples": [2000],
@@ -151,7 +75,7 @@ EXPERIMENT_PROFILES = {
             "seed": [42, 43, 44, 45, 46]
         }
     },
-    
+
     "test": {
         "description": "Tiny run to check the pipeline end to end",
         "param_grid": {
@@ -164,7 +88,6 @@ EXPERIMENT_PROFILES = {
             "dim_reduction": [4]
         }
     }
-    
 }
 
 def run_experiment_profile(profile_name: str, 

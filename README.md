@@ -146,9 +146,8 @@ python parameter_sweep/run_experiments.py profile ae_pca_qgars_5_runs
 | Accuracy against the number of atoms | `encoding_dimensions` | `n_qubit_reduction_method_analysis.py` |
 | Effect of $\lambda$ | `guided_autoencoder_lambda` | `guided_lambda_analysis.py` |
 | Training losses | | `classical_qrc_losses_plotter.py` |
-| Autoencoder regularization | `autoencoder_regularization` | `autoencoder_regularization_analysis.py` |
 | Surrogate update frequency | `guided_autoencoder_update_frequency` | `quantum_update_frequency_analysis.py` |
-| Probe times and evolution time | `time_steps_evolution_time` | `time_steps_evolution_time_analysis.py` |
+| Choice of autoencoder weight decay | `autoencoder_regularization` | `autoencoder_regularization_analysis.py` |
 
 The plot scripts are in `parameter_sweep/data_analysis_scripts/`.
 
