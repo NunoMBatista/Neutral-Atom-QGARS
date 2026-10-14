@@ -4,7 +4,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Tuple
 from matplotlib.ticker import MaxNLocator
 
 def load_metrics(filepath: str) -> Dict[str, Any]:

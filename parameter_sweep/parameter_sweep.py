@@ -2,20 +2,20 @@ import os
 import numpy as np
 import itertools
 import pandas as pd
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Optional
 from tqdm import tqdm
 import json
 import datetime
-import argparse
 import sys
 
 DEFAULT_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+# Make the repository root importable when this file is run as a script
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
-from main import main
-from utils.config_manager import ConfigManager
-from utils.statistics_tracking import save_all_statistics, extract_metrics  # Import the functions directly
+from src.main import main
+from src.utils.config_manager import ConfigManager
+from src.utils.statistics_tracking import save_all_statistics, extract_metrics
 
 class ParameterSweep:
     """

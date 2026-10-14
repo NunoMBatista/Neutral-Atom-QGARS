@@ -4,7 +4,7 @@ from PIL import Image
 from tqdm import tqdm
 import random
 import matplotlib.pyplot as plt
-from typing import Tuple, Dict, Any, List, Optional, Union, Callable
+from typing import Tuple, Dict, Any, List, Optional
 from sklearn.preprocessing import OneHotEncoder
 from torch.utils.data import Subset
     

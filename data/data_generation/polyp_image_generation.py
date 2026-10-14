@@ -1,18 +1,13 @@
-# Colon Polyp Detection - Synthetic Data Generation and ML Model
-# Google Colab Notebook
+# Synthetic colon images with and without polyps, for the QGARS experiments.
+# Usage: python data/data_generation/polyp_image_generation.py [--num-images N] [--img-size S]
 
+import argparse
 import os
 import random
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchvision
-from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
-from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 # Check if GPU is available
@@ -353,19 +348,22 @@ def generate_dataset(num_images=500, img_size=28):
     
     return all_images
 
-# Generate the dataset
-images = generate_dataset(num_images=70000-63565, img_size=128) 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate the synthetic polyp dataset into dataset/polyp and dataset/no_polyp")
+    parser.add_argument("--num-images", type=int, default=6435, help="Number of images to generate")
+    parser.add_argument("--img-size", type=int, default=128, help="Image side length in pixels")
+    args = parser.parse_args()
 
-# Visualize some examples
-fig, axes = plt.subplots(3, 2, figsize=(12, 12))
-for i in range(3):
-    idx = random.randint(0, len(images) - 1)
-    axes[i, 0].imshow(images[idx])
-    axes[i, 0].set_title(f"Image {idx}")
-    axes[i, 0].axis('off')
+    images = generate_dataset(num_images=args.num_images, img_size=args.img_size)
+
+    # Visualize some examples
+    fig, axes = plt.subplots(3, 2, figsize=(12, 12))
+    for i in range(3):
+        idx = random.randint(0, len(images) - 1)
+        axes[i, 0].imshow(images[idx])
+        axes[i, 0].set_title(f"Image {idx}")
+        axes[i, 0].axis('off')
 
 
-plt.tight_layout()
-plt.show()
-
-
+    plt.tight_layout()
+    plt.show()

@@ -1,7 +1,7 @@
 import numpy as np 
 import torch
 import torch.nn as nn
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Union
 from tqdm import tqdm 
 from src.utils.cli_printing import print_sequential_model
 from src.globals import TrainingResults

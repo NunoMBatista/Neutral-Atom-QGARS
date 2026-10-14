@@ -1,7 +1,5 @@
 import numpy as np
 from bloqade.analog.ir.location import Chain
-from tqdm import tqdm
-from typing import Dict, Any, Union, Optional, List, Callable, Any
 
 from src.quantum_layer.quantum_task import get_embeddings_emulation
 from src.utils.cli_printing import print_quantum_layer

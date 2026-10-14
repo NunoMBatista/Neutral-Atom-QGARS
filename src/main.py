@@ -1,23 +1,16 @@
-from logging import config
-from multiprocessing import reduction
 import os
-import sys
 import numpy as np
 import random
 import torch
-import matplotlib.pyplot as plt
-from typing import Dict, Any, Tuple, Optional, List
-import time
+from typing import Dict, Tuple, Optional, List
 from pathlib import Path
 
 #sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import custom modules
-from src.feature_reduction.autoencoder.autoencoder import Autoencoder
-from src.feature_reduction.autoencoder.guided_autoencoder import GuidedAutoencoder
 from src.utils.statistics_tracking import save_all_statistics, setup_stats_directory
 
-from src.data_processing.data_processing import load_dataset, show_sample_image, flatten_images, one_hot_encode, select_random_samples
+from src.data_processing.data_processing import load_dataset, one_hot_encode
 from src.feature_reduction.feature_reduction import (
     apply_pca, apply_pca_to_test_data, 
     apply_autoencoder, apply_autoencoder_to_test_data,
@@ -26,16 +19,13 @@ from src.feature_reduction.feature_reduction import (
 )
 from src.quantum_layer.qrc_layer import DetuningLayer
 from src.classification_models.training import train
-from src.classification_models.models import LinearClassifier, NeuralNetwork, QRCModel
 from src.utils.visualization import plot_training_results, print_results
 
-from src.feature_reduction.autoencoder import Autoencoder
-from sklearn.decomposition import PCA
 
 from src.utils.cli_utils import get_args
 import argparse
 
-from src.globals import ROOT_DIR, DEFAULT_DATA_DIR, DEFAULT_RESULTS_DIR
+from src.globals import DEFAULT_DATA_DIR, DEFAULT_RESULTS_DIR
 
 def main(args: Optional[argparse.Namespace] = None, results_dir: Path = DEFAULT_RESULTS_DIR) -> Tuple[Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray, torch.nn.Module]], Optional[Dict[str, List[float]]]]:
     """

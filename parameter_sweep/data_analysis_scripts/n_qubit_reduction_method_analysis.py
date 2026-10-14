@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import argparse
 
 def plot_qrc_performance_by_method(results_file, output_dir="../../results/figures/generated"):

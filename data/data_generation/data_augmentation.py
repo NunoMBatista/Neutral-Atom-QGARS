@@ -1,7 +1,6 @@
 import os
 import argparse
 import cv2
-import numpy as np
 from tqdm import tqdm
 import random
 import albumentations as A

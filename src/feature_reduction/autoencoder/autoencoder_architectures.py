@@ -1,11 +1,4 @@
-from venv import create
-import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-from tqdm import tqdm
-from typing import Tuple, List, Dict, Any, Optional
 
 def create_default_architecture(
                     input_dim: int,

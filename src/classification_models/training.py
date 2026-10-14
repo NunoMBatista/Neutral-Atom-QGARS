@@ -1,13 +1,12 @@
-from calendar import c
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
-from typing import Tuple, List, Dict, Any, Optional, Union
+from typing import Optional
 from sklearn.metrics import confusion_matrix, f1_score
-from src.globals import ResultsDict, TrainingResults
+from src.globals import TrainingResults
 from src.classification_models.models import LinearClassifier, NeuralNetwork
 
 

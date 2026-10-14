@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Tuple, Optional, Any, Union, List, TYPE_CHECKING
+from typing import Dict, Tuple, Optional, Any, List
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 from src.data_processing.data_processing import flatten_images

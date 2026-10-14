@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite the accompanying paper
+  (preferred-citation below).
+title: "Neutral-Atom-QGARS"
+authors:
+  - family-names: "Batista"
+    given-names: "Nuno"
+repository-code: "https://github.com/NunoMBatista/Neutral-Atom-QGARS"
+license: GPL-3.0
+preferred-citation:
+  type: conference-paper
+  title: "Medical Imaging Classification with Cold-Atom Reservoir Computing Using Auto-Encoders and Surrogate-Driven Training"
+  authors:
+    - family-names: "Batista"
+      given-names: "Nuno"
+    - family-names: "Morgado"
+      given-names: "Ana"
+    - family-names: "Ferraz"
+      given-names: "Oscar"
+    - family-names: "Pratapsi"
+      given-names: "Sagar Silva"
+    - family-names: "Lobo"
+      given-names: "Jorge"
+    - family-names: "Falcão"
+      given-names: "Gabriel"
+  collection-title: "2025 IEEE International Conference on Quantum Artificial Intelligence (QAI)"
+  publisher:
+    name: "IEEE"
+  start: "373"
+  end: "380"
+  year: 2025
+  doi: "10.1109/QAI63978.2025.00064"

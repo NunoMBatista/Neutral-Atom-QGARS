@@ -1,15 +1,15 @@
 import os
 import argparse
 from datetime import datetime
-from tkinter.tix import AUTO
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import pandas as pd
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+# Make the repository root importable when this file is run as a script
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from parameter_sweep import ParameterSweep
-from utils.config_manager import ConfigManager
+from src.utils.config_manager import ConfigManager
 
 # Define experiment profiles with parameter ranges
 EXPERIMENT_PROFILES = {
@@ -153,7 +153,7 @@ EXPERIMENT_PROFILES = {
     },
     
     "test": {
-        "description": "asdf",
+        "description": "Tiny run to check the pipeline end to end",
         "param_grid": {
             "seed": [42],
             "dataset_type": ["generated_polyp_dataset"],

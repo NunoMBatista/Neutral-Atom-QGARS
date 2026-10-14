@@ -1,7 +1,4 @@
 import matplotlib.pyplot as plt
-from typing import Dict, Tuple, List, Any
-import numpy as np
-import torch.nn as nn
 from src.globals import ResultsDict
 
 def plot_training_results(

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Any, Optional, Tuple, List
 
 from src.utils.cli_printing import print_sequential_model
 

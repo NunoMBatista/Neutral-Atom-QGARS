@@ -1,34 +1,19 @@
-*.aux
-*.fdb_latexmk
-*.fls
-*.log
-*.synctex.gz
-*.toc
-
-**/venv/
-**/.env/
+# Python
+__pycache__/
 *.pyc
+venv/
+.env/
+.CondaPkg/
 
-**/__pycache__
-**/.DS_Store
-
-**/.CondaPkg
-
+# Datasets and run outputs (the scripts regenerate them)
 data/datasets/**
+!data/datasets/.gitkeep
+results/
+run_stats/
+src/run_stats/
 
-src/parameter_sweep/results/**
-
-results/**
- 
-paper/*.aux
-paper/*.fdb_latexmk
-paper/*.fls
-paper/*.log
-paper/*.synctex.gz
-paper/*.toc
-paper/*.out
-paper/*.bbl
-paper/*.blg
-
-
-src/run_stats/**
+# Kept locally, not part of the code release
+archive/
+experimental_logs/
+paper/
+docs/

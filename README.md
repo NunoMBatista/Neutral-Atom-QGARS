@@ -1,130 +1,180 @@
-# Neutral Atom QGARS (Quantum Guided Autoencoder with Reservoir Surrogate)
+# QGARS: neutral-atom reservoir computing with a guided autoencoder
 
-## Project Overview
+[![Paper DOI](https://img.shields.io/badge/DOI-10.1109%2FQAI63978.2025.00064-blue)](https://doi.org/10.1109/QAI63978.2025.00064)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](requirements.txt)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](LICENCE)
 
-Neutral Atom QGARS is a quantum-classical hybrid system that leverages neutral atom quantum processors for image classification tasks. The system combines quantum reservoir computing (QRC) with classical deep learning techniques and introduces two key innovations: quantum guided autoencoders and quantum surrogate models to address the challenges of gradient-based training in quantum-classical hybrid architectures.
+Code for the paper *Medical Imaging Classification with Cold-Atom Reservoir
+Computing using Auto-Encoders and Surrogate-Driven Training* (IEEE QAI 2025).
 
-## Key Improvements
+QGARS (Quantum Guided Autoencoder with Reservoir Surrogate) compresses each
+image with an autoencoder, writes the latent code into the local detunings of
+a simulated chain of Rydberg atoms, and classifies the measured correlations
+with a linear classifier. Measurements block gradients, so a small neural
+network (the surrogate) learns to imitate the reservoir, which lets the
+classification loss train the encoder.
 
-### Classical Autoencoder vs PCA
+![QGARS pipeline](assets/pipeline.png)
 
-Traditional dimensionality reduction techniques like Principal Component Analysis (PCA) have several limitations when dealing with complex image data:
+(a) Autoencoder. (b) Rydberg-atom reservoir. (c) Surrogate, retrained every
+$N$ epochs on the reservoir's outputs. (d) Linear classifier.
 
-- **Linearity**: PCA is a linear transformation and cannot capture complex non-linear patterns in the data
-- **Scalability**: PCA becomes computationally intensive with high-dimensional inputs
-- **Fixed Transformation**: PCA lacks flexibility to adapt based on downstream tasks
+## Main result
 
-Autoencoders address these limitations by:
+Test accuracy (%) of the linear classifier on the reservoir embeddings, with 12
+atoms, mean ± standard deviation over five runs:
 
-- **Non-linearity**: Capturing complex patterns through non-linear activation functions
-- **Adaptability**: Learning representations that minimize reconstruction error rather than just maximizing variance
-- **Flexibility**: Supporting architectural variations like convolutional layers for image data
-- **End-to-end Training**: Allowing for joint optimization with downstream tasks
+| Reduction before the reservoir | Synthetic polyps | CVC-ClinicDB | MNIST 0/1 |
+|---|---|---|---|
+| PCA | 79.20 ± 2.53 | 84.95 ± 2.31 | 97.70 ± 0.97 |
+| Autoencoder | 77.50 ± 2.70 | 73.75 ± 1.90 | 87.05 ± 2.09 |
+| QGARS (guided autoencoder) | **89.45 ± 2.06** | **88.90 ± 1.65** | 97.00 ± 2.37 |
 
-### Quantum Guided Autoencoder
+Guiding the autoencoder through the surrogate gives the best reservoir
+features on both polyp datasets. Against fully classical pipelines (PCA or an
+autoencoder followed by a neural network) QGARS is ahead on synthetic polyps
+(best classical 85.85) and behind on CVC-ClinicDB (91.65) and MNIST 0/1
+(99.90).
 
-While standard autoencoders optimize solely for reconstruction quality, the Quantum Guided Autoencoder optimizes for both reconstruction AND quantum classification performance. This creates several advantages:
+## Method
 
-- **Task-Specific Encodings**: Generates encodings that work particularly well with quantum processing
-- **End-to-End Quantum-Classical Pipeline**: Establishes gradient flow between quantum outputs and classical inputs
-- **Enhanced Performance**: Achieves better classification accuracy compared to standard autoencoders
-- **Quantum Advantage Targeting**: Directs the feature learning toward regions where quantum processing excels
+### Guided autoencoder
 
-The total loss function for the Quantum Guided Autoencoder combines reconstruction loss and classification loss:
+The autoencoder is trained on
 
-```math
-𝓛_{\text{total}} = (1-\lambda) \cdot 𝓛_{\text{reconstruction}} + \lambda \cdot 𝓛_{\text{classification}}
+$$\mathcal{L} = (1-\lambda)\,\mathcal{L}_R + \lambda\,\mathcal{L}_C$$
+
+where $\mathcal{L}_R$ is the mean squared reconstruction error and
+$\mathcal{L}_C$ the cross-entropy of a linear classifier applied to the
+surrogate's output. Every $N$ epochs (`--quantum-update-frequency`) the
+current latent codes are run through the simulated reservoir and the surrogate
+is retrained on the result. $\lambda$ is `--guided-lambda`; $\lambda = 0$ is a
+plain autoencoder.
+
+### Rydberg reservoir
+
+The latent code of $N$ values drives a chain of $N$ atoms under
+
+$$H(t) = \frac{\Omega(t)}{2}\sum_j \left(|g_j\rangle\langle r_j| + |r_j\rangle\langle g_j|\right) + \sum_{j<k} V_{jk}\, n_j n_k - \sum_j \left[\Delta_g(t) + \alpha_j \Delta_l(t)\right] n_j$$
+
+with $n_j = |r_j\rangle\langle r_j|$, van der Waals couplings
+$V_{jk} = C_6/\lVert \mathbf{r}_j - \mathbf{r}_k \rVert^6$, a global detuning
+$\Delta_g$ and a local detuning $\Delta_l$ whose site weights $\alpha_j$ are the
+latent code, scaled to the detuning range.
+
+### Embeddings
+
+At each of $T$ probe times the reservoir is measured to estimate
+
+$$\langle Z_i \rangle, \qquad \langle Z_i Z_j \rangle \;(i<j), \qquad \langle Z_i Z_j Z_k \rangle \;(i<j<k),$$
+
+so the embedding has $T\left[N + \binom{N}{2} + \binom{N}{3}\right]$ values:
+4768 for the paper's $N = 12$ atoms and $T = 16$ steps. `--readout-type`
+selects `Z`, `ZZ` or `all`.
+
+## Installation
+
+Python 3.12, from the repository root:
+
+```bash
+pip install -r requirements.txt
 ```
 
-Where:
+The reservoir is simulated with [Bloqade](https://github.com/QuEraComputing/bloqade-analog)
+on the CPU.
 
-- $\lambda$ is the guided_lambda parameter (0-1) that balances the two loss components
-- $𝓛_{\text{reconstruction}}$ is the Mean Squared Error (MSE) between input and reconstruction:
-  $𝓛_{\text{reconstruction}} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \hat{x}_i)^2$
-- $𝓛_{\text{classification}}$ is the Cross-Entropy loss for classification:
-  $𝓛_{\text{classification}} = -\frac{1}{N} \sum_{i=1}^{N} \sum_{j=1}^{C} y_{ij} \log(\hat{y}_{ij})$
+## Quick start
 
-### The Quantum Surrogate Model Problem
+Reservoir embeddings for three random latent codes, without training (from the
+repository root, e.g. in `python`):
 
-A key challenge in quantum-classical hybrid learning is the non-differentiable nature of quantum operations. When we want to use the classification loss to guide the autoencoder's learning:
+```python
+import numpy as np
+from src.quantum_layer.qrc_layer import DetuningLayer
 
-1. Classical autoencoder produces an encoding
-2. Quantum layer processes this encoding to produce quantum embeddings
-3. A classifier uses these embeddings for prediction
+# A chain of 4 atoms probed at 4 times, reading out Z, ZZ and ZZZ correlators
+reservoir = DetuningLayer(n_atoms=4, n_steps=4, readout_type="all")
 
-**The Gradient Barrier Problem**: Gradients cannot flow back from the classification loss to the autoencoder because:
+codes = np.random.rand(4, 3)  # 3 latent codes, one value per atom
+embeddings = reservoir.apply_layer(codes, n_shots=200)
+print(embeddings.shape)       # (56, 3): 4 steps x (4 + 6 + 4) correlators
+```
 
-- Converting classical data to quantum states is non-differentiable
-- Quantum measurements break the computational graph
-- Classical gradients cannot propagate through the quantum layer
+## Datasets
 
-### Our Solution: The Surrogate Approach
+- **MNIST 0/1**: `--dataset-type binary_mnist`, downloaded on first use.
+- **CVC-ClinicDB**: `python data/data_generation/CVC_Clinic_DB_Download.py`
+  downloads the dataset from Kaggle. Put it in `data/datasets/cvc_clinic_db_original`
+  and run `python data/data_generation/polyp_patch_extraction.py`, which writes
+  the patches to `data/datasets/cvc_clinic_db_patches`.
+- **Synthetic polyps**: `python data/data_generation/polyp_image_generation.py`
+  (`--num-images`, default 6435) writes `dataset/polyp` and `dataset/no_polyp`
+  in the current directory; move them to `data/datasets/generated_polyp_dataset`.
 
-We solve this by creating a differentiable surrogate model that mimics the quantum layer:
+Image-folder datasets live in `data/datasets/<name>/<class>/` and are selected
+with `--dataset-type <name>`.
 
-![Surrogate Model Architecture](docs/images/surrogate_model.svg)
+## Running
 
-## Quantum Reservoir Computing with Neutral Atoms
+One run trains the reduction, simulates the reservoir and trains three
+classifiers: linear on the reduced features, linear on the reservoir embeddings
+(`QRC`) and a small neural network on the reduced features (`NN`).
 
-Our system leverages neutral atom arrays as a quantum reservoir for information processing. Quantum reservoirs provide a powerful computational framework that can exploit quantum dynamics for machine learning tasks.
+```bash
+python -m src.main --dataset-type binary_mnist --reduction-method guided_autoencoder \
+    --dim-reduction 12 --num-examples 2000 --num-test-examples 400
+```
 
-### Rydberg Hamiltonian and Quantum Dynamics
+`--reduction-method` is `pca`, `autoencoder` or `guided_autoencoder`.
+`python -m src.main --help` lists every option; the defaults are in
+`src/utils/config_manager.py`. Results go to `results/`.
 
-The quantum reservoir is governed by the Rydberg atom Hamiltonian:
+## Reproducing the paper
 
-$H(t) = \dfrac{\Omega(t)}{2}\sum_j (\ket{g_j}\bra{r_j}+\ket{r_j}\bra{g_j})+ \sum_{j<k}V_{jk}n_jn_k-\sum_j [\Delta_{\mathrm{g}}(t) + \alpha_j\Delta_{\mathrm{l}}(t)] n_j$
+Sweeps are defined as profiles in `parameter_sweep/run_experiments.py`:
 
-Where:
+```bash
+python parameter_sweep/run_experiments.py list
+python parameter_sweep/run_experiments.py profile ae_pca_qgars_5_runs
+```
 
-- $\Omega(t)$ is the global Rabi drive amplitude between ground state $\ket{g_j}$ and Rydberg state $\ket{r_j}$
-- $n_j=\ket{r_j}\bra{r_j}$ is the Rydberg state projector for atom $j$
-- $V_{jk}=C/\lVert\mathbf{r}_j-\mathbf{r}_k\rVert^6$ describes the van der Waals interactions between atoms
-- $\Delta_{\mathrm{g}}(t)$ is the global detuning term applied to all atoms
-- $\Delta_{\mathrm{l}}(t)$ is the local detuning term with site-specific modulation $\alpha_j \in [0,1]$
+| Result | Profile | Plot |
+|---|---|---|
+| Main table and classical baselines (five seeds) | `ae_pca_qgars_5_runs`, with `dataset_type` set per dataset | |
+| Accuracy against the number of atoms | `encoding_dimensions` | `n_qubit_reduction_method_analysis.py` |
+| Effect of $\lambda$ | `guided_autoencoder_lambda` | `guided_lambda_analysis.py` |
+| Training losses | | `classical_qrc_losses_plotter.py` |
+| Autoencoder regularization | `autoencoder_regularization` | `autoencoder_regularization_analysis.py` |
+| Surrogate update frequency | `guided_autoencoder_update_frequency` | `quantum_update_frequency_analysis.py` |
+| Probe times and evolution time | `time_steps_evolution_time` | `time_steps_evolution_time_analysis.py` |
 
-### Data Encoding Schemes
+The plot scripts are in `parameter_sweep/data_analysis_scripts/`.
 
-In the current implementation, the features are directly mapped to the detuning values $\Delta_j(t)$ for each atom. This encoding scheme allows the input data to modulate the energy landscape of the quantum system, influencing its dynamics.
+## Layout
 
-The detuning values are scaled to a specified range ($[-detuning_{\text{max}}, detuning_{\text{max}}]$) to ensure compatibility with the quantum hardware. This scaling is performed using the spectral range of the encoded features, ensuring that the input data is appropriately normalized.
+```
+src/quantum_layer/          Rydberg reservoir (Bloqade) and correlator readout
+src/feature_reduction/      PCA, autoencoder, guided autoencoder, surrogate
+src/classification_models/  linear and neural-network classifiers, training loop
+src/data_processing/        dataset loading
+src/utils/                  configuration, command line, statistics, plots
+data/data_generation/       dataset download, synthetic polyps, patch extraction
+parameter_sweep/            sweep profiles and analysis scripts
+```
 
-Future extensions of this work will explore additional encoding schemes:
+## Citation
 
-1. **Spatial encoding**: Mapping data to atom positions in the array
-2. **Rabi encoding**: Modulating the Rabi drive amplitude for each atom
-3. **Mixed encoding**: Combinations of detuning, spatial, and Rabi encodings
-
-### Quantum Readout Methods
-
-We support multiple types of quantum observables as readouts from the system:
-
-1. **Single-atom measurements** ($\langle Z_i \rangle$): Expectation values of the Z operator for each atom $i$, representing the population difference between ground and Rydberg states.
-   $\langle Z_i \rangle = \langle \psi | Z_i | \psi \rangle = P(|g_i\rangle) - P(|r_i\rangle)$
-2. **Two-atom correlations** ($\langle Z_i Z_j \rangle$): Two-body correlations between all pairs of atoms $i$ and $j$.
-   $\langle Z_i Z_j \rangle = \langle \psi | Z_i Z_j | \psi \rangle$
-3. **Three-atom correlations** ($\langle Z_i Z_j Z_k \rangle$): Three-body correlations between atom triplets $i$, $j$, and $k$.
-   $\langle Z_i Z_j Z_k \rangle = \langle \psi | Z_i Z_j Z_k | \psi \rangle$
-
-These readout options can be selected via the `readout_type` parameter:
-
-- `"Z"`: Only single-atom measurements
-- `"ZZ"`: Both single-atom and two-atom correlations
-- `"all"`: Complete set including single-atom, two-atom, and three-atom correlations
-
-The richness of these quantum correlations provides a high-dimensional feature space that can capture complex patterns in the input data, offering potential quantum advantage for classification tasks.
-
-## Complete Pipeline Architecture 
-
-![Quantum Guided Autoencoder Pipeline](docs/images/pipeline.svg)
-
-## Key Benefits
-
-1. **Training Efficiency**: Requires fewer quantum simulations through surrogate modeling
-2. **Improved Learning**: Classification loss effectively guides autoencoder learning
-3. **Better Quantum Features**: Encodes features that work well with quantum processing
-4. **Performance**: Better classification accuracy compared to non-guided approaches
-5. **Flexibility**: Works with various quantum configurations and datasets
+```bibtex
+@inproceedings{batista2025medical,
+  title     = {Medical Imaging Classification with Cold-Atom Reservoir Computing Using Auto-Encoders and Surrogate-Driven Training},
+  author    = {Batista, Nuno and Morgado, Ana and Ferraz, Oscar and Pratapsi, Sagar Silva and Lobo, Jorge and Falc{\~a}o, Gabriel},
+  booktitle = {2025 IEEE International Conference on Quantum Artificial Intelligence (QAI)},
+  pages     = {373--380},
+  year      = {2025},
+  doi       = {10.1109/QAI63978.2025.00064}
+}
+```
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENCE](LICENCE) file for details.  
+GPL-3.0 (see `LICENCE`).

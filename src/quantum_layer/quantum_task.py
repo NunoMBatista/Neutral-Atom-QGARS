@@ -1,5 +1,4 @@
 import numpy as np
-from bloqade.analog.ir.location import Chain
 from typing import Dict, Any
 from tqdm import tqdm
 

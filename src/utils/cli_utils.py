@@ -1,6 +1,4 @@
 import argparse
-import numpy as np
-import sys
 
 from src.utils.config_manager import ConfigManager
 

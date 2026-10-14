@@ -1,14 +1,12 @@
-from telnetlib import SUPDUP
-from venv import create
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from tqdm import tqdm
-from typing import Tuple, List, Dict, Any, Optional, Mapping
+from typing import Tuple, Any, Mapping
 
-from src.feature_reduction.autoencoder.autoencoder_architectures import create_default_architecture, create_convolutional_architecture
+from src.feature_reduction.autoencoder.autoencoder_architectures import create_default_architecture
 from src.utils.cli_printing import print_sequential_model
 
 SUPPORTED_AUTOENCODER_TYPES = ['default', 'convolutional']
