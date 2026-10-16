@@ -44,7 +44,9 @@ autoencoder followed by a neural network) QGARS is ahead on synthetic polyps
 
 The autoencoder is trained on
 
-$$\mathcal{L} = (1-\lambda)\,\mathcal{L}_R + \lambda\,\mathcal{L}_C$$
+```math
+\mathcal{L} = (1-\lambda)\,\mathcal{L}_R + \lambda\,\mathcal{L}_C
+```
 
 where $\mathcal{L}_R$ is the mean squared reconstruction error and
 $\mathcal{L}_C$ the cross-entropy of a linear classifier applied to the
@@ -57,7 +59,9 @@ plain autoencoder.
 
 The latent code of $N$ values drives a chain of $N$ atoms under
 
-$$H(t) = \frac{\Omega(t)}{2}\sum_j \left(|g_j\rangle\langle r_j| + |r_j\rangle\langle g_j|\right) + \sum_{j<k} V_{jk}\, n_j n_k - \sum_j \left[\Delta_g(t) + \alpha_j \Delta_l(t)\right] n_j$$
+```math
+H(t) = \frac{\Omega(t)}{2}\sum_j \left(|g_j\rangle\langle r_j| + |r_j\rangle\langle g_j|\right) + \sum_{j < k} V_{jk}\, n_j n_k - \sum_j \left[\Delta_g(t) + \alpha_j \Delta_l(t)\right] n_j
+```
 
 with $n_j = |r_j\rangle\langle r_j|$, van der Waals couplings
 $V_{jk} = C_6/\lVert \mathbf{r}_j - \mathbf{r}_k \rVert^6$, a global detuning
@@ -68,7 +72,9 @@ latent code, scaled to the detuning range.
 
 At each of $T$ probe times the reservoir is measured to estimate
 
-$$\langle Z_i \rangle, \qquad \langle Z_i Z_j \rangle \;(i<j), \qquad \langle Z_i Z_j Z_k \rangle \;(i<j<k),$$
+```math
+\langle Z_i \rangle, \qquad \langle Z_i Z_j \rangle \;(i < j), \qquad \langle Z_i Z_j Z_k \rangle \;(i < j < k),
+```
 
 so the embedding has $T\left[N + \binom{N}{2} + \binom{N}{3}\right]$ values:
 4768 for the paper's $N = 12$ atoms and $T = 16$ steps. `--readout-type`
